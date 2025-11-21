@@ -5,95 +5,38 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>연제 운동 체크 앱</title>
 
-<link rel="manifest" href="manifest.json" />
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2a7bff">
 <link rel="apple-mobile-web-app-capable" content="yes">
 <link rel="apple-touch-icon" href="icon-192.png">
-
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
 <style>
-body { 
-    font-family:sans-serif; 
-    padding:15px; 
-    background:#000; 
-    color:#e0e0e0; 
-}
-h2, h3 { text-align:center; color:#fff; }
-
-.container {
-    background:#1e1e1e; 
-    padding:15px; 
-    border-radius:10px;
-    box-shadow:0 2px 5px rgba(0,0,0,0.5); 
-    margin-bottom:15px;
-}
-
-.save-btn, .delete-btn, .add-btn {
-    padding:10px 15px; font-size:14px; border:none; border-radius:8px; cursor:pointer;
-}
-.save-btn { background:#2a7bff; color:white; width:100%; margin-top:15px; }
-.delete-btn { background:#d9534f; color:white; margin-left:10px; }
-.add-btn { background:#ff9800; color:white; margin-left:10px; }
-
-.date-row { display:flex; align-items:center; gap:5px; }
-.date-row input[type="text"] { 
-    flex:1; padding:8px; font-size:16px; 
-    background:#2c2c2c; color:#e0e0e0; border:1px solid #555; border-radius:5px;
-}
-
-table {
-    width: 100%; border-collapse: separate; border-spacing: 0;
-    margin-top: 10px; border: 1px solid #555; border-radius: 10px; overflow: hidden;
-    background:#1e1e1e;
-}
-th, td { border: 1px solid #555; padding: 8px; text-align: center; }
-th { background:#333; color:white; }
-
-tr.draggable-row { cursor:move; }
-tr.dragging { opacity:0.3; }
-
-input[type="checkbox"] { width:18px; height:18px; }
-
-footer { text-align:center; margin-top:20px; padding:10px; color:#888; }
-
-#progressContainer {
-    background:#1e1e1e; padding:15px; border-radius:10px;
-    box-shadow:0 2px 5px rgba(0,0,0,0.5); margin-bottom:15px;
-}
-#progressPercent { color:red; font-size:2em; font-weight:bold; }
-
-button:hover { opacity:0.8; }
-
-.flatpickr-calendar { background: #1e1e1e; color:#e0e0e0; border:1px solid #555; }
-.flatpickr-day.selected { background:#2a7bff !important; color:#fff !important; }
-.flatpickr-day.today { border-color:#2a7bff; }
-
-.modal-overlay {
-    display:none; 
-    position:fixed; top:0; left:0; width:100%; height:100%;
-    background:rgba(0,0,0,0.6); 
-    z-index:1000; 
-    justify-content:center; align-items:center;
-}
-.modal {
-    background:#333;  
-    color:white; 
-    padding:20px; 
-    border-radius:10px; 
-    text-align:center;
-    min-width:220px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.7);
-}
-.modal button { 
-    margin-top:10px; 
-    padding:5px 12px; 
-    border:none; 
-    border-radius:5px; 
-    background:white; 
-    color:#333; 
-    cursor:pointer; 
-}
+body{font-family:sans-serif;padding:15px;background:#000;color:#e0e0e0;}
+h2,h3{text-align:center;color:#fff;}
+.container{background:#1e1e1e;padding:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.5);margin-bottom:15px;}
+.save-btn,.delete-btn,.add-btn{padding:10px 15px;font-size:14px;border:none;border-radius:8px;cursor:pointer;}
+.save-btn{background:#2a7bff;color:white;width:100%;margin-top:15px;}
+.delete-btn{background:#d9534f;color:white;margin-left:10px;}
+.add-btn{background:#ff9800;color:white;margin-left:10px;}
+.date-row{display:flex;align-items:center;gap:5px;}
+.date-row input[type="text"]{flex:1;padding:8px;font-size:16px;background:#2c2c2c;color:#e0e0e0;border:1px solid #555;border-radius:5px;}
+table{width:100%;border-collapse:separate;border-spacing:0;margin-top:10px;border:1px solid #555;border-radius:10px;overflow:hidden;background:#1e1e1e;}
+th,td{border:1px solid #555;padding:8px;text-align:center;}
+th{background:#333;color:white;}
+tr.draggable-row{cursor:move;}
+tr.dragging{opacity:0.3;}
+input[type="checkbox"]{width:18px;height:18px;}
+footer{text-align:center;margin-top:20px;padding:10px;color:#888;}
+#progressContainer{background:#1e1e1e;padding:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.5);margin-bottom:15px;}
+#progressPercent{color:red;font-size:2em;font-weight:bold;}
+button:hover{opacity:0.8;}
+.flatpickr-calendar{background:#1e1e1e;color:#e0e0e0;border:1px solid #555;}
+.flatpickr-day.selected{background:#2a7bff !important;color:#fff !important;}
+.flatpickr-day.today{border-color:#2a7bff;}
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:1000;justify-content:center;align-items:center;}
+.modal{background:#333;color:white;padding:20px;border-radius:10px;text-align:center;min-width:220px;box-shadow:0 4px 15px rgba(0,0,0,0.7);}
+.modal button{margin-top:10px;padding:5px 12px;border:none;border-radius:5px;background:white;color:#333;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -101,174 +44,117 @@ button:hover { opacity:0.8; }
 <h2>연제 운동 체크 앱</h2>
 
 <div id="progressContainer">
-    <h3>이번 달 진도율</h3>
-    <p id="progressText">
-        이번 달 운동한 날: <span id="completedDays"></span> / <span id="totalDays"></span>일<br>
-        진도율: <span id="progressPercent"></span>%
-    </p>
+<h3>이번 달 진도율</h3>
+<p id="progressText">이번 달 운동한 날: <span id="completedDays"></span> / <span id="totalDays"></span>일<br>진도율: <span id="progressPercent"></span>%</p>
 </div>
 
 <div class="container">
-    <div class="date-row">
-        <input type="text" id="dateInput" readonly />
-        <button class="delete-btn" id="deleteBtn">🗑 삭제</button>
-        <button class="add-btn" id="addExerciseBtn">+ 운동 추가</button>
-    </div>
-
-    <table id="exerciseTable">
-        <thead>
-            <tr><th>운동</th><th>1set</th><th>2set</th><th>3set</th><th>삭제</th></tr>
-        </thead>
-        <tbody id="exerciseBody">
-            <tr draggable="true" class="draggable-row"><td>보강</td><td><input type="checkbox" data-name="bo1"></td><td><input type="checkbox" data-name="bo2"></td><td><input type="checkbox" data-name="bo3"></td><td></td></tr>
-            <tr draggable="true" class="draggable-row"><td>코어</td><td><input type="checkbox" data-name="core1"></td><td><input type="checkbox" data-name="core2"></td><td><input type="checkbox" data-name="core3"></td><td></td></tr>
-            <tr draggable="true" class="draggable-row"><td>푸쉬업</td><td><input type="checkbox" data-name="push1"></td><td><input type="checkbox" data-name="push2"></td><td><input type="checkbox" data-name="push3"></td><td></td></tr>
-            <tr draggable="true" class="draggable-row"><td>몸통 돌리기</td><td><input type="checkbox" data-name="bat1"></td><td><input type="checkbox" data-name="bat2"></td><td><input type="checkbox" data-name="bat3"></td><td></td></tr>
-            <tr draggable="true" class="draggable-row"><td>악력기</td><td><input type="checkbox" data-name="gripL"></td><td><input type="checkbox" data-name="gripR"></td><td></td><td></td></tr>
-            <tr draggable="true" class="draggable-row"><td>고무줄 튜빙</td><td><input type="checkbox" data-name="tubing1"></td><td><input type="checkbox" data-name="tubing2"></td><td><input type="checkbox" data-name="tubing3"></td><td></td></tr>
-        </tbody>
-    </table>
-
-    <button id="saveBtn" class="save-btn">💾 저장하기</button>
+<div class="date-row">
+<input type="text" id="dateInput" readonly>
+<button class="delete-btn" id="deleteBtn">🗑 삭제</button>
+<button class="add-btn" id="addExerciseBtn">+ 운동 추가</button>
 </div>
 
-<footer>
-    만든 사람 : <strong>Jaeho</strong>
-</footer>
+<table id="exerciseTable">
+<thead><tr><th>운동</th><th>1set</th><th>2set</th><th>3set</th><th>삭제</th></tr></thead>
+<tbody id="exerciseBody">
+<tr draggable="true" class="draggable-row"><td>보강</td><td><input type="checkbox" data-name="bo1"></td><td><input type="checkbox" data-name="bo2"></td><td><input type="checkbox" data-name="bo3"></td><td></td></tr>
+<tr draggable="true" class="draggable-row"><td>코어</td><td><input type="checkbox" data-name="core1"></td><td><input type="checkbox" data-name="core2"></td><td><input type="checkbox" data-name="core3"></td><td></td></tr>
+<tr draggable="true" class="draggable-row"><td>푸쉬업</td><td><input type="checkbox" data-name="push1"></td><td><input type="checkbox" data-name="push2"></td><td><input type="checkbox" data-name="push3"></td><td></td></tr>
+<tr draggable="true" class="draggable-row"><td>몸통 돌리기</td><td><input type="checkbox" data-name="bat1"></td><td><input type="checkbox" data-name="bat2"></td><td><input type="checkbox" data-name="bat3"></td><td></td></tr>
+<tr draggable="true" class="draggable-row"><td>악력기</td><td><input type="checkbox" data-name="gripL"></td><td><input type="checkbox" data-name="gripR"></td><td></td><td></td></tr>
+<tr draggable="true" class="draggable-row"><td>고무줄 튜빙</td><td><input type="checkbox" data-name="tubing1"></td><td><input type="checkbox" data-name="tubing2"></td><td><input type="checkbox" data-name="tubing3"></td><td></td></tr>
+</tbody>
+</table>
+
+<button id="saveBtn" class="save-btn">💾 저장하기</button>
+</div>
+
+<footer>만든 사람 : <strong>Jaeho</strong></footer>
 
 <div id="modalOverlay" class="modal-overlay">
-    <div class="modal" id="modalContent">
-        <span id="modalMessage"></span><br>
-        <button id="modalOkBtn">확인</button>
-    </div>
+<div class="modal">
+<span id="modalMessage"></span><br>
+<button id="modalOkBtn">확인</button>
+</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
-// 모달
 const modalOverlay = document.getElementById("modalOverlay");
 const modalMessage = document.getElementById("modalMessage");
-const modalOkBtn = document.getElementById("modalOkBtn");
-function showAlert(msg){
-    modalMessage.textContent = msg;
-    modalOverlay.style.display="flex";
-}
-modalOkBtn.onclick = ()=>{ modalOverlay.style.display="none"; };
+document.getElementById("modalOkBtn").onclick = ()=> modalOverlay.style.display="none";
+function showAlert(msg){ modalMessage.textContent=msg; modalOverlay.style.display="flex"; }
 
-// 변수
 const exerciseBody = document.getElementById("exerciseBody");
 const defaultExercises = ["보강","코어","푸쉬업","몸통 돌리기","악력기","고무줄 튜빙"];
 
-// Flatpickr 초기화
-const fp = flatpickr("#dateInput", {
-    dateFormat: "Y-m-d",
-    defaultDate: new Date(),
-    onChange: function(selectedDates, dateStr) { loadData(dateStr); },
-    onDayCreate: function(dObj, dStr, fp, dayElem){
-        const date = dayElem.dateObj.toISOString().split("T")[0];
-        if(localStorage.getItem("exercise_" + date)){ dayElem.classList.add("selected"); }
-    },
-    locale: "ko"
-});
+const fp = flatpickr("#dateInput",{dateFormat:"Y-m-d",defaultDate:new Date(),
+onChange:(dates,dateStr)=>loadData(dateStr),
+onDayCreate:(dObj,dStr,fpObj,dayElem)=>{const date=dayElem.dateObj.toISOString().split("T")[0];if(localStorage.getItem("exercise_"+date)) dayElem.classList.add("selected");},
+locale:"ko"});
 
-// 운동 추가
-document.getElementById("addExerciseBtn").onclick = () => {
-    const name = prompt("추가할 운동 이름을 입력하세요:");
-    if(!name) return;
-    const idBase = name.replace(/\s/g,"");
-    const row = document.createElement("tr");
-    row.draggable=true;
-    row.className="draggable-row";
-    row.innerHTML = `<td>${name}</td>
-        <td><input type="checkbox" data-name="${idBase}_1"></td>
-        <td><input type="checkbox" data-name="${idBase}_2"></td>
-        <td><input type="checkbox" data-name="${idBase}_3"></td>
-        <td><button onclick="deleteRow(this)">X</button></td>`;
-    exerciseBody.appendChild(row);
-    initDragEvents();
+document.getElementById("addExerciseBtn").onclick=()=>{
+    const name=prompt("추가할 운동 이름을 입력하세요:"); if(!name) return;
+    const idBase=name.replace(/\s/g,"");
+    const row=document.createElement("tr");
+    row.draggable=true; row.className="draggable-row";
+    row.innerHTML=`<td>${name}</td><td><input type="checkbox" data-name="${idBase}_1"></td>
+    <td><input type="checkbox" data-name="${idBase}_2"></td><td><input type="checkbox" data-name="${idBase}_3"></td>
+    <td><button onclick="deleteRow(this)">X</button></td>`;
+    exerciseBody.appendChild(row); initDragEvents();
 };
 
-// 삭제
 function deleteRow(btn){
     const exerciseName = btn.closest("tr").querySelector("td").textContent;
-    if(defaultExercises.includes(exerciseName)){
-        showAlert("기본 운동은 삭제할 수 없습니다!");
-        return;
-    }
+    if(defaultExercises.includes(exerciseName)){showAlert("기본 운동은 삭제할 수 없습니다!");return;}
     btn.closest("tr").remove();
 }
 
-// 저장
-document.getElementById("saveBtn").onclick = () => {
-    const key = "exercise_"+fp.input.value;
-    let data={};
-    document.querySelectorAll("input[type=checkbox]").forEach(cb=>data[cb.dataset.name]=cb.checked);
-    localStorage.setItem(key, JSON.stringify(data));
-    showAlert("저장되었습니다!");
-    fp.redraw();
-    updateMonthlyProgress();
+document.getElementById("saveBtn").onclick=()=>{
+    const key="exercise_"+fp.input.value;
+    let data={}; document.querySelectorAll("input[type=checkbox]").forEach(cb=>data[cb.dataset.name]=cb.checked);
+    localStorage.setItem(key,JSON.stringify(data)); showAlert("저장되었습니다!"); fp.redraw(); updateMonthlyProgress();
 };
 
-// 불러오기
 function loadData(date){
     document.querySelectorAll("input[type=checkbox]").forEach(cb=>cb.checked=false);
-    const data = JSON.parse(localStorage.getItem("exercise_" + date) || "{}");
-    for(let key in data){
-        const cb = document.querySelector(`[data-name="${key}"]`);
-        if(cb) cb.checked = data[key];
-    }
+    const data=JSON.parse(localStorage.getItem("exercise_"+date)||"{}");
+    for(let key in data){ const cb=document.querySelector(`[data-name="${key}"]`); if(cb) cb.checked=data[key]; }
 }
 loadData(fp.input.value);
 
-// 날짜 삭제
-document.getElementById("deleteBtn").onclick = () => {
-    const date = fp.input.value;
-    localStorage.removeItem("exercise_"+date);
+document.getElementById("deleteBtn").onclick=()=>{
+    const date=fp.input.value; localStorage.removeItem("exercise_"+date);
     document.querySelectorAll("input[type=checkbox]").forEach(cb=>cb.checked=false);
-    showAlert("삭제되었습니다!");
-    fp.redraw();
-    updateMonthlyProgress();
+    showAlert("삭제되었습니다!"); fp.redraw(); updateMonthlyProgress();
 };
 
-// 드래그
 function initDragEvents(){
     const rows=document.querySelectorAll(".draggable-row");
-    rows.forEach(row=>{
-        row.addEventListener("dragstart",()=>row.classList.add("dragging"));
-        row.addEventListener("dragend",()=>row.classList.remove("dragging"));
-    });
-    exerciseBody.addEventListener("dragover", e=>{
-        e.preventDefault();
+    rows.forEach(row=>{row.addEventListener("dragstart",()=>row.classList.add("dragging"));
+    row.addEventListener("dragend",()=>row.classList.remove("dragging"));});
+    exerciseBody.addEventListener("dragover",e=>{e.preventDefault();
         const dragging=document.querySelector(".dragging");
         const after=getDragAfterElement(exerciseBody,e.clientY);
-        if(after==null) exerciseBody.appendChild(dragging);
-        else exerciseBody.insertBefore(dragging, after);
+        if(!after) exerciseBody.appendChild(dragging);
+        else exerciseBody.insertBefore(dragging,after);
     });
 }
 function getDragAfterElement(container,y){
     const elements=[...container.querySelectorAll(".draggable-row:not(.dragging)")];
-    return elements.reduce((closest, child)=>{
-        const box=child.getBoundingClientRect();
-        const offset=y-box.top-box.height/2;
-        if(offset<0 && offset>closest.offset) return {offset,element:child};
-        else return closest;
-    }, {offset:Number.NEGATIVE_INFINITY}).element;
+    return elements.reduce((closest,child)=>{
+        const box=child.getBoundingClientRect(); const offset=y-box.top-box.height/2;
+        if(offset<0 && offset>closest.offset) return {offset,element:child}; else return closest;
+    },{offset:Number.NEGATIVE_INFINITY}).element;
 }
 initDragEvents();
 
-// 한 달 진도율
 function updateMonthlyProgress(){
-    const today=new Date();
-    const year=today.getFullYear();
-    const month=today.getMonth()+1;
-    const totalDays=new Date(year,month,0).getDate();
-    let completedDays=0;
-    for(let i=1;i<=totalDays;i++){
-        const day=i.toString().padStart(2,'0');
-        const monthStr=month.toString().padStart(2,'0');
-        const key=`exercise_${year}-${monthStr}-${day}`;
-        if(localStorage.getItem(key)) completedDays++;
-    }
+    const today=new Date(); const year=today.getFullYear(); const month=today.getMonth()+1;
+    const totalDays=new Date(year,month,0).getDate(); let completedDays=0;
+    for(let i=1;i<=totalDays;i++){const day=i.toString().padStart(2,'0');const monthStr=month.toString().padStart(2,'0');
+    if(localStorage.getItem(`exercise_${year}-${monthStr}-${day}`)) completedDays++; }
     const progress=((completedDays/totalDays)*100).toFixed(1);
     document.getElementById("completedDays").textContent=completedDays;
     document.getElementById("totalDays").textContent=totalDays;
@@ -276,12 +162,7 @@ function updateMonthlyProgress(){
 }
 updateMonthlyProgress();
 
-// PWA
-if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('service-worker.js')
-    .then(()=>console.log('Service Worker 등록됨'))
-    .catch(err=>console.error('Service Worker 등록 실패',err));
-}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('service-worker.js').then(()=>console.log('Service Worker 등록됨')).catch(err=>console.error('Service Worker 등록 실패',err));}
 </script>
 </body>
 </html>
