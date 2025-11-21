@@ -16,7 +16,7 @@
 body { 
     font-family:sans-serif; 
     padding:15px; 
-    background:#000; /* 배경 검정색 */
+    background:#000; 
     color:#e0e0e0; 
 }
 h2, h3 { text-align:center; color:#fff; }
@@ -33,10 +33,10 @@ h2, h3 { text-align:center; color:#fff; }
     padding:10px 15px; font-size:14px; border:none; border-radius:8px; cursor:pointer;
 }
 .save-btn { background:#2a7bff; color:white; width:100%; margin-top:15px; }
-.delete-btn { background:#d9534f; color:white; }
-.add-btn { background:#ff9800; color:white; }
+.delete-btn { background:#d9534f; color:white; margin-left:10px; }
+.add-btn { background:#ff9800; color:white; margin-left:10px; }
 
-.date-row { display:flex; align-items:center; gap:5px; margin-bottom:10px; }
+.date-row { display:flex; align-items:center; gap:5px; }
 .date-row input[type="text"] { 
     flex:1; padding:8px; font-size:16px; 
     background:#2c2c2c; color:#e0e0e0; border:1px solid #555; border-radius:5px;
@@ -69,7 +69,6 @@ button:hover { opacity:0.8; }
 .flatpickr-day.selected { background:#2a7bff !important; color:#fff !important; }
 .flatpickr-day.today { border-color:#2a7bff; }
 
-/* 커스텀 안내창 */
 .modal-overlay {
     display:none; 
     position:fixed; top:0; left:0; width:100%; height:100%;
@@ -78,7 +77,7 @@ button:hover { opacity:0.8; }
     justify-content:center; align-items:center;
 }
 .modal {
-    background:#333333;  
+    background:#333;  
     color:white; 
     padding:20px; 
     border-radius:10px; 
@@ -92,7 +91,7 @@ button:hover { opacity:0.8; }
     border:none; 
     border-radius:5px; 
     background:white; 
-    color:#333333; 
+    color:#333; 
     cursor:pointer; 
 }
 </style>
@@ -146,7 +145,7 @@ button:hover { opacity:0.8; }
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
-// -------------------- 모달 --------------------
+// 모달
 const modalOverlay = document.getElementById("modalOverlay");
 const modalMessage = document.getElementById("modalMessage");
 const modalOkBtn = document.getElementById("modalOkBtn");
@@ -156,10 +155,11 @@ function showAlert(msg){
 }
 modalOkBtn.onclick = ()=>{ modalOverlay.style.display="none"; };
 
-// -------------------- 변수 --------------------
+// 변수
 const exerciseBody = document.getElementById("exerciseBody");
+const defaultExercises = ["보강","코어","푸쉬업","몸통 돌리기","악력기","고무줄 튜빙"];
 
-// -------------------- Flatpickr 초기화 --------------------
+// Flatpickr 초기화
 const fp = flatpickr("#dateInput", {
     dateFormat: "Y-m-d",
     defaultDate: new Date(),
@@ -171,29 +171,34 @@ const fp = flatpickr("#dateInput", {
     locale: "ko"
 });
 
-// -------------------- 운동 추가 --------------------
+// 운동 추가
 document.getElementById("addExerciseBtn").onclick = () => {
     const name = prompt("추가할 운동 이름을 입력하세요:");
-    if (!name) return;
-    const idBase = name.replace(/\s/g, "");
+    if(!name) return;
+    const idBase = name.replace(/\s/g,"");
     const row = document.createElement("tr");
-    row.draggable = true;
-    row.className = "draggable-row";
-    row.innerHTML = `
-        <td>${name}</td>
+    row.draggable=true;
+    row.className="draggable-row";
+    row.innerHTML = `<td>${name}</td>
         <td><input type="checkbox" data-name="${idBase}_1"></td>
         <td><input type="checkbox" data-name="${idBase}_2"></td>
         <td><input type="checkbox" data-name="${idBase}_3"></td>
-        <td><button onclick="deleteRow(this)">X</button></td>
-    `;
+        <td><button onclick="deleteRow(this)">X</button></td>`;
     exerciseBody.appendChild(row);
     initDragEvents();
 };
 
-// -------------------- 삭제 --------------------
-function deleteRow(btn){ btn.closest("tr").remove(); }
+// 삭제
+function deleteRow(btn){
+    const exerciseName = btn.closest("tr").querySelector("td").textContent;
+    if(defaultExercises.includes(exerciseName)){
+        showAlert("기본 운동은 삭제할 수 없습니다!");
+        return;
+    }
+    btn.closest("tr").remove();
+}
 
-// -------------------- 저장 --------------------
+// 저장
 document.getElementById("saveBtn").onclick = () => {
     const key = "exercise_"+fp.input.value;
     let data={};
@@ -204,7 +209,7 @@ document.getElementById("saveBtn").onclick = () => {
     updateMonthlyProgress();
 };
 
-// -------------------- 불러오기 --------------------
+// 불러오기
 function loadData(date){
     document.querySelectorAll("input[type=checkbox]").forEach(cb=>cb.checked=false);
     const data = JSON.parse(localStorage.getItem("exercise_" + date) || "{}");
@@ -215,7 +220,7 @@ function loadData(date){
 }
 loadData(fp.input.value);
 
-// -------------------- 날짜 삭제 --------------------
+// 날짜 삭제
 document.getElementById("deleteBtn").onclick = () => {
     const date = fp.input.value;
     localStorage.removeItem("exercise_"+date);
@@ -225,7 +230,7 @@ document.getElementById("deleteBtn").onclick = () => {
     updateMonthlyProgress();
 };
 
-// -------------------- 드래그 --------------------
+// 드래그
 function initDragEvents(){
     const rows=document.querySelectorAll(".draggable-row");
     rows.forEach(row=>{
@@ -251,7 +256,7 @@ function getDragAfterElement(container,y){
 }
 initDragEvents();
 
-// -------------------- 한 달 진도율 --------------------
+// 한 달 진도율
 function updateMonthlyProgress(){
     const today=new Date();
     const year=today.getFullYear();
@@ -271,7 +276,7 @@ function updateMonthlyProgress(){
 }
 updateMonthlyProgress();
 
-// -------------------- PWA --------------------
+// PWA
 if('serviceWorker' in navigator){
     navigator.serviceWorker.register('service-worker.js')
     .then(()=>console.log('Service Worker 등록됨'))
