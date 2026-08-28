@@ -1,374 +1,1929 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>연제 운동 체크 앱</title>
-
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2a7bff">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="apple-touch-icon" href="icon-192.png">
-
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f9f9f7">
+<meta name="description" content="야구 경기 기록·분석 노트 — 타석별 상세 기록, 수비 기록, 차트 분석, 경기 영상 보관">
+<title>야구 기록 노트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
-html, body {
-    font-family: sans-serif;
-    margin: 0;
-    padding: 0;
-    background: #000;
-    color: #e0e0e0;
-    font-size: 1.1em; /* 전체 글자 20% 증가 */
+:root{
+  color-scheme: light;
+  --surface-0:#f9f9f7; --surface-1:#fcfcfb; --surface-2:#f0efec; --surface-3:#e8e7e2;
+  --text-1:#0b0b0b; --text-2:#52514e; --text-3:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  --neutral:#898781;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+  --btn:#A3C6C4; --btn-ink:#0b0b0b; --btn-ring:#7fa9a7;
+  --accent-ink:#3f6b69;
+  --field:#eef3ea; --dirt:#f3e7d6; --fieldline:#c9d3c1;
+  --shadow:0 1px 2px rgba(11,11,11,.05), 0 6px 20px rgba(11,11,11,.05);
+  --r:14px; --r-sm:10px;
+  --nav-h:60px;
+  --font-ui:"Noto Sans KR","Apple SD Gothic Neo",system-ui,-apple-system,"Malgun Gothic","Segoe UI",sans-serif;
+  --font-num:var(--font-ui);   /* 숫자도 같은 고딕체 — 자리 정렬은 tabular-nums로 */
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --surface-0:#0d0d0d; --surface-1:#1a1a19; --surface-2:#2c2c2a; --surface-3:#383835;
+    --text-1:#ffffff; --text-2:#c3c2b7; --text-3:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+    --neutral:#898781; --accent-ink:#A3C6C4;
+    --field:#18211a; --dirt:#26201a; --fieldline:#2f3a30;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --surface-0:#0d0d0d; --surface-1:#1a1a19; --surface-2:#2c2c2a; --surface-3:#383835;
+  --text-1:#ffffff; --text-2:#c3c2b7; --text-3:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+  --neutral:#898781; --accent-ink:#A3C6C4;
+  --field:#18211a; --dirt:#26201a; --fieldline:#2f3a30;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
 }
 
-/* 타이틀 30% 작게 */
-h2 {
-    text-align: center;
-    color: #fff;
-    margin: 6px 0;
-    font-size: 0.7em;
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--surface-0); color:var(--text-1);
+  font-family:var(--font-ui);
+  font-size:15px; line-height:1.5;
+  -webkit-text-size-adjust:100%;
+  padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom));
 }
+h1,h2,h3,h4{margin:0;font-weight:650;letter-spacing:-.01em}
+button{font:inherit;color:inherit}
+a{color:var(--s1)}
 
-/* 컨테이너 */
-.container {
-    background: #1e1e1e;
-    padding: 8px;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-    margin: 6px;
+/* ---------- app chrome ---------- */
+.topbar{
+  position:sticky; top:0; z-index:40;
+  background:color-mix(in srgb, var(--surface-0) 88%, transparent);
+  backdrop-filter:saturate(180%) blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;
+  display:flex; align-items:center; gap:10px;
 }
+.topbar .brand{display:flex;align-items:center;gap:8px;min-width:0}
+.topbar .ball{
+  width:26px;height:26px;border-radius:50%;flex:0 0 auto;
+  background:var(--surface-1); border:1px solid var(--axis); position:relative;
+}
+.topbar .ball::before,.topbar .ball::after{
+  content:""; position:absolute; inset:3px 5px; border:1.5px solid var(--s2);
+  border-radius:50%; border-color:transparent var(--s2) transparent transparent;
+}
+.topbar .ball::after{border-color:transparent transparent transparent var(--s2)}
+.topbar h1{font-size:17px}
+.topbar .sub{font-size:12px;color:var(--text-3);margin-top:-2px}
+.spacer{flex:1}
+.iconbtn{
+  width:38px;height:38px;border-radius:12px;border:1px solid var(--border);
+  background:var(--surface-1); display:grid;place-items:center;cursor:pointer;
+  font-size:16px; line-height:1;
+}
+.iconbtn:active{background:var(--surface-2)}
+.iconbtn svg{display:block}
+.iconbtn.del{color:var(--crit);border:0;background:none;flex:0 0 auto}
+.iconbtn.del:active{background:none;opacity:.55}
+.iconbtn.sm{width:34px;height:34px;border-radius:10px}
+.iconbtn.on{background:var(--btn);border-color:var(--btn-ring);color:var(--btn-ink)}
 
-/* 달력 */
-#monthNav {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 6px;
-    font-size: 0.8em;
-}
-#monthNav button {
-    cursor: pointer;
-    padding: 6px 8px;
-    border-radius: 4px;
-}
-#calendar {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-    font-size: 0.8em;
-    line-height: 1.5;
-    transform: scaleY(0.85); /* 달력 높이 15% 줄임 */
-}
-.calendar-weekday {
-    text-align: center;
-    font-weight: bold;
-    padding: 4px 0;
-}
-.calendar-day {
-    padding: 2px;
-    text-align: center;
-    background: #222;
-    border-radius: 4px;
-    cursor: pointer;
-    border: 1px solid transparent;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.calendar-day.today { border-color: rgb(240,128,128); }
-.calendar-day.selected { border-color: rgb(192,192,192); }
-.calendar-day:hover { background: #444; }
+.wrap{max-width:1080px;margin:0 auto;padding:14px 14px 24px}
+@media(min-width:820px){ .wrap{padding:20px} }
 
-/* 버튼 영역 */
-.date-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-bottom: 4px; /* 간격 줄임 */
+/* ---------- bottom nav ---------- */
+nav.tabs{
+  position:fixed;left:0;right:0;bottom:0;z-index:50;
+  background:color-mix(in srgb, var(--surface-1) 92%, transparent);
+  backdrop-filter:saturate(180%) blur(14px);
+  border-top:1px solid var(--border);
+  display:grid;grid-template-columns:repeat(4,1fr);
+  padding-bottom:env(safe-area-inset-bottom);
 }
-.action-btn {
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.72em;
-    padding: 6px;
-    flex: 1;
-    min-width: 100px;
-    text-align: center;
+nav.tabs button{
+  background:none;border:0;padding:8px 2px 9px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  color:var(--text-3);font-size:11px;min-height:var(--nav-h);justify-content:center;
 }
-.delete-btn { background: #d9534f; color: white; }
-.add-btn { background: #ff9800; color: white; }
-.save-btn {
-    background: #2a7bff;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    width: 100%;
-    padding: 6px;
-    margin-top: 4px;
-    font-size: 0.72em;
-}
+nav.tabs button .ic{font-size:19px;line-height:1}
+nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
 
-/* 운동 테이블 */
-#exerciseContainer {
-    margin-top: 2px; /* 버튼과 테이블 간격 최소화 */
-    transform: scaleY(0.8); /* 높이 20% 감소 */
+/* ---------- cards ---------- */
+.card{
+  background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);
+  padding:14px; margin-bottom:12px; box-shadow:var(--shadow);
 }
-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    border: 1px solid #555;
-    border-radius: 6px;
-    overflow: hidden;
-    font-size: 0.72em;
-}
-th, td {
-    border: 1px solid #555;
-    padding: 8px;
-    text-align: center;
-}
-th { background: #333; color: white; }
-tr { height: 48px; }
+.card > .hd{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px}
+.card h3{font-size:14.5px}
+.card .cap{font-size:12px;color:var(--text-3);margin-top:2px;line-height:1.35}
+.grid{display:grid;gap:12px}
+@media(min-width:760px){ .grid.g2{grid-template-columns:1fr 1fr} }
 
-/* 모달 */
-.modal-overlay {
-    display: none;
-    position: fixed;
-    top:0; left:0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.6);
-    z-index: 1000;
-    justify-content: center;
-    align-items: center;
+/* ---------- stat tiles ---------- */
+.hero{
+  background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px 16px 14px;margin-bottom:12px;box-shadow:var(--shadow);
 }
-.modal {
-    background: #333;
-    color: white;
-    padding: 10px;
-    border-radius: 6px;
-    text-align: center;
-    min-width: 200px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.7);
-    font-size: 0.72em;
+.hero .lb{font-size:12.5px;color:var(--text-2)}
+.hero .fig{font-size:52px;font-weight:680;letter-spacing:-.03em;line-height:1.02;margin:2px 0 4px}
+.hero .meta{font-size:12.5px;color:var(--text-3)}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(min-width:560px){ .tiles{grid-template-columns:repeat(6,1fr)} }
+.tile{
+  background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:9px 10px;
 }
-.modal button {
-    margin-top: 6px;
-    padding: 4px 6px;
-    border: none;
-    border-radius: 5px;
-    background: white;
-    color: #333;
-    cursor: pointer;
-    font-size: 0.72em;
-}
-.modal input {
-    font-size: 0.72em;
-    padding: 4px;
-    width: 80%;
-    margin-top: 4px;
-}
+.tile .lb{font-size:11px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.01em}
+.tile .v{font-size:19px;font-weight:650;letter-spacing:-.02em}
+.tile .v small{font-size:11px;font-weight:500;color:var(--text-3);margin-left:2px}
 
-/* Footer 글자 50% 작게 */
-footer {
-    text-align: center;
-    margin-top: 4px;
-    color: #888;
-    font-size: 0.5em;
+/* ---------- filter row ---------- */
+.filters{
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  margin:0 0 12px;
 }
+.seg{display:inline-flex;background:var(--surface-2);border-radius:999px;padding:3px;gap:2px;overflow-x:auto;max-width:100%}
+.seg button{
+  border:0;background:none;padding:7px 13px;border-radius:999px;font-size:13px;
+  cursor:pointer;color:var(--text-2);white-space:nowrap;min-height:34px;
+}
+.seg button[aria-pressed="true"]{background:var(--surface-1);color:var(--text-1);font-weight:650;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+/* ---------- buttons / forms ---------- */
+.btn{
+  border:1px solid var(--border);background:var(--surface-1);color:var(--text-1);
+  padding:10px 14px;border-radius:12px;cursor:pointer;font-size:14px;font-weight:550;
+  min-height:44px; display:inline-flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn:active{background:var(--surface-2)}
+.btn.pri{background:var(--btn);border-color:var(--btn-ring);color:var(--btn-ink);font-weight:650}
+.btn.pri:active{filter:brightness(.93)}
+.btn.dan{color:var(--crit);border-color:color-mix(in srgb,var(--crit) 35%,transparent)}
+.btn.sm{padding:6px 10px;min-height:34px;font-size:12.5px;border-radius:10px;font-weight:500}
+.btn.block{width:100%}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+
+label.f{display:block;margin-bottom:12px}
+label.f > span{display:block;font-size:12.5px;color:var(--text-2);margin-bottom:5px;font-weight:550}
+input,select,textarea{
+  width:100%;font:inherit;font-size:16px;padding:11px 12px;border-radius:12px;
+  border:1px solid var(--border);background:var(--surface-1);color:var(--text-1);
+  min-height:46px;
+}
+textarea{min-height:76px;resize:vertical}
+input:focus,select,textarea:focus{outline:2px solid color-mix(in srgb,var(--s1) 55%,transparent);outline-offset:1px}
+select{outline:none;-webkit-appearance:none;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--text-3) 50%),linear-gradient(135deg,var(--text-3) 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:36px}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.f3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+
+.stepper{display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface-1)}
+.stepper button{width:46px;min-height:46px;border:0;background:var(--surface-2);font-size:19px;cursor:pointer;flex:0 0 auto}
+.stepper input{border:0;border-radius:0;text-align:center;background:none;font-weight:650;padding:11px 0}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  border:1px solid var(--border);background:var(--surface-1);border-radius:999px;
+  padding:8px 12px;font-size:13px;cursor:pointer;min-height:38px;
+}
+.chip[aria-pressed="true"]{background:var(--s1);border-color:var(--s1);color:#fff;font-weight:600}
+.chip.g-hit[aria-pressed="true"]{background:var(--s1);border-color:var(--s1)}
+.chip.g-onbase[aria-pressed="true"]{background:var(--s3);border-color:var(--s3)}
+.chip.g-out[aria-pressed="true"]{background:var(--neutral);border-color:var(--neutral);color:var(--surface-1)}
+.chipgroup{margin-bottom:10px}
+.chipgroup > .gl{font-size:11.5px;color:var(--text-3);margin-bottom:5px;font-weight:600;letter-spacing:.02em}
+
+/* ---------- sheet / modal ---------- */
+.backdrop{
+  position:fixed;inset:0;background:rgba(11,11,11,.42);z-index:60;
+  display:flex;align-items:flex-end;justify-content:center;
+  animation:fade .18s ease;
+}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes rise{from{transform:translateY(18px);opacity:.6}to{transform:none;opacity:1}}
+.sheet{
+  background:var(--surface-0);width:100%;max-width:620px;
+  border-radius:20px 20px 0 0;max-height:92vh;overflow:auto;
+  padding:0 16px calc(20px + env(safe-area-inset-bottom));
+  animation:rise .2s cubic-bezier(.2,.9,.3,1);
+}
+@media(min-width:700px){
+  .backdrop{align-items:center}
+  .sheet{border-radius:20px;max-height:88vh}
+}
+.sheet .sh{
+  position:sticky;top:0;background:var(--surface-0);z-index:2;
+  padding:14px 0 10px;margin-bottom:4px;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--border);
+}
+.sheet .sh h3{font-size:16px}
+.sheet .sf{position:sticky;bottom:0;background:var(--surface-0);padding:12px 0 4px;border-top:1px solid var(--border);display:flex;gap:8px}
+.sheet .sf .btn{flex:1}
+
+/* ---------- lists ---------- */
+.list{display:flex;flex-direction:column;gap:8px}
+.row{
+  background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:11px 12px;display:flex;gap:10px;align-items:center;cursor:pointer;
+}
+.row:active{background:var(--surface-2)}
+.row .main{flex:1;min-width:0}
+.row .t{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .s{font-size:12px;color:var(--text-3);margin-top:1px}
+.row .r{text-align:right;font-size:12.5px;color:var(--text-2);white-space:nowrap;font-variant-numeric:tabular-nums}
+.badge{display:inline-block;font-size:11px;font-weight:650;padding:2px 7px;border-radius:999px;background:var(--surface-2);color:var(--text-2)}
+.badge.w{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
+.badge.l{background:color-mix(in srgb,var(--crit) 14%,transparent);color:var(--crit)}
+.badge.hit{background:color-mix(in srgb,var(--s1) 15%,transparent);color:var(--s1)}
+.badge.ob{background:color-mix(in srgb,var(--s3) 16%,transparent);color:var(--s3)}
+.badge.out{background:var(--surface-2);color:var(--text-3)}
+
+.empty{
+  text-align:center;padding:34px 18px;color:var(--text-3);font-size:13.5px;
+  border:1px dashed var(--axis);border-radius:var(--r);background:var(--surface-1);
+}
+.empty .big{font-size:30px;display:block;margin-bottom:8px}
+
+/* ---------- tables ---------- */
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:7px 9px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--grid)}
+td{font-family:var(--font-ui)}
+th{color:var(--text-3);font-weight:600;font-size:11.5px;text-align:right}
+th:first-child,td:first-child{text-align:left}
+tbody tr:last-child td{border-bottom:0}
+tfoot td{font-weight:650;border-top:1px solid var(--axis);border-bottom:0}
+
+/* ---------- charts ---------- */
+.chart{width:100%;max-width:620px;height:auto;display:block;margin:0 auto;overflow:visible;touch-action:pan-y}
+.chart text{font-family:inherit}
+.ax{font-size:10.5px;fill:var(--text-3);font-family:var(--font-ui);font-variant-numeric:tabular-nums}
+.gl{stroke:var(--grid);stroke-width:1}
+.bl{stroke:var(--axis);stroke-width:1}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin:2px 0 8px;font-size:12px;color:var(--text-2)}
+.legend i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:-1px}
+.legend i.dot{border-radius:50%}
+.dlbl{font-size:11px;font-weight:650;fill:var(--text-1);font-family:var(--font-ui);font-variant-numeric:tabular-nums}
+.tv{margin-top:10px;border-top:1px solid var(--grid);padding-top:8px}
+#tip{
+  position:fixed;z-index:80;pointer-events:none;opacity:0;transition:opacity .1s;
+  background:var(--text-1);color:var(--surface-1);font-size:12px;line-height:1.4;
+  padding:7px 9px;border-radius:8px;max-width:220px;box-shadow:0 4px 14px rgba(0,0,0,.25);
+  font-variant-numeric:tabular-nums;
+}
+#tip b{font-weight:650}
+
+/* ---------- video ---------- */
+video{width:100%;border-radius:var(--r-sm);background:#000;display:block}
+.vidcard{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px;margin-bottom:8px}
+.vidcard .vh{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.vtitle{
+  flex:1;min-width:0;display:flex;align-items:center;text-align:left;
+  background:none;border:0;padding:6px 2px;cursor:pointer;font-size:14px;font-weight:600;
+  min-height:38px;color:var(--accent-ink);
+}
+.vtitle .tx{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vtitle:active{opacity:.7}
+.vgame{
+  width:100%;display:flex;align-items:center;gap:10px;background:none;border:0;cursor:pointer;
+  padding:4px 0;text-align:left;color:var(--text-1);min-height:44px;
+}
+.vgame .gt{flex:1;min-width:0}
+.vgame .gt .t{font-size:14.5px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vgame .gt .s{font-size:12px;color:var(--text-3);margin-top:1px}
+.vgame .chev{transition:transform .18s;color:var(--text-3);font-size:13px}
+.vgame[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.vlist{margin-top:10px;border-top:1px solid var(--grid);padding-top:10px}
+.vidcard .vh .t{flex:1;min-width:0;font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ratio{position:relative;padding-top:56.25%;border-radius:var(--r-sm);overflow:hidden;background:#000}
+.ratio > *{position:absolute;inset:0;width:100%;height:100%;border:0}
+.hint{font-size:12px;color:var(--text-3);line-height:1.45}
+.note{background:var(--surface-2);border-radius:var(--r-sm);padding:10px 12px;font-size:12.5px;color:var(--text-2);line-height:1.5}
+.bar{height:7px;border-radius:999px;background:var(--surface-3);overflow:hidden}
+.bar > i{display:block;height:100%;background:var(--s1);border-radius:999px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + 18px + env(safe-area-inset-bottom));
+  background:var(--text-1);color:var(--surface-1);padding:10px 16px;border-radius:999px;
+  font-size:13px;z-index:90;box-shadow:0 6px 20px rgba(0,0,0,.25);animation:rise .2s;
+  pointer-events:none;max-width:calc(100vw - 40px);text-align:center;
+}
+@media print{ nav.tabs,.topbar .iconbtn{display:none} }
 </style>
 </head>
 <body>
-
-<h2>연제 운동 체크 앱</h2>
-
-<!-- 달력 -->
-<div class="container">
-    <div id="monthNav">
-        <button id="prevMonthBtn">◀</button>
-        <span id="currentMonthText"></span>
-        <button id="nextMonthBtn">▶</button>
+<header class="topbar">
+  <div class="brand">
+    <div class="ball" aria-hidden="true"></div>
+    <div>
+      <h1>야구 기록 노트</h1>
+      <div class="sub" id="subttl">기록 · 분석 · 영상</div>
     </div>
-    <div id="calendar"></div>
-</div>
-
-<!-- 버튼 & 운동 테이블 -->
-<div class="container">
-    <div class="date-row">
-        <button class="action-btn delete-btn" id="deleteBtn">🗑 삭제</button>
-        <button class="action-btn add-btn" id="addExerciseBtn">+ 운동 추가</button>
-    </div>
-
-    <div id="exerciseContainer">
-        <table>
-            <thead>
-                <tr><th>운동</th><th>1set</th><th>2set</th><th>3set</th><th>삭제</th></tr>
-            </thead>
-            <tbody id="exerciseBody"></tbody>
-        </table>
-    </div>
-
-    <button class="save-btn" id="saveBtn">💾 저장하기</button>
-</div>
-
-<footer>만든 사람 : <strong>Jaeho</strong></footer>
-
-<!-- 저장/추가 모달 -->
-<div id="modalOverlay" class="modal-overlay">
-  <div class="modal">
-    <span id="modalMessage"></span><br>
-    <button id="modalOkBtn">확인</button>
   </div>
-</div>
+  <div class="spacer"></div>
+  <button class="iconbtn" id="setBtn" data-act="nav" data-v="settings" title="설정" aria-label="설정">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+      <circle cx="12" cy="12" r="3.1"/>
+      <path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-.97 1.47V21a2 2 0 1 1-4 0v-.11a1.6 1.6 0 0 0-1.05-1.46 1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.6 1.6 0 0 0 .32-1.77 1.6 1.6 0 0 0-1.47-.97H3a2 2 0 1 1 0-4h.11a1.6 1.6 0 0 0 1.46-1.05 1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.6 1.6 0 0 0 1.77.32H9a1.6 1.6 0 0 0 .97-1.47V3a2 2 0 1 1 4 0v.11a1.6 1.6 0 0 0 .97 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.6 1.6 0 0 0-.32 1.77V9a1.6 1.6 0 0 0 1.47.97H21a2 2 0 1 1 0 4h-.11a1.6 1.6 0 0 0-1.47.97z" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+</header>
 
-<div id="addExerciseModal" class="modal-overlay">
-  <div class="modal">
-    <span>추가할 운동 이름:</span><br>
-    <input type="text" id="newExerciseInput"><br>
-    <button id="addExerciseOkBtn">추가</button>
-  </div>
-</div>
+<main class="wrap" id="view" tabindex="-1"></main>
+
+<nav class="tabs" role="tablist" aria-label="주요 화면">
+  <button data-nav="home"><span class="ic" aria-hidden="true">◆</span>홈</button>
+  <button data-nav="games"><span class="ic" aria-hidden="true">▤</span>경기</button>
+  <button data-nav="stats"><span class="ic" aria-hidden="true">▮</span>분석</button>
+  <button data-nav="videos"><span class="ic" aria-hidden="true">▶</span>영상</button>
+</nav>
+
+<div id="tip" role="status" aria-live="polite"></div>
+<div id="modal"></div>
 
 <script>
-const defaultExercises = [
-    {name:"보강", sets:3},
-    {name:"코어", sets:3},
-    {name:"푸쉬업", sets:3},
-    {name:"몸통 돌리기", sets:3},
-    {name:"악력기", sets:2},
-    {name:"고무줄 튜빙", sets:3}
+"use strict";
+/* =========================================================================
+   야구 기록 노트 — 단일 파일 앱
+   저장: 기록은 localStorage, 영상 파일은 IndexedDB(브라우저 내부)
+   ========================================================================= */
+
+/* ---------------------------- 상수 / 도메인 ---------------------------- */
+const KEY = "bb_note_v1";
+const THEME_KEY = "bb_note_theme";
+
+// 타석 결과 정의 (ab: 타수, h: 안타, tb: 총루타, bb: 볼넷, hbp: 사구, so: 삼진,
+//                 sf: 희생플라이, sh: 희생번트, bip: 인플레이 타구)
+const RESULTS = [
+  {c:"1B",  ko:"안타",         g:"hit",    ab:1, h:1, tb:1, bip:1},
+  {c:"2B",  ko:"2루타",        g:"hit",    ab:1, h:1, tb:2, bip:1},
+  {c:"3B",  ko:"3루타",        g:"hit",    ab:1, h:1, tb:3, bip:1},
+  {c:"HR",  ko:"홈런",         g:"hit",    ab:1, h:1, tb:4, bip:1},
+  {c:"BB",  ko:"볼넷",         g:"onbase", bb:1},
+  {c:"IBB", ko:"고의4구",      g:"onbase", bb:1},
+  {c:"HBP", ko:"몸에 맞는 공", g:"onbase", hbp:1},
+  {c:"ROE", ko:"실책 출루",    g:"onbase", ab:1, bip:1},
+  {c:"FC",  ko:"야수 선택",    g:"onbase", ab:1, bip:1},
+  {c:"K",   ko:"삼진",         g:"out",    ab:1, so:1},
+  {c:"GO",  ko:"땅볼 아웃",    g:"out",    ab:1, bip:1},
+  {c:"FO",  ko:"뜬공 아웃",    g:"out",    ab:1, bip:1},
+  {c:"LO",  ko:"직선타 아웃",  g:"out",    ab:1, bip:1},
+  {c:"DP",  ko:"병살타",       g:"out",    ab:1, bip:1},
+  {c:"SF",  ko:"희생 플라이",  g:"out",    sf:1, bip:1},
+  {c:"SH",  ko:"희생 번트",    g:"out",    sh:1, bip:1}
 ];
+const RMAP = Object.fromEntries(RESULTS.map(r=>[r.c,r]));
+const GLABEL = {hit:"안타 / 장타", onbase:"출루", out:"아웃 · 희생"};
+const GBADGE = {hit:"hit", onbase:"ob", out:"out"};
 
-const exerciseBody=document.getElementById("exerciseBody");
-const modalOverlay=document.getElementById("modalOverlay");
-const modalMessage=document.getElementById("modalMessage");
-document.getElementById("modalOkBtn").onclick=()=>modalOverlay.style.display="none";
-function showModal(msg){ modalMessage.textContent=msg; modalOverlay.style.display="flex"; }
+const POS = [
+  {c:"P",ko:"투수"},{c:"C",ko:"포수"},{c:"1B",ko:"1루수"},{c:"2B",ko:"2루수"},
+  {c:"3B",ko:"3루수"},{c:"SS",ko:"유격수"},{c:"LF",ko:"좌익수"},{c:"CF",ko:"중견수"},
+  {c:"RF",ko:"우익수"},{c:"DH",ko:"지명타자"}
+];
+const PMAP = Object.fromEntries(POS.map(p=>[p.c,p.ko]));
 
-function createRow(ex){
-    const tr=document.createElement("tr");
-    let html = `<td>${ex.name}</td>`;
-    for(let i=0;i<ex.sets;i++){
-        const isChecked = ex.checkedValues && ex.checkedValues[i] ? 'checked' : '';
-        html+=`<td><input type="checkbox" data-name="${ex.name}_${i+1}" ${isChecked}></td>`;
-    }
-    if(defaultExercises.find(def=>def.name===ex.name)){
-        html+=`<td></td>`;
-    } else {
-        html+=`<td><button class="action-btn delete-btn" onclick="deleteExerciseRow(this)">X</button></td>`;
-    }
-    tr.innerHTML=html;
-    return tr;
+// 경기장 규격 (루간 거리 / 좌우 폴 / 중앙 펜스, 단위: m)
+const LEVELS = {
+  elem: {ko:"초등 (리틀)",  base:18.29, lf:65, cf:70,  mound:14.02, inn:6, note:"루간 18.3m · 외야 65~70m"},
+  mid:  {ko:"중등",         base:27.43, lf:88, cf:95,  mound:18.44, inn:7, note:"루간 27.4m · 외야 88~95m"},
+  high: {ko:"고등",         base:27.43, lf:95, cf:110, mound:18.44, inn:7, note:"루간 27.4m · 외야 95~110m"},
+  univ: {ko:"대학 · 성인",  base:27.43, lf:98, cf:122, mound:18.44, inn:9, note:"루간 27.4m · 외야 98~122m"}
+};
+const LEVEL_KEYS = ["elem","mid","high","univ"];
+
+/* ------------------------------- 유틸 -------------------------------- */
+const $  = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
+const uid = ()=> Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num = (v,d)=> { const n = parseFloat(v); return isFinite(n)? n : (d||0); };
+const clamp = (v,a,b)=> Math.max(a, Math.min(b, v));
+const pad2 = n => String(n).padStart(2,"0");
+
+function today(){ const d=new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+function fmtDate(s){ if(!s) return "-"; const p=s.split("-"); return p.length===3? `${p[0].slice(2)}.${p[1]}.${p[2]}` : s; }
+function fmtDateLong(s){ if(!s) return "-"; const p=s.split("-"); if(p.length!==3) return s;
+  const wd=["일","월","화","수","목","금","토"][new Date(s+"T00:00:00").getDay()];
+  return `${p[0]}년 ${+p[1]}월 ${+p[2]}일 (${wd})`; }
+function avg3(v){ if(v==null||!isFinite(v)) return "-"; const s=v.toFixed(3); return v<1? s.slice(1) : s; }
+function pct1(v){ return (v==null||!isFinite(v))? "-" : (v*100).toFixed(1)+"%"; }
+function bytes(n){ if(n==null) return "-"; if(n<1024) return n+" B";
+  const u=["KB","MB","GB"]; let i=-1, v=n; do{ v/=1024; i++; }while(v>=1024 && i<2); return v.toFixed(v<10?1:0)+" "+u[i]; }
+// 이닝 표기(5.2 = 5이닝 2아웃) <-> 아웃 수
+function inn2outs(v){ const n=num(v,0); const w=Math.floor(n+1e-9); const f=Math.round((n-w)*10); return w*3 + clamp(f,0,2); }
+function outs2inn(o){ return Math.floor(o/3) + (o%3)/10; }
+function fmtInn(o){ return Math.floor(o/3) + (o%3? "."+(o%3) : ""); }
+
+function toast(msg){
+  $$(".toast").forEach(t=>t.remove());
+  const d=document.createElement("div"); d.className="toast"; d.textContent=msg;
+  document.body.appendChild(d); setTimeout(()=>d.remove(), 2200);
 }
-function deleteExerciseRow(btn){ btn.closest("tr").remove(); }
 
-const addExerciseModal = document.getElementById("addExerciseModal");
-const addExerciseInput = document.getElementById("newExerciseInput");
-const addExerciseOkBtn = document.getElementById("addExerciseOkBtn");
-document.getElementById("addExerciseBtn").onclick = ()=>{
-    addExerciseInput.value="";
-    addExerciseModal.style.display="flex";
-    addExerciseInput.focus();
-};
-addExerciseOkBtn.onclick = ()=>{
-    const name = addExerciseInput.value.trim();
-    if(name){
-        exerciseBody.appendChild(createRow({name, sets:3, checkedValues:[]}));
-        showModal(`${name} 운동이 추가되었습니다.`);
+/* ------------------------------ 상태 저장 ------------------------------ */
+const blank = ()=>({
+  version:1,
+  profile:{ name:"", team:"", number:"", position:"", bats:"우타", throws:"우투" },
+  games:[],
+  settings:{ level:"elem", inningsBy:{elem:6, mid:7, high:7, univ:9}, autoplay:"sound" },
+  ui:{ tab:"home", year:"all", metric:"avg" }
+});
+let S = blank();
+let saveTimer = null;
+
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){ const o = JSON.parse(raw); S = Object.assign(blank(), o); S.ui = Object.assign(blank().ui, o.ui||{}); S.settings = Object.assign(blank().settings, o.settings||{});
+      S.settings.inningsBy = Object.assign(blank().settings.inningsBy, (o.settings&&o.settings.inningsBy)||{}); }
+  }catch(e){ console.warn("저장 데이터를 읽지 못했습니다.", e); }
+  if(!Array.isArray(S.games)) S.games = [];
+  S.games.forEach(g=>{ g.pas=g.pas||[]; g.def=g.def||[]; g.videos=g.videos||[];
+    // 삼진·볼넷 등 타구가 없는 결과에 남아 있던 타구 위치는 정리
+    g.pas.forEach(p=>{ if(p.zone && !(RMAP[p.result] && RMAP[p.result].bip)) p.zone = null; });
+  });
+}
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    try{ localStorage.setItem(KEY, JSON.stringify(S)); }
+    catch(e){ toast("저장 실패: 브라우저 저장 공간이 부족합니다"); console.error(e); }
+  }, 120);
+}
+function saveNow(){ clearTimeout(saveTimer); try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ console.error(e); } }
+
+/* --------------------------- IndexedDB (영상) --------------------------- */
+const DB_NAME="bb_note_media", STORE="videos";
+let _db=null;
+function db(){
+  if(_db) return Promise.resolve(_db);
+  return new Promise((res,rej)=>{
+    if(!("indexedDB" in window)) return rej(new Error("이 브라우저는 파일 저장을 지원하지 않습니다"));
+    const rq = indexedDB.open(DB_NAME,1);
+    rq.onupgradeneeded = ()=>{ const d=rq.result; if(!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE); };
+    rq.onsuccess = ()=>{ _db=rq.result; res(_db); };
+    rq.onerror = ()=> rej(rq.error);
+  });
+}
+function idbPut(id, blob){
+  return db().then(d=> new Promise((res,rej)=>{
+    const tx=d.transaction(STORE,"readwrite"); tx.objectStore(STORE).put(blob,id);
+    tx.oncomplete=res; tx.onerror=()=>rej(tx.error); tx.onabort=()=>rej(tx.error);
+  }));
+}
+function idbGet(id){
+  return db().then(d=> new Promise((res,rej)=>{
+    const rq=d.transaction(STORE,"readonly").objectStore(STORE).get(id);
+    rq.onsuccess=()=>res(rq.result||null); rq.onerror=()=>rej(rq.error);
+  }));
+}
+function idbDel(id){
+  return db().then(d=> new Promise((res,rej)=>{
+    const tx=d.transaction(STORE,"readwrite"); tx.objectStore(STORE).delete(id);
+    tx.oncomplete=res; tx.onerror=()=>rej(tx.error);
+  }));
+}
+
+/* ------------------------------ 집계 계산 ------------------------------ */
+function battingOf(pas){
+  const t={PA:0,AB:0,H:0,TB:0,BB:0,HBP:0,SO:0,SF:0,SH:0,RBI:0,R:0,SB:0,CS:0,
+           s1:0,s2:0,s3:0,HR:0,GO:0,FO:0,BIP:0,DP:0,ROE:0,FC:0,LO:0};
+  pas.forEach(p=>{
+    const r = RMAP[p.result]; if(!r) return;
+    t.AB+=r.ab||0; t.H+=r.h||0; t.TB+=r.tb||0; t.BB+=r.bb||0; t.HBP+=r.hbp||0;
+    t.SO+=r.so||0; t.SF+=r.sf||0; t.SH+=r.sh||0; t.BIP+=r.bip||0;
+    if(p.result==="1B") t.s1++; if(p.result==="2B") t.s2++; if(p.result==="3B") t.s3++;
+    if(p.result==="HR") t.HR++; if(p.result==="GO") t.GO++; if(p.result==="FO") t.FO++;
+    if(p.result==="LO") t.LO++; if(p.result==="DP") t.DP++;
+    if(p.result==="ROE") t.ROE++; if(p.result==="FC") t.FC++;
+    t.RBI += num(p.rbi,0); t.R += num(p.runs,0); t.SB += num(p.sb,0); t.CS += num(p.cs,0);
+  });
+  t.PA = t.AB + t.BB + t.HBP + t.SF + t.SH;
+  t.AVG = t.AB? t.H/t.AB : null;
+  const obDen = t.AB + t.BB + t.HBP + t.SF;
+  t.OBP = obDen? (t.H+t.BB+t.HBP)/obDen : null;
+  t.SLG = t.AB? t.TB/t.AB : null;
+  t.OPS = (t.OBP!=null && t.SLG!=null)? t.OBP+t.SLG : null;
+  t.ISO = (t.SLG!=null && t.AVG!=null)? t.SLG-t.AVG : null;
+  const bbDen = t.AB - t.SO - t.HR + t.SF;
+  t.BABIP = bbDen>0? (t.H-t.HR)/bbDen : null;
+  const wDen = t.AB + t.BB + t.SF + t.HBP;
+  t.wOBA = wDen? (0.69*t.BB + 0.72*t.HBP + 0.89*t.s1 + 1.27*t.s2 + 1.62*t.s3 + 2.10*t.HR)/wDen : null;
+  t.KP  = t.PA? t.SO/t.PA : null;
+  t.BBP = t.PA? t.BB/t.PA : null;
+  t.SBP = (t.SB+t.CS)? t.SB/(t.SB+t.CS) : null;
+  return t;
+}
+function fieldingOf(defs){
+  const t={outs:0,PO:0,A:0,E:0,DP:0};
+  defs.forEach(d=>{ t.outs+=inn2outs(d.innings); t.PO+=num(d.po,0); t.A+=num(d.a,0); t.E+=num(d.e,0); t.DP+=num(d.dp,0); });
+  const den = t.PO+t.A+t.E;
+  t.FPCT = den? (t.PO+t.A)/den : null;
+  t.INN = t.outs/3;
+  return t;
+}
+function years(){
+  const set = new Set(S.games.map(g=>(g.date||"").slice(0,4)).filter(Boolean));
+  return Array.from(set).sort().reverse();
+}
+function scopedGames(){
+  const y = S.ui.year;
+  const gs = S.games.slice().sort((a,b)=> (a.date||"").localeCompare(b.date||"") || (a.id>b.id?1:-1));
+  return y==="all"? gs : gs.filter(g=>(g.date||"").startsWith(y));
+}
+function allPAs(gs){ return (gs||scopedGames()).flatMap(g=>g.pas.map(p=>Object.assign({_g:g},p))); }
+function allDef(gs){ return (gs||scopedGames()).flatMap(g=>g.def.map(d=>Object.assign({_g:g},d))); }
+function curLevel(){ return (S.settings && LEVELS[S.settings.level])? S.settings.level : "high"; }
+function gameLevel(g){ return (g && LEVELS[g.level])? g.level : curLevel(); }
+function regInnings(lv){
+  const k = LEVELS[lv]? lv : curLevel();
+  const v = S.settings && S.settings.inningsBy && S.settings.inningsBy[k];
+  return (v && isFinite(v) && v>0)? v : LEVELS[k].inn;
+}
+function hasBIP(code){ return !!(RMAP[code] && RMAP[code].bip); }
+const AUTOPLAY = {sound:"소리와 함께", muted:"음소거로", off:"수동"};
+function apMode(){ const v=S.settings && S.settings.autoplay; return AUTOPLAY[v]? v : "sound"; }
+function gameResult(g){
+  const a=num(g.myScore,NaN), b=num(g.oppScore,NaN);
+  if(!isFinite(a)||!isFinite(b)) return null;
+  return a>b? "승" : a<b? "패" : "무";
+}
+
+/* =========================== 차트 (자체 SVG) =========================== */
+const TIP = ()=> $("#tip");
+function tipShow(el, x, y){
+  const t=TIP(); t.innerHTML = el.getAttribute("data-tip");
+  t.style.opacity="1";
+  const r=t.getBoundingClientRect();
+  let left = x - r.width/2, top = y - r.height - 14;
+  left = clamp(left, 8, window.innerWidth - r.width - 8);
+  if(top < 8) top = y + 18;
+  t.style.left=left+"px"; t.style.top=top+"px";
+}
+function tipHide(){ TIP().style.opacity="0"; }
+document.addEventListener("pointerover", e=>{
+  const el = e.target.closest && e.target.closest("[data-tip]");
+  if(el) tipShow(el, e.clientX, e.clientY); else if(!e.target.closest("#tip")) tipHide();
+});
+document.addEventListener("pointerdown", e=>{
+  const el = e.target.closest && e.target.closest("[data-tip]");
+  if(el){ tipShow(el, e.clientX, e.clientY); setTimeout(tipHide, 2600); } else tipHide();
+});
+document.addEventListener("pointerleave", tipHide);
+window.addEventListener("scroll", tipHide, {passive:true});
+
+function niceTicks(min, max, n){
+  n = n||4;
+  if(min===max){ max = min + 1; }
+  const span = max-min, raw = span/n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw/mag;
+  const step = (norm<=1?1: norm<=2?2: norm<=2.5?2.5: norm<=5?5:10)*mag;
+  const lo = Math.floor(min/step)*step, hi = Math.ceil(max/step)*step;
+  const out=[]; for(let v=lo; v<=hi+step/1e6; v+=step) out.push(Math.round(v*1e6)/1e6);
+  return out;
+}
+function rTop(x,y,w,h,r){
+  r=Math.min(r, w/2, Math.max(h,0));
+  if(h<=0.4) return `M${x},${y} L${x+w},${y}`;
+  return `M${x},${y+h} L${x},${y+r} Q${x},${y} ${x+r},${y} L${x+w-r},${y} Q${x+w},${y} ${x+w},${y+r} L${x+w},${y+h} Z`;
+}
+function rRight(x,y,w,h,r){
+  r=Math.min(r, h/2, Math.max(w,0));
+  if(w<=0.4) return `M${x},${y} L${x},${y+h}`;
+  return `M${x},${y} L${x+w-r},${y} Q${x+w},${y} ${x+w},${y+r} L${x+w},${y+h-r} Q${x+w},${y+h} ${x+w-r},${y+h} L${x},${y+h} Z`;
+}
+
+/* 꺾은선: 단일/이중 시리즈. pts = [{x, y, tip}] (y=null 허용) */
+function lineChart(series, opt){
+  opt = opt||{};
+  const W=340, H=opt.height||160, L=38, R=18, T=12, B=26;
+  const pw=W-L-R, ph=H-T-B;
+  const all = series.flatMap(s=>s.pts.map(p=>p.y)).filter(v=>v!=null && isFinite(v));
+  if(!all.length) return `<div class="empty">표시할 데이터가 없습니다</div>`;
+  let mn = opt.min!=null? opt.min : Math.min.apply(null, all);
+  let mx = opt.max!=null? opt.max : Math.max.apply(null, all);
+  if(mn===mx){ mn = Math.max(0, mn - 0.05); mx = mx + 0.05; }
+  const ticks = niceTicks(mn, mx, 4);
+  const t0=ticks[0], t1=ticks[ticks.length-1];
+  const n = Math.max(series[0].pts.length, 1);
+  const X = i => L + (n===1? pw/2 : pw*i/(n-1));
+  const Y = v => T + ph - ph*(v-t0)/(t1-t0);
+  const fm = opt.fmt || avg3;
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||"추이 차트")}">`;
+  s += `<g>`;
+  ticks.forEach(t=>{ s += `<line class="gl" x1="${L}" x2="${W-R}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/>`
+                        + `<text class="ax" x="${L-6}" y="${(Y(t)+3.5).toFixed(1)}" text-anchor="end">${fm(t)}</text>`; });
+  s += `<line class="bl" x1="${L}" x2="${W-R}" y1="${T+ph}" y2="${T+ph}"/>`;
+  // x축 라벨 (최대 6개)
+  const step = Math.max(1, Math.ceil(n/6));
+  series[0].pts.forEach((p,i)=>{ if(i%step===0 || i===n-1)
+    s += `<text class="ax" x="${X(i).toFixed(1)}" y="${H-8}" text-anchor="middle">${esc(p.x)}</text>`; });
+  series.forEach((ser,si)=>{
+    const col = ser.color;
+    let d="", started=false;
+    ser.pts.forEach((p,i)=>{ if(p.y==null||!isFinite(p.y)){ started=false; return; }
+      d += (started? " L":" M") + X(i).toFixed(1)+","+Y(p.y).toFixed(1); started=true; });
+    if(d) s += `<path d="${d.trim()}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    // 마지막 지점 강조 + 직접 라벨
+    let last=-1; ser.pts.forEach((p,i)=>{ if(p.y!=null&&isFinite(p.y)) last=i; });
+    if(last>=0){
+      const lx=X(last), ly=Y(ser.pts[last].y);
+      s += `<circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="4.5" fill="${col}" stroke="var(--surface-1)" stroke-width="2"/>`;
+      const anchor = last===n-1? "end" : "middle";
+      s += `<text class="dlbl" x="${(lx + (anchor==="end"? 0 : 0)).toFixed(1)}" y="${(ly-10).toFixed(1)}" text-anchor="${anchor}">${fm(ser.pts[last].y)}</text>`;
     }
-    addExerciseModal.style.display="none";
-};
+    // 히트 영역
+    ser.pts.forEach((p,i)=>{ if(p.y==null||!isFinite(p.y)) return;
+      s += `<circle cx="${X(i).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="12" fill="transparent" data-tip="${esc(p.tip||"")}"/>`; });
+  });
+  s += `</g></svg>`;
+  return s;
+}
 
-let selectedDate = null;
-function saveDay(){
-    if(!selectedDate) return;
-    let exercises=[];
-    [...exerciseBody.children].forEach(tr=>{
-        const name=tr.children[0].textContent;
-        const sets=[...tr.querySelectorAll("input")].map(c=>c.checked);
-        exercises.push({name, sets});
+/* 세로 막대 */
+function colChart(items, opt){
+  opt=opt||{};
+  if(!items.length) return `<div class="empty">표시할 데이터가 없습니다</div>`;
+  const W=340, H=opt.height||162, L=opt.left!=null?opt.left:34, R=12, T=opt.labelTop?20:14, B=opt.bottom||26;
+  const pw=W-L-R, ph=H-T-B;
+  const vals = items.map(d=>num(d.value,0));
+  const mx = Math.max.apply(null, vals.concat([opt.minMax||1]));
+  const ticks = niceTicks(0, mx, 3);
+  const t1 = ticks[ticks.length-1];
+  const band = pw/items.length;
+  const bw = Math.min(24, band*0.62);
+  const Y = v => T + ph - ph*v/t1;
+  const fm = opt.fmt || (v=> String(Math.round(v*100)/100));
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||"막대 차트")}">`;
+  ticks.forEach(t=>{ s += `<line class="gl" x1="${L}" x2="${W-R}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/>`
+    + `<text class="ax" x="${L-6}" y="${(Y(t)+3.5).toFixed(1)}" text-anchor="end">${fm(t)}</text>`; });
+  s += `<line class="bl" x1="${L}" x2="${W-R}" y1="${T+ph}" y2="${T+ph}"/>`;
+  items.forEach((d,i)=>{
+    const v=num(d.value,0), x=L+band*i+(band-bw)/2, y=Y(v), h=T+ph-y;
+    const col = d.color || opt.color || "var(--s1)";
+    if(v>0) s += `<path d="${rTop(x, y, bw, h, 4)}" fill="${col}"/>`;
+    s += `<rect x="${(L+band*i+1).toFixed(1)}" y="${T}" width="${(band-2).toFixed(1)}" height="${ph}" fill="transparent" data-tip="${esc(d.tip||(d.label+": "+fm(v)))}"/>`;
+    s += `<text class="ax" x="${(x+bw/2).toFixed(1)}" y="${H-9}" text-anchor="middle">${esc(d.label)}</text>`;
+    if(opt.labelTop && v>0) s += `<text class="dlbl" x="${(x+bw/2).toFixed(1)}" y="${(y-5).toFixed(1)}" text-anchor="middle">${fm(v)}</text>`;
+  });
+  s += `</svg>`;
+  return s;
+}
+
+/* 가로 막대 */
+function hbarChart(items, opt){
+  opt=opt||{};
+  if(!items.length) return `<div class="empty">표시할 데이터가 없습니다</div>`;
+  const W=340, rowH=opt.rowH||22, L=opt.left||64, R=34, T=4;
+  const H = T + items.length*rowH + 4;
+  const pw = W-L-R;
+  const mx = Math.max.apply(null, items.map(d=>num(d.value,0)).concat([1]));
+  const bh = Math.min(14, rowH-8);
+  const fm = opt.fmt || (v=>String(v));
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||"막대 차트")}">`;
+  items.forEach((d,i)=>{
+    const v=num(d.value,0), y=T+i*rowH+(rowH-bh)/2, w=pw*v/mx;
+    const col=d.color||opt.color||"var(--s1)";
+    s += `<text class="ax" x="${L-8}" y="${(y+bh/2+3.5).toFixed(1)}" text-anchor="end">${esc(d.label)}</text>`;
+    s += `<line class="gl" x1="${L}" x2="${L+pw}" y1="${(y+bh/2).toFixed(1)}" y2="${(y+bh/2).toFixed(1)}" opacity=".45"/>`;
+    if(v>0) s += `<path d="${rRight(L, y, w, bh, 4)}" fill="${col}"/>`;
+    s += `<text class="dlbl" x="${(L+w+6).toFixed(1)}" y="${(y+bh/2+3.8).toFixed(1)}">${fm(v)}</text>`;
+    s += `<rect x="${L}" y="${(T+i*rowH).toFixed(1)}" width="${pw}" height="${rowH}" fill="transparent" data-tip="${esc(d.tip||(d.label+": "+fm(v)))}"/>`;
+  });
+  s += `</svg>`;
+  return s;
+}
+
+/* --------------------------- 야구장 좌표계 --------------------------- */
+/* 캔버스는 고정(320x300). 중앙 펜스가 항상 캔버스 끝(R)에 닿게 두고,
+   내야·좌우 펜스 비율만 규격에 따라 달라지므로 "외야가 짧은 구장"이 그대로 보입니다. */
+const FIELD = {W:320, H:300, hx:160, hy:270, R:212};
+function geom(lv){
+  const L = LEVELS[lv] || LEVELS.high;
+  const u = FIELD.R / L.cf;
+  return {L, u, cfU:L.cf*u, lfU:L.lf*u, baseU:L.base*u, moundU:L.mound*u,
+          inU:L.base*u*1.47, dirtU:L.base*u*1.62};
+}
+function fenceR(g, ang){
+  const t = Math.abs(ang)/(Math.PI/4);
+  return g.cfU + (g.lfU - g.cfU)*t*t;
+}
+function polar(g, ang, dist){
+  return [FIELD.hx + Math.sin(ang)*dist, FIELD.hy - Math.cos(ang)*dist];
+}
+function fencePath(g){
+  const pts=[]; const N=48, A=Math.PI/4;
+  for(let i=0;i<=N;i++){ const ang=-A + 2*A*i/N; const p=polar(g, ang, fenceR(g,ang)); pts.push(p[0].toFixed(1)+" "+p[1].toFixed(1)); }
+  return pts;
+}
+function arcPath(g, radius){
+  const pts=[]; const N=32, A=Math.PI/4;
+  for(let i=0;i<=N;i++){ const ang=-A + 2*A*i/N; const p=polar(g, ang, radius); pts.push(p[0].toFixed(1)+" "+p[1].toFixed(1)); }
+  return "M "+pts.join(" L ");
+}
+function fieldSVG(inner, opt){
+  opt=opt||{};
+  const g = geom(opt.level || curLevel());
+  const F = FIELD;
+  const fence = fencePath(g);
+  const fair = `M ${F.hx} ${F.hy} L ` + fence.join(" L ") + " Z";
+  const b = g.baseU/Math.SQRT2;
+  const p1=[F.hx+b, F.hy-b], p2=[F.hx, F.hy-g.baseU*Math.SQRT2], p3=[F.hx-b, F.hy-b];
+  let s = `<svg class="chart" viewBox="0 0 ${F.W} ${F.H}" role="img" aria-label="${esc(opt.aria||"타구 방향 차트")}" `
+        + `style="max-width:${opt.maxw||400}px"${opt.id?` id="${opt.id}"`:""}>`;
+  s += `<path d="${fair}" fill="var(--field)"/>`;
+  s += `<path d="${arcPath(g, g.dirtU)} L ${F.hx} ${F.hy} Z" fill="var(--dirt)"/>`;
+  s += `<path d="M ${fence.join(" L ")}" fill="none" stroke="var(--axis)" stroke-width="1.5"/>`;
+  [ -1, 1 ].forEach(sg=>{ const p=polar(g, sg*Math.PI/4, fenceR(g, Math.PI/4));
+    s += `<line x1="${F.hx}" y1="${F.hy}" x2="${p[0].toFixed(1)}" y2="${p[1].toFixed(1)}" stroke="var(--axis)" stroke-width="1"/>`; });
+  s += `<path d="M ${F.hx} ${F.hy} L ${p1[0].toFixed(1)} ${p1[1].toFixed(1)} L ${p2[0].toFixed(1)} ${p2[1].toFixed(1)} L ${p3[0].toFixed(1)} ${p3[1].toFixed(1)} Z" fill="none" stroke="var(--fieldline)" stroke-width="1.5"/>`;
+  [[F.hx,F.hy],p1,p2,p3].forEach(p=>{ s += `<rect x="${(p[0]-3).toFixed(1)}" y="${(p[1]-3).toFixed(1)}" width="6" height="6" fill="var(--surface-1)" stroke="var(--fieldline)" stroke-width="1" transform="rotate(45 ${p[0].toFixed(1)} ${p[1].toFixed(1)})"/>`; });
+  s += `<circle cx="${F.hx}" cy="${(F.hy-g.moundU).toFixed(1)}" r="${Math.max(5,g.baseU*0.12).toFixed(1)}" fill="var(--dirt)" stroke="var(--fieldline)" stroke-width="1"/>`;
+  [-15,15].forEach(a=>{ const rad=a*Math.PI/180; const p=polar(g, rad, fenceR(g,rad));
+    s += `<line x1="${F.hx}" y1="${F.hy}" x2="${p[0].toFixed(1)}" y2="${p[1].toFixed(1)}" stroke="var(--fieldline)" stroke-width="1" opacity=".55"/>`; });
+  s += `<path d="${arcPath(g, g.inU)}" fill="none" stroke="var(--fieldline)" stroke-width="1" opacity=".7"/>`;
+  s += inner||"";
+  s += `</svg>`;
+  return s;
+}
+function zoneOf(pt, lv){
+  if(!pt) return null;
+  const g = geom(lv || curLevel());
+  const dx = pt.x - FIELD.hx, dy = FIELD.hy - pt.y;
+  const dist = Math.hypot(dx,dy);
+  const ang = Math.atan2(dx, Math.max(dy,0.001))*180/Math.PI;
+  const dir = ang < -15? "좌" : ang > 15? "우" : "중";
+  const depth = dist < g.inU? "내야" : "외야";
+  const label = depth==="외야"? ({"좌":"좌익","중":"중견","우":"우익"})[dir] : "내야 "+dir+"측";
+  return {dir, depth, label, dist, ang, m: dist/g.u};
+}
+/* 페어 지역 판정. 담장·파울선 바로 밖(홈런성 타구 등)은 약간의 여유를 두고
+   받아들인 뒤 clampFair가 담장 위로 붙여 줍니다. 그 밖의 클릭은 무시합니다. */
+function insideFair(x, y, lv){
+  const g = geom(lv || curLevel());
+  const dx = x - FIELD.hx, dy = FIELD.hy - y;
+  if(dy <= 1) return false;
+  const ang = Math.atan2(dx, dy);
+  if(Math.abs(ang) > 47*Math.PI/180) return false;
+  const d = Math.hypot(dx, dy);
+  return d >= g.baseU*0.10 && d <= fenceR(g, Math.min(Math.abs(ang), Math.PI/4)) + 14;
+}
+function clampFair(x, y, lv){
+  const g = geom(lv || curLevel());
+  const F = FIELD;
+  let dx = x - F.hx, dy = F.hy - y;
+  if(dy < 2) dy = 2;
+  let ang = clamp(Math.atan2(dx, dy), -44*Math.PI/180, 44*Math.PI/180);
+  const dist = clamp(Math.hypot(dx,dy), g.baseU*0.18, fenceR(g, ang)-3);
+  const p = polar(g, ang, dist);
+  return {x:p[0], y:p[1]};
+}
+function paClass(code){
+  if(code==="HR"||code==="2B"||code==="3B") return "xbh";
+  if(code==="1B") return "hit";
+  if(RMAP[code] && RMAP[code].g==="onbase") return "ob";
+  return "out";
+}
+const SPRAY_COLOR = {hit:"var(--s1)", xbh:"var(--s2)", out:"var(--neutral)", ob:"var(--s3)"};
+const SPRAY_LABEL = {hit:"단타", xbh:"장타(2·3루타·홈런)", out:"인플레이 아웃", ob:"출루(실책·야선)"};
+
+function sprayChart(pas, lv){
+  const pts = pas.filter(p=>p.zone && RMAP[p.result] && RMAP[p.result].bip);
+  if(!pts.length) return `<div class="empty">타구 위치가 기록된 타석이 없습니다<br><span class="hint">타석을 기록할 때 야구장을 눌러 타구 위치를 남겨보세요</span></div>`;
+  let inner="";
+  ["out","ob","hit","xbh"].forEach(cls=>{
+    pts.filter(p=>paClass(p.result)===cls).forEach(p=>{
+      const z = zoneOf(p.zone, p._g? gameLevel(p._g) : lv);
+      const tip = `<b>${esc(RMAP[p.result].ko)}</b><br>${esc(fmtDate(p._g? p._g.date : ""))} ${p.inning?p.inning+"회":""}<br>${esc(z.label)} · 약 ${Math.round(z.m)}m`;
+      inner += `<circle cx="${p.zone.x.toFixed(1)}" cy="${p.zone.y.toFixed(1)}" r="5" fill="${SPRAY_COLOR[cls]}" stroke="var(--surface-1)" stroke-width="2" data-tip="${esc(tip)}"/>`;
     });
-    localStorage.setItem("exercise_"+selectedDate, JSON.stringify({exercises}));
-    showModal("연제야 수고했어");
+  });
+  const legend = `<div class="legend">`+["xbh","hit","ob","out"].map(c=>
+    `<span><i class="dot" style="background:${SPRAY_COLOR[c]}"></i>${SPRAY_LABEL[c]}</span>`).join("")+`</div>`;
+  return legend + fieldSVG(inner, {aria:"타구 방향 산점도", level:lv});
 }
-function loadDay(date){
-    exerciseBody.innerHTML="";
-    selectedDate=date;
-    const data=JSON.parse(localStorage.getItem("exercise_"+date)||"null");
-    if(!data){ 
-        defaultExercises.forEach(ex=>exerciseBody.appendChild(createRow({name:ex.name, sets:ex.sets, checkedValues:[] })));
-        return; 
+
+/* 표 보기 토글이 붙은 차트 카드 */
+let cardSeq=0;
+function chartCard(title, cap, chartHTML, tableHTML){
+  const id="tv"+(++cardSeq);
+  return `<div class="card">
+    <div class="hd"><div style="flex:1"><h3>${esc(title)}</h3>${cap?`<div class="cap">${cap}</div>`:""}</div>
+    ${tableHTML?`<button class="btn sm" data-toggle="${id}" aria-expanded="false">표</button>`:""}</div>
+    ${chartHTML}
+    ${tableHTML?`<div class="tv" id="${id}" hidden>${tableHTML}</div>`:""}
+  </div>`;
+}
+function tableHTML(head, rows, foot){
+  return `<div class="tblwrap"><table><thead><tr>${head.map(h=>`<th>${h}</th>`).join("")}</tr></thead>`
+    + `<tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</tbody>`
+    + (foot?`<tfoot><tr>${foot.map(c=>`<td>${c}</td>`).join("")}</tr></tfoot>`:"")+`</table></div>`;
+}
+
+/* ============================== 화면 ============================== */
+const METRICS = {avg:{ko:"타율",k:"AVG"}, obp:{ko:"출루율",k:"OBP"}, slg:{ko:"장타율",k:"SLG"}, ops:{ko:"OPS",k:"OPS"}};
+const ICON_MINUS = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path d="M8 12h8" stroke-linecap="round"/></svg>';
+function delBtn(act, attrs, label){
+  return `<button class="iconbtn del" data-act="${act}" ${attrs} title="${esc(label)}" aria-label="${esc(label)}">${ICON_MINUS}</button>`;
+}
+
+function filterRow(){
+  const ys = years();
+  if(!ys.length) return "";
+  const items = [["all","전체"]].concat(ys.map(y=>[y, y.slice(2)+"시즌"]));
+  return `<div class="filters"><div class="seg" role="group" aria-label="시즌 선택">`
+    + items.map(([v,l])=>`<button data-act="year" data-v="${v}" aria-pressed="${S.ui.year===v}">${l}</button>`).join("")
+    + `</div></div>`;
+}
+function tile(lb, v, sub){
+  return `<div class="tile"><div class="lb">${esc(lb)}</div><div class="v">${v}${sub?`<small>${sub}</small>`:""}</div></div>`;
+}
+function paBadge(code){
+  const r=RMAP[code]; if(!r) return "";
+  return `<span class="badge ${GBADGE[r.g]}">${r.ko}</span>`;
+}
+function paLine(p){
+  const z = p.zone? zoneOf(p.zone) : null;
+  const bits=[];
+  if(p.inning) bits.push(p.inning+"회");
+  if(z) bits.push(z.label);
+  if(num(p.rbi,0)) bits.push(num(p.rbi,0)+"타점");
+  if(num(p.runs,0)) bits.push("득점");
+  if(num(p.sb,0)) bits.push("도루"+num(p.sb,0));
+  if(p.pitcher) bits.push("vs "+p.pitcher);
+  return bits.join(" · ");
+}
+
+/* ------------------------------- 홈 ------------------------------- */
+function viewHome(){
+  const gs = scopedGames();
+  const pas = allPAs(gs);
+  const b = battingOf(pas);
+  const f = fieldingOf(allDef(gs));
+  const m = S.ui.metric, mk = METRICS[m].k;
+
+  if(!S.games.length){
+    return `<div class="empty"><span class="big">⚾</span>
+      아직 기록이 없습니다.<br>첫 경기를 추가하고 타석을 기록해 보세요.
+      <div style="margin-top:12px" class="hint">아래 <b>경기</b> 탭에서 첫 경기를 추가할 수 있습니다.</div></div>`;
+  }
+
+  // 누적 지표 추이
+  let acc=[], pts=[];
+  gs.forEach(g=>{ acc = acc.concat(g.pas); const t=battingOf(acc);
+    pts.push({x:fmtDate(g.date).slice(3), y:t[mk], tip:`<b>${esc(fmtDate(g.date))} vs ${esc(g.opponent||"-")}</b><br>누적 ${METRICS[m].ko} ${avg3(t[mk])}<br>${t.H}안타 / ${t.AB}타수`});
+  });
+  const trendTbl = tableHTML(["경기","상대","누적 "+METRICS[m].ko],
+    gs.map((g,i)=>[fmtDate(g.date), esc(g.opponent||"-"), avg3(pts[i].y)]));
+
+  // 최근 10경기 안타
+  const recent = gs.slice(-10);
+  const hitCols = recent.map(g=>{ const t=battingOf(g.pas);
+    return {label:fmtDate(g.date).slice(3), value:t.H,
+      tip:`<b>${esc(fmtDate(g.date))} vs ${esc(g.opponent||"-")}</b><br>${t.AB}타수 ${t.H}안타 ${t.RBI}타점<br>타율 ${avg3(t.AVG)}`};
+  });
+
+  return filterRow()
+  + `<div class="hero">
+      <div class="lb">${METRICS[m].ko}</div>
+      <div class="fig">${avg3(b[mk])}</div>
+      <div class="meta">${gs.length}경기 · ${b.PA}타석 ${b.AB}타수 ${b.H}안타 ${b.HR}홈런 ${b.RBI}타점</div>
+      <div class="filters" style="margin:12px 0 0"><div class="seg" role="group" aria-label="지표 선택">`
+      + Object.keys(METRICS).map(k=>`<button data-act="metric" data-v="${k}" aria-pressed="${m===k}">${METRICS[k].ko}</button>`).join("")
+      + `</div></div></div>`
+  + `<div class="tiles" style="margin-bottom:12px">`
+      + tile("경기", gs.length, "G") + tile("타점", b.RBI) + tile("득점", b.R)
+      + tile("볼넷", b.BB) + tile("삼진", b.SO) + tile("도루", b.SB)
+    + `</div>`
+  + chartCard("누적 "+METRICS[m].ko+" 추이", "경기를 치를수록 지표가 어떻게 수렴하는지 보여줍니다. 마지막 값이 현재 시즌 기록입니다.",
+      lineChart([{pts, color:"var(--s1)"}], {aria:"누적 "+METRICS[m].ko+" 추이", fmt:avg3}), trendTbl)
+  + chartCard("최근 경기 안타", recent.length+"경기 · 경기당 안타 수",
+      colChart(hitCols, {aria:"경기별 안타 수", labelTop:true, fmt:v=>String(Math.round(v))}),
+      tableHTML(["경기","상대","타수","안타","타점","타율"], recent.map(g=>{const t=battingOf(g.pas);
+        return [fmtDate(g.date), esc(g.opponent||"-"), t.AB, t.H, t.RBI, avg3(t.AVG)];})))
+  + `<div class="card"><div class="hd"><div style="flex:1"><h3>최근 경기</h3></div>
+      <button class="btn sm" data-act="nav" data-v="games">전체</button></div>
+      <div class="list">${gs.slice(-5).reverse().map(gameRow).join("")||`<div class="hint">경기가 없습니다</div>`}</div></div>`
+  + (f.INN>0? `<div class="card"><div class="hd"><div style="flex:1"><h3>수비</h3>
+      <div class="cap">기록된 수비 이닝 ${fmtInn(f.outs)} · 수비율 ${avg3(f.FPCT)}</div></div></div>
+      <div class="tiles">${tile("이닝", fmtInn(f.outs))+tile("자살", f.PO)+tile("보살", f.A)+tile("실책", f.E)+tile("병살", f.DP)+tile("수비율", avg3(f.FPCT))}</div></div>`:"")
+  ;
+}
+
+function gameRow(g){
+  const t = battingOf(g.pas);
+  const res = gameResult(g);
+  const badge = res? `<span class="badge ${res==="승"?"w":res==="패"?"l":""}">${res}</span>` : "";
+  const sc = (g.myScore!==""&&g.myScore!=null&&g.oppScore!==""&&g.oppScore!=null)? `${g.myScore}:${g.oppScore}` : "";
+  return `<div class="row" data-act="openGame" data-id="${g.id}">
+    <div class="main">
+      <div class="t">${badge} ${esc(g.opponent||"상대 미입력")} ${sc?`<span style="color:var(--text-3);font-weight:500">${sc}</span>`:""}</div>
+      <div class="s">${esc(fmtDate(g.date))}${g.venue?" · "+esc(g.venue):""}${g.videos.length?" · 영상 "+g.videos.length:""}</div>
+    </div>
+    <div class="r">${t.PA? `${t.AB}타수 ${t.H}안타${t.RBI?" "+t.RBI+"타점":""}<br><span style="color:var(--text-3)">${avg3(t.AVG)}</span>`:`<span style="color:var(--text-3)">타석 미기록</span>`}</div>
+  </div>`;
+}
+
+/* ------------------------------ 경기 목록 ------------------------------ */
+function viewGames(){
+  const gs = scopedGames().slice().reverse();
+  return `<button class="btn pri block" data-act="newGame" style="margin-bottom:12px">+ 새 경기 기록</button>`
+  + filterRow()
+  + (gs.length? `<div class="list">${gs.map(gameRow).join("")}</div>`
+              : `<div class="empty"><span class="big">▤</span>이 시즌에 기록된 경기가 없습니다</div>`);
+}
+
+/* ------------------------------ 경기 상세 ------------------------------ */
+function viewGame(id){
+  const g = S.games.find(x=>x.id===id);
+  if(!g){ S.ui.gameId=null; return viewGames(); }
+  const t = battingOf(g.pas), f = fieldingOf(g.def);
+  const res = gameResult(g);
+  const pas = g.pas.map(p=>Object.assign({_g:g},p));
+
+  const paList = g.pas.length? g.pas.map((p,i)=>`
+    <div class="row" data-act="editPA" data-gid="${g.id}" data-id="${p.id}">
+      <div style="width:26px;text-align:center;color:var(--text-3);font-size:12px;font-variant-numeric:tabular-nums">${i+1}</div>
+      <div class="main"><div class="t">${paBadge(p.result)}</div><div class="s">${esc(paLine(p))||"&nbsp;"}</div></div>
+      <div class="r" style="color:var(--text-3)">›</div>
+    </div>`).join("") : `<div class="hint">타석 기록이 없습니다. 아래 버튼으로 추가하세요.</div>`;
+
+  const defList = g.def.length? g.def.map(d=>`
+    <div class="row" data-act="editDef" data-gid="${g.id}" data-id="${d.id}">
+      <div class="main"><div class="t">${esc(PMAP[d.pos]||d.pos||"-")}</div>
+        <div class="s">${fmtInn(inn2outs(d.innings))}이닝 · 자살 ${num(d.po,0)} 보살 ${num(d.a,0)} 실책 ${num(d.e,0)}${num(d.dp,0)?" 병살 "+num(d.dp,0):""}</div></div>
+      <div class="r" style="color:var(--text-3)">›</div>
+    </div>`).join("") : `<div class="hint">수비 기록이 없습니다.</div>`;
+
+  const vidList = g.videos.length? g.videos.map(v=>videoCard(v,g)).join("") : `<div class="hint">등록된 영상이 없습니다.</div>`;
+
+  return `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+      <button class="btn sm" data-act="nav" data-v="games">‹ 경기 목록</button><div class="spacer" style="flex:1"></div>
+      <button class="btn sm" data-act="editGame" data-id="${g.id}">경기 정보 수정</button>
+      ${delBtn("delGame", `data-id="${g.id}"`, "이 경기 기록 삭제")}
+    </div>
+    <div class="card">
+      <div class="hd"><div style="flex:1">
+        <h3>${res?`<span class="badge ${res==="승"?"w":res==="패"?"l":""}">${res}</span> `:""}${esc(g.opponent||"상대 미입력")}</h3>
+        <div class="cap">${esc(fmtDateLong(g.date))}${g.venue?" · "+esc(g.venue):""}${g.homeAway?" · "+esc(g.homeAway):""}
+        ${(g.myScore!==""&&g.oppScore!=="")?` · ${esc(String(g.myScore))} : ${esc(String(g.oppScore))}`:""}
+        · <span style="color:var(--text-2)">${esc(LEVELS[gameLevel(g)].ko)} 규격</span></div>
+      </div></div>
+      <div class="tiles">${tile("타석",t.PA)+tile("타수",t.AB)+tile("안타",t.H)+tile("타점",t.RBI)+tile("타율",avg3(t.AVG))+tile("OPS",avg3(t.OPS))}</div>
+      ${g.note?`<div class="note" style="margin-top:10px">${esc(g.note)}</div>`:""}
+    </div>
+    <div class="card">
+      <div class="hd"><div style="flex:1"><h3>타석 기록</h3><div class="cap">${g.pas.length}타석</div></div>
+        <button class="btn sm pri" data-act="newPA" data-gid="${g.id}">+ 타석</button></div>
+      <div class="list">${paList}</div>
+    </div>
+    ${pas.some(p=>p.zone && hasBIP(p.result))? chartCard("이 경기 타구 방향", `${esc(LEVELS[gameLevel(g)].ko)} 규격 (${esc(LEVELS[gameLevel(g)].note)}) · 정규 ${regInnings(gameLevel(g))}이닝 · 점을 누르면 상세가 표시됩니다`,
+        sprayChart(pas, gameLevel(g)),
+        tableHTML(["타석","결과","위치","추정 거리"], pas.map((p,i)=>({p,i})).filter(o=>o.p.zone && hasBIP(o.p.result)).map(o=>{const z=zoneOf(o.p.zone, gameLevel(g));
+          return [o.i+1, esc(RMAP[o.p.result].ko), esc(z.label), Math.round(z.m)+"m"];}))) : ""}
+    <div class="card">
+      <div class="hd"><div style="flex:1"><h3>수비 기록</h3><div class="cap">${f.INN? fmtInn(f.outs)+"이닝 · 수비율 "+avg3(f.FPCT) : "미기록"}</div></div>
+        <button class="btn sm pri" data-act="newDef" data-gid="${g.id}">+ 포지션</button></div>
+      <div class="list">${defList}</div>
+    </div>
+    <div class="card">
+      <div class="hd"><div style="flex:1"><h3>경기 영상</h3><div class="cap">${g.videos.length}개</div></div>
+        <button class="btn sm pri" data-act="newVideo" data-gid="${g.id}">+ 영상</button></div>
+      ${vidList}
+    </div>
+`;
+}
+
+/* ------------------------------- 분석 ------------------------------- */
+function viewStats(){
+  const gs = scopedGames(), pas = allPAs(gs), b = battingOf(pas), defs = allDef(gs);
+  if(!pas.length && !defs.length)
+    return filterRow()+`<div class="empty"><span class="big">▮</span>분석할 기록이 없습니다<br><span class="hint">경기와 타석을 기록하면 자동으로 차트가 만들어집니다</span></div>`;
+
+  // 결과 분포
+  const dist = RESULTS.map(r=>({label:r.ko, value:pas.filter(p=>p.result===r.c).length,
+      color: r.g==="hit"?"var(--s1)": r.g==="onbase"?"var(--s3)":"var(--neutral)"}))
+    .filter(d=>d.value>0).sort((a,c)=>c.value-a.value);
+  dist.forEach(d=>{ d.tip = `<b>${esc(d.label)}</b><br>${d.value}회 · 전체 타석의 ${pct1(d.value/Math.max(pas.length,1))}`; });
+
+  // 방향 분포 (인플레이 타구)
+  const bip = pas.filter(p=>p.zone && hasBIP(p.result));
+  const dirs = ["좌","중","우"].map(d=>{
+    const g2 = bip.filter(p=>zoneOf(p.zone, gameLevel(p._g)).dir===d);
+    const t = battingOf(g2);
+    return {label:({"좌":"좌측","중":"중앙","우":"우측"})[d], value:g2.length,
+      tip:`<b>${({"좌":"좌측 방향","중":"중앙 방향","우":"우측 방향"})[d]}</b><br>타구 ${g2.length}개 (${pct1(g2.length/Math.max(bip.length,1))})<br>안타 ${t.H}개`, _h:t.H};
+  });
+  const depth = ["내야","외야"].map(d=>{
+    const g2 = bip.filter(p=>zoneOf(p.zone, gameLevel(p._g)).depth===d);
+    return {label:d, value:g2.length, tip:`<b>${d} 타구</b><br>${g2.length}개 (${pct1(g2.length/Math.max(bip.length,1))})`};
+  });
+
+  // 이닝별
+  const maxInn = Math.max(regInnings(curLevel()), ...pas.map(p=>num(p.inning,0)), 1);
+  const innings = Array.from({length:Math.min(maxInn,15)},(_,k)=>k+1).map(i=>{
+    const t = battingOf(pas.filter(p=>num(p.inning,0)===i));
+    return {label:i+"회", value:t.AVG==null?0:t.AVG, _t:t,
+      tip:`<b>${i}회</b><br>${t.AB}타수 ${t.H}안타<br>타율 ${avg3(t.AVG)}`};
+  }).filter(d=>d._t.PA>0);
+
+  // 월별
+  const byMonth = {};
+  pas.forEach(p=>{ const m=(p._g.date||"").slice(0,7); if(!m) return; (byMonth[m]=byMonth[m]||[]).push(p); });
+  const months = Object.keys(byMonth).sort().map(m=>{ const t=battingOf(byMonth[m]);
+    return {label:(+m.slice(5,7))+"월", value:t.AVG==null?0:t.AVG, _t:t,
+      tip:`<b>${m.slice(0,4)}년 ${+m.slice(5,7)}월</b><br>${t.AB}타수 ${t.H}안타 ${t.RBI}타점<br>타율 ${avg3(t.AVG)} · OPS ${avg3(t.OPS)}`};
+  });
+
+  // 상대 투수별
+  const byP = {};
+  pas.forEach(p=>{ const k=(p.pitcher||"").trim(); if(!k) return; (byP[k]=byP[k]||[]).push(p); });
+  const pitchers = Object.keys(byP).map(k=>({name:k, t:battingOf(byP[k])})).sort((a,c)=>c.t.PA-a.t.PA);
+
+  // 포지션별 수비
+  const byPos = {};
+  defs.forEach(d=>{ (byPos[d.pos]=byPos[d.pos]||[]).push(d); });
+  const posRows = Object.keys(byPos).map(k=>({pos:k, f:fieldingOf(byPos[k])})).sort((a,c)=>c.f.outs-a.f.outs);
+
+  const summary = tableHTML(
+    ["항목","값","항목 ","값 "],
+    [["경기",gs.length,"타율",avg3(b.AVG)],["타석",b.PA,"출루율",avg3(b.OBP)],["타수",b.AB,"장타율",avg3(b.SLG)],
+     ["안타",b.H,"OPS",avg3(b.OPS)],["2루타",b.s2,"순장타율(ISO)",avg3(b.ISO)],["3루타",b.s3,"wOBA",avg3(b.wOBA)],
+     ["홈런",b.HR,"BABIP",avg3(b.BABIP)],["타점",b.RBI,"삼진율",pct1(b.KP)],["득점",b.R,"볼넷율",pct1(b.BBP)],
+     ["볼넷",b.BB,"총루타",b.TB],["몸에 맞는 공",b.HBP,"희생타",b.SF+b.SH],
+     ["삼진",b.SO,"도루",b.SB+"/"+(b.SB+b.CS)+(b.SBP!=null?" ("+pct1(b.SBP)+")":"")]]);
+
+  return filterRow()
+  + `<div class="card"><div class="hd"><div style="flex:1"><h3>시즌 요약</h3>
+      <div class="cap">${S.ui.year==="all"?"전체 기간":S.ui.year+"시즌"} · ${gs.length}경기 ${b.PA}타석</div></div></div>${summary}</div>`
+  + chartCard("타구 방향 (스프레이 차트)", `타구 위치가 기록된 인플레이 타구 ${bip.length}개 · 그림은 ${esc(LEVELS[curLevel()].ko)} 규격 (${esc(LEVELS[curLevel()].note)})`,
+      sprayChart(pas, curLevel()),
+      bip.length? tableHTML(["날짜","이닝","결과","위치","추정 거리"], bip.map(p=>{const z=zoneOf(p.zone, gameLevel(p._g));
+        return [fmtDate(p._g.date), (p.inning||"-")+"회", esc(RMAP[p.result].ko), esc(z.label), Math.round(z.m)+"m"];})) : "")
+  + `<div class="grid g2">`
+  + chartCard("방향별 타구 수", "당겨치는 성향인지 밀어치는 성향인지 확인합니다",
+      colChart(dirs, {aria:"방향별 타구 수", labelTop:true, fmt:v=>String(Math.round(v))}),
+      tableHTML(["방향","타구","안타"], dirs.map(d=>[d.label, d.value, d._h])))
+  + chartCard("타구 깊이", "내야 / 외야로 나눈 타구 분포",
+      colChart(depth, {aria:"타구 깊이 분포", labelTop:true, fmt:v=>String(Math.round(v))}),
+      tableHTML(["깊이","타구"], depth.map(d=>[d.label, d.value])))
+  + `</div>`
+  + chartCard("타석 결과 분포", `총 ${pas.length}타석의 결과별 횟수`,
+      hbarChart(dist, {aria:"타석 결과 분포", left:78, fmt:v=>String(Math.round(v))}),
+      tableHTML(["결과","횟수","비중"], dist.map(d=>[d.label, d.value, pct1(d.value/Math.max(pas.length,1))])))
+  + (innings.length? chartCard("이닝별 타율", `타석이 있었던 이닝만 표시합니다 · ${esc(LEVELS[curLevel()].ko)} 정규 ${regInnings(curLevel())}이닝`,
+      colChart(innings, {aria:"이닝별 타율", fmt:avg3}),
+      tableHTML(["이닝","타수","안타","타율"], innings.map(d=>[d.label, d._t.AB, d._t.H, avg3(d._t.AVG)]))) : "")
+  + (months.length>1? chartCard("월별 타율", "시즌 흐름을 월 단위로 봅니다",
+      colChart(months, {aria:"월별 타율", fmt:avg3}),
+      tableHTML(["월","타수","안타","타점","타율","OPS"], months.map(d=>[d.label, d._t.AB, d._t.H, d._t.RBI, avg3(d._t.AVG), avg3(d._t.OPS)]))) : "")
+  + (pitchers.length? `<div class="card"><div class="hd"><div style="flex:1"><h3>상대 투수별 성적</h3>
+      <div class="cap">투수 이름을 입력한 타석만 집계됩니다</div></div></div>
+      ${tableHTML(["투수","타석","타수","안타","홈런","삼진","타율","OPS"],
+        pitchers.map(p=>[esc(p.name), p.t.PA, p.t.AB, p.t.H, p.t.HR, p.t.SO, avg3(p.t.AVG), avg3(p.t.OPS)]))}</div>` : "")
+  + (posRows.length? `<div class="card"><div class="hd"><div style="flex:1"><h3>포지션별 수비</h3>
+      <div class="cap">수비율 = (자살+보살) / (자살+보살+실책)</div></div></div>
+      ${tableHTML(["포지션","이닝","자살","보살","실책","병살","수비율"],
+        posRows.map(r=>[esc(PMAP[r.pos]||r.pos), fmtInn(r.f.outs), r.f.PO, r.f.A, r.f.E, r.f.DP, avg3(r.f.FPCT)]),
+        ["합계", fmtInn(fieldingOf(defs).outs), fieldingOf(defs).PO, fieldingOf(defs).A, fieldingOf(defs).E, fieldingOf(defs).DP, avg3(fieldingOf(defs).FPCT)])}</div>` : "")
+  + `<div class="note">지표 설명 — <b>OPS</b> 출루율+장타율 · <b>ISO</b> 장타율−타율(순수 장타력) ·
+      <b>wOBA</b> 출루 유형별 가중치를 적용한 종합 타격 지표 · <b>BABIP</b> 인플레이 타구의 안타 비율</div>`;
+}
+
+/* ------------------------------- 영상 ------------------------------- */
+function videoCard(v, g){
+  const link = v.paId? (g.pas.find(p=>p.id===v.paId)) : null;
+  const sub = [];
+  if(v.kind==="file") sub.push(bytes(v.size)+" · 이 기기에 저장");
+  else sub.push("링크");
+  if(link) sub.push(RMAP[link.result]? (link.inning?link.inning+"회 ":"")+RMAP[link.result].ko+" 타석" : "타석 연결");
+  return `<div class="vidcard" data-vid="${v.id}">
+    <div class="vh">
+      <button class="vtitle" data-act="playVideo" data-gid="${g.id}" data-id="${v.id}">
+        <span class="tx">${esc(v.title||v.name||"영상")}</span>
+      </button>
+      ${v.kind==="link"?`<button class="iconbtn sm" data-act="openVideo" data-gid="${g.id}" data-id="${v.id}" title="새 창에서 열기" aria-label="새 창에서 열기">↗</button>`:""}
+      ${delBtn("delVideo", `data-gid="${g.id}" data-id="${v.id}"`, "영상 삭제")}
+    </div>
+    <div class="hint">${esc(sub.join(" · "))}${v.note?" — "+esc(v.note):""}</div>
+    <div class="player" style="margin-top:8px"></div>
+  </div>`;
+}
+function viewVideos(){
+  const gs = scopedGames().slice().reverse();
+  const withV = gs.filter(g=>g.videos.length);
+  const total = withV.reduce((a,g)=>a+g.videos.reduce((x,v)=>x+(v.size||0),0),0);
+  const cnt = withV.reduce((a,g)=>a+g.videos.length,0);
+  return filterRow()
+  + `<div class="card"><div class="hd"><div style="flex:1"><h3>영상 보관함</h3>
+      <div class="cap">${cnt}개 · 기기 저장 용량 ${bytes(total)}</div></div></div>
+      <div id="quota" class="hint">저장 공간 확인 중…</div></div>`
+  + (withV.length? withV.map(g=>{
+      const open = openVG.has(g.id);
+      return `<div class="card">
+        <button class="vgame" data-act="toggleVG" data-id="${g.id}" aria-expanded="${open}">
+          <div class="gt">
+            <div class="t">${esc(fmtDate(g.date))} vs ${esc(g.opponent||"-")}</div>
+            <div class="s">영상 ${g.videos.length}개${g.venue?" · "+esc(g.venue):""}</div>
+          </div>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
+        <div class="vlist" ${open?"":"hidden"}>
+          ${g.videos.map(v=>videoCard(v,g)).join("")}
+          <div class="btnrow" style="margin-top:4px">
+            <button class="btn sm" data-act="openGame" data-id="${g.id}">경기 기록 보기</button>
+            <button class="btn sm pri" data-act="newVideo" data-gid="${g.id}">+ 영상 추가</button>
+          </div>
+        </div>
+      </div>`;
+    }).join("")
+    : `<div class="empty"><span class="big">▶</span>등록된 영상이 없습니다<br>
+       <span class="hint">경기 상세 화면에서 영상을 추가할 수 있습니다</span></div>`);
+}
+
+/* ------------------------------- 설정 ------------------------------- */
+function viewSettings(){
+  const p = S.profile;
+  const raw = (()=>{ try{ return new Blob([JSON.stringify(S)]).size; }catch(e){ return null; } })();
+  const vids = S.games.reduce((a,g)=>a+g.videos.filter(v=>v.kind==="file").reduce((x,v)=>x+(v.size||0),0),0);
+  return `<div class="card"><div class="hd"><div style="flex:1"><h3>선수 정보</h3>
+      <div class="cap">기록지 상단과 내보내기 파일에 함께 저장됩니다</div></div></div>
+    <div class="f2">
+      <label class="f"><span>이름</span><input id="pf_name" value="${esc(p.name)}" placeholder="홍길동"></label>
+      <label class="f"><span>소속 팀</span><input id="pf_team" value="${esc(p.team)}" placeholder="○○ 베어스"></label>
+      <label class="f"><span>등번호</span><input id="pf_num" value="${esc(p.number)}" inputmode="numeric" placeholder="7"></label>
+      <label class="f"><span>주 포지션</span><select id="pf_pos"><option value="">선택</option>
+        ${POS.map(x=>`<option value="${x.c}" ${p.position===x.c?"selected":""}>${x.ko}</option>`).join("")}</select></label>
+      <label class="f"><span>타석</span><select id="pf_bats">${["우타","좌타","양타"].map(x=>`<option ${p.bats===x?"selected":""}>${x}</option>`).join("")}</select></label>
+      <label class="f"><span>투구</span><select id="pf_thr">${["우투","좌투"].map(x=>`<option ${p.throws===x?"selected":""}>${x}</option>`).join("")}</select></label>
+    </div>
+    <button class="btn pri block" data-act="saveProfile">선수 정보 저장</button></div>
+
+    <div class="card"><div class="hd"><div style="flex:1"><h3>경기장 규격</h3>
+      <div class="cap">타구 위치 그림과 추정 거리에 쓰입니다. 경기마다 다른 구장을 쓸 때는 경기 정보에서 따로 지정할 수 있습니다.</div></div></div>
+      <div class="filters" style="margin-bottom:8px"><div class="seg" role="group" aria-label="경기장 규격">
+        ${LEVEL_KEYS.map(k=>`<button data-act="level" data-v="${k}" aria-pressed="${curLevel()===k}">${LEVELS[k].ko}</button>`).join("")}
+      </div></div>
+      <div class="hint">${esc(LEVELS[curLevel()].note)}</div>
+      <div style="display:flex;gap:10px;align-items:flex-end;margin-top:12px;flex-wrap:wrap">
+        <label class="f" style="margin:0;max-width:190px"><span>정규 이닝</span>${stepper("set_inn", regInnings(curLevel()), 1, 15)}</label>
+        <button class="btn" data-act="saveInn">적용</button>
+      </div>
+      <div class="hint" style="margin-top:8px">리그·대회마다 다릅니다(리틀 6이닝, 중등·고교 주말리그 7이닝, 전국대회·대학 9이닝 등).
+        소속 리그 기준으로 바꿔 두면 타석 입력과 이닝별 차트 범위가 그에 맞춰집니다.</div>
+      <div style="margin-top:10px">${fieldSVG("", {aria:"선택한 규격의 경기장", maxw:300, level:curLevel()})}</div>
+    </div>
+
+    <div class="card"><div class="hd"><div style="flex:1"><h3>화면 테마</h3>
+      <div class="cap">기본값은 휴대폰·PC의 설정을 그대로 따릅니다.</div></div></div>
+      <div class="filters" style="margin-bottom:0"><div class="seg" role="group" aria-label="화면 테마">
+        ${[["","시스템"],["light","밝게"],["dark","어둡게"]].map(([v,l])=>
+          `<button data-act="theme" data-v="${v}" aria-pressed="${curTheme()===v}">${l}</button>`).join("")}
+      </div></div>
+    </div>
+
+    <div class="card"><div class="hd"><div style="flex:1"><h3>영상 재생</h3>
+      <div class="cap">누르는 즉시 재생을 시작할지 정합니다.</div></div></div>
+      <div class="filters" style="margin-bottom:8px"><div class="seg" role="group" aria-label="자동 재생 방식">
+        ${Object.keys(AUTOPLAY).map(k=>`<button data-act="autoplay" data-v="${k}" aria-pressed="${apMode()===k}">${AUTOPLAY[k]}</button>`).join("")}
+      </div></div>
+      <div class="hint">브라우저가 소리 있는 자동 재생을 막는 경우가 있습니다. 눌렀는데 바로 시작되지 않으면 <b>음소거로</b>를 골라 보세요 — 재생 후 플레이어에서 음소거를 풀 수 있습니다.<br>
+        유튜브 링크는 공개 범위가 <b>일부 공개(미등록)</b>여야 앱 안에서 재생됩니다. <b>비공개</b>는 유튜브 정책상 임베드가 차단됩니다.</div>
+    </div>
+
+    <div class="card"><div class="hd"><div style="flex:1"><h3>백업 / 복원</h3>
+      <div class="cap">기록은 이 브라우저에 자동 저장됩니다. 기기를 바꾸거나 만약을 대비해 파일로 내보내 두세요.</div></div></div>
+      <div class="btnrow">
+        <button class="btn pri" data-act="exportJSON">JSON 내보내기</button>
+        <button class="btn" data-act="importJSON">JSON 불러오기</button>
+        <button class="btn" data-act="exportCSV">타석 CSV</button>
+        <button class="btn" data-act="exportDefCSV">수비 CSV</button>
+      </div>
+      <div class="btnrow" style="margin-top:8px">
+        <button class="btn sm" data-act="showJSON">JSON 화면에 표시 · 복사</button>
+        <button class="btn sm" data-act="pasteJSON">붙여넣기로 불러오기</button>
+      </div>
+      <div class="hint" style="margin-top:10px">불러오기는 <b>현재 기록에 합치기</b> 또는 <b>전체 교체</b>를 선택할 수 있습니다.
+      JSON 파일에는 영상 <i>파일</i>은 포함되지 않습니다(용량 문제). 영상 링크와 파일 목록 정보는 함께 저장됩니다.</div>
+    </div>
+
+    <div class="card"><div class="hd"><div style="flex:1"><h3>저장 상태</h3></div></div>
+      <div class="tiles">${tile("경기",S.games.length)+tile("타석",S.games.reduce((a,g)=>a+g.pas.length,0))
+        +tile("영상",S.games.reduce((a,g)=>a+g.videos.length,0))+tile("기록 크기",raw!=null?bytes(raw):"-")
+        +tile("영상 용량",bytes(vids))}</div>
+      <div id="quota" class="hint" style="margin-top:10px">저장 공간 확인 중…</div>
+    </div>
+
+    <div class="card"><div class="hd"><div style="flex:1"><h3>사용 안내</h3></div></div>
+      <div class="hint" style="line-height:1.7">
+        · <b>홈 화면에 추가</b>하면 앱처럼 전체 화면으로 쓸 수 있습니다 (아이폰: 공유 → 홈 화면에 추가 / 안드로이드: 메뉴 → 앱 설치).<br>
+        · 인터넷 연결 없이도 동작합니다. 파일을 열어둔 브라우저에 기록이 저장됩니다.<br>
+        · 브라우저 데이터(쿠키·사이트 데이터)를 지우면 기록도 함께 삭제되니 정기적으로 JSON 백업을 받아두세요.<br>
+        · 타석을 기록할 때 야구장 그림을 누르면 타구 위치가 저장되고 스프레이 차트가 만들어집니다.
+      </div></div>
+
+    <div class="card"><div class="hd"><div style="flex:1"><h3>데이터 관리</h3></div></div>
+      <div class="btnrow" style="align-items:center">
+        ${delBtn("wipe", "", "전체 기록 삭제")}
+        <span class="hint">전체 기록 삭제</span>
+      </div>
+      <div class="hint" style="margin-top:8px">삭제 전에 <b>JSON 내보내기</b>로 백업해 두세요. 삭제하면 되돌릴 수 없습니다.</div></div>`;
+}
+
+/* ============================ 시트 / 모달 ============================ */
+function openSheet(inner, mount){
+  const m = $("#modal");
+  m.innerHTML = `<div class="backdrop"><div class="sheet" role="dialog" aria-modal="true">${inner}</div></div>`;
+  document.body.style.overflow = "hidden";
+  if(mount) mount(m.querySelector(".sheet"));
+  const first = m.querySelector("input,select,textarea,button");
+  if(first && window.innerWidth>700) try{ first.focus(); }catch(e){}
+}
+function closeSheet(){ $("#modal").innerHTML=""; document.body.style.overflow=""; }
+function ask(title, msg, opts){
+  return new Promise(res=>{
+    openSheet(`<div class="sh"><h3>${esc(title)}</h3></div>
+      <div class="hint" style="padding:6px 0 14px;line-height:1.6">${msg}</div>
+      <div class="sf">${opts.map((o,i)=>`<button class="btn ${o.style||""}" data-ask="${i}">${esc(o.label)}</button>`).join("")}</div>`);
+    $$("#modal [data-ask]").forEach(b=> b.addEventListener("click", ()=>{ closeSheet(); res(+b.dataset.ask); }));
+    $("#modal .backdrop").addEventListener("click", e=>{ if(e.target.classList.contains("backdrop")){ closeSheet(); res(-1); } });
+  });
+}
+function stepper(id, val, min, max){
+  return `<div class="stepper">
+    <button type="button" class="stepbtn" data-act="step" data-t="${id}" data-d="-1" aria-label="감소">−</button>
+    <input id="${id}" type="number" inputmode="numeric" value="${val}" min="${min==null?0:min}" ${max!=null?`max="${max}"`:""}>
+    <button type="button" class="stepbtn" data-act="step" data-t="${id}" data-d="1" aria-label="증가">+</button></div>`;
+}
+
+/* ---------------------------- 경기 정보 시트 ---------------------------- */
+function gameSheet(id){
+  const g = id? S.games.find(x=>x.id===id) : null;
+  const d = g || {date:today(), opponent:"", venue:"", homeAway:"홈", myScore:"", oppScore:"", note:"", level:""};
+  const venues = Array.from(new Set(S.games.map(x=>x.venue).filter(Boolean)));
+  const opps = Array.from(new Set(S.games.map(x=>x.opponent).filter(Boolean)));
+  openSheet(`
+    <div class="sh"><h3>${g?"경기 정보 수정":"새 경기"}</h3><div class="spacer" style="flex:1"></div>
+      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+    <label class="f"><span>경기 날짜</span><input id="g_date" type="date" value="${esc(d.date)}"></label>
+    <label class="f"><span>상대 팀</span><input id="g_opp" value="${esc(d.opponent)}" list="dl_opp" placeholder="상대 팀 이름">
+      <datalist id="dl_opp">${opps.map(o=>`<option value="${esc(o)}">`).join("")}</datalist></label>
+    <div class="f2">
+      <label class="f"><span>구장</span><input id="g_venue" value="${esc(d.venue)}" list="dl_venue" placeholder="○○ 구장">
+        <datalist id="dl_venue">${venues.map(o=>`<option value="${esc(o)}">`).join("")}</datalist></label>
+      <label class="f"><span>홈/원정</span><select id="g_ha">${["홈","원정","중립"].map(x=>`<option ${d.homeAway===x?"selected":""}>${x}</option>`).join("")}</select></label>
+      <label class="f"><span>경기장 규격</span><select id="g_lv">
+        <option value="">기본값 (${LEVELS[curLevel()].ko})</option>
+        ${LEVEL_KEYS.map(k=>`<option value="${k}" ${d.level===k?"selected":""}>${LEVELS[k].ko}</option>`).join("")}</select></label>
+      <label class="f"><span>우리 점수</span><input id="g_ms" type="number" inputmode="numeric" value="${esc(d.myScore)}"></label>
+      <label class="f"><span>상대 점수</span><input id="g_os" type="number" inputmode="numeric" value="${esc(d.oppScore)}"></label>
+    </div>
+    <label class="f"><span>메모</span><textarea id="g_note" placeholder="컨디션, 날씨, 기억할 장면 등">${esc(d.note)}</textarea></label>
+    <div class="sf"><button class="btn" data-act="close">취소</button>
+      <button class="btn pri" data-act="saveGame" data-id="${g?g.id:""}">저장</button></div>`);
+}
+
+/* ------------------------------ 타석 시트 ------------------------------ */
+let draft = null;
+let paPaint = null;   // 타석 시트의 타구 위치 다시 그리기
+const blobURLs = {}; // 기기에 저장한 영상의 재생 주소 캐시 (두 번째 클릭부터 즉시 재생)
+function paSheet(gid, pid){
+  const g = S.games.find(x=>x.id===gid); if(!g) return;
+  const p = pid? g.pas.find(x=>x.id===pid) : null;
+  draft = p? JSON.parse(JSON.stringify(p)) : {id:null, inning:(g.pas.length?num(g.pas[g.pas.length-1].inning,1)+1:1),
+    pitcher:"", result:"", zone:null, rbi:0, runs:0, sb:0, cs:0, note:""};
+  const pitchers = Array.from(new Set(S.games.flatMap(x=>x.pas.map(y=>y.pitcher)).filter(Boolean)));
+  const LV = gameLevel(g);
+  const groups = ["hit","onbase","out"].map(gk=>`
+    <div class="chipgroup"><div class="gl">${GLABEL[gk]}</div><div class="chips">
+      ${RESULTS.filter(r=>r.g===gk).map(r=>`<button type="button" class="chip g-${gk}" data-act="pickResult" data-v="${r.c}"
+        aria-pressed="${draft.result===r.c}">${r.ko}</button>`).join("")}
+    </div></div>`).join("");
+
+  openSheet(`
+    <div class="sh"><h3>${p?"타석 수정":"타석 기록"}</h3>
+      <div class="spacer" style="flex:1"></div>
+      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+    <div class="f2">
+      <label class="f"><span>이닝 <span style="color:var(--text-3);font-weight:400">/ 정규 ${regInnings(LV)}이닝</span></span>${stepper("pa_inn", clamp(num(draft.inning,1),1,regInnings(LV)+3), 1, regInnings(LV)+3)}</label>
+      <label class="f"><span>상대 투수</span><input id="pa_pit" value="${esc(draft.pitcher)}" list="dl_pit" placeholder="이름 (선택)">
+        <datalist id="dl_pit">${pitchers.map(o=>`<option value="${esc(o)}">`).join("")}</datalist></label>
+    </div>
+    <div style="margin-bottom:6px"><span style="display:block;font-size:12.5px;color:var(--text-2);margin-bottom:6px;font-weight:550">결과</span>${groups}</div>
+    <div class="f" id="pa_zone_wrap" style="margin-bottom:8px" ${hasBIP(draft.result)?"":"hidden"}>
+      <span style="display:block;font-size:12.5px;color:var(--text-2);margin-bottom:6px;font-weight:550">타구 위치 <span style="color:var(--text-3);font-weight:400">— 경기장 안쪽을 눌러 표시</span></span>
+      <div id="pa_field">${fieldSVG(`<g id="zmark"></g>`, {id:"pafield", aria:"타구 위치 선택", maxw:320, level:LV})}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        <div id="pa_zlabel" class="hint" style="flex:1">${draft.zone? esc(zoneOf(draft.zone, LV).label)+" 방향" : "선택 안 됨"} <span style="opacity:.7">— ${esc(LEVELS[LV].ko)} 규격</span></div>
+        <button type="button" class="btn sm" data-act="clearZone">위치 지우기</button>
+      </div>
+    </div>
+    <div class="f3">
+      <label class="f"><span>타점</span>${stepper("pa_rbi", num(draft.rbi,0), 0, 4)}</label>
+      <label class="f"><span>득점</span>${stepper("pa_run", num(draft.runs,0), 0, 1)}</label>
+      <label class="f"><span>도루</span>${stepper("pa_sb", num(draft.sb,0), 0, 4)}</label>
+    </div>
+    <label class="f"><span>메모</span><textarea id="pa_note" placeholder="볼카운트, 구종, 느낀 점 등">${esc(draft.note)}</textarea></label>
+    <div class="sf">${p? delBtn("delPA", `data-gid="${gid}" data-id="${p.id}"`, "이 타석 삭제") : `<button class="btn" data-act="close">취소</button>`}
+      <button class="btn pri" data-act="savePA" data-gid="${gid}" data-id="${p?p.id:""}">저장</button></div>`,
+  sheet=>{
+    const svg = sheet.querySelector("#pafield");
+    const paint = ()=>{
+      const gEl = sheet.querySelector("#zmark");
+      if(!draft.zone){ gEl.innerHTML=""; sheet.querySelector("#pa_zlabel").textContent="선택 안 됨"; return; }
+      gEl.innerHTML = `<circle cx="${draft.zone.x.toFixed(1)}" cy="${draft.zone.y.toFixed(1)}" r="7.5" fill="var(--s2)" stroke="var(--surface-1)" stroke-width="2.5"/>`;
+      const z = zoneOf(draft.zone, LV);
+      sheet.querySelector("#pa_zlabel").textContent = z.label+" 방향 · 홈에서 약 "+Math.round(z.m)+"m";
+    };
+    const pick = ev=>{
+      const r = svg.getBoundingClientRect();
+      const x = (ev.clientX - r.left) * (FIELD.W / r.width);
+      const y = (ev.clientY - r.top)  * (FIELD.H / r.height);
+      if(!insideFair(x,y,LV)){ toast("경기장 안쪽(페어 지역)을 눌러 주세요"); return; }
+      draft.zone = clampFair(x,y,LV); paint();
+    };
+    svg.style.cursor="crosshair";
+    svg.addEventListener("pointerdown", ev=>{ ev.preventDefault(); pick(ev); });
+    paPaint = paint;
+    paint();
+  });
+}
+
+/* ------------------------------ 수비 시트 ------------------------------ */
+function defSheet(gid, did){
+  const g = S.games.find(x=>x.id===gid); if(!g) return;
+  const d = did? g.def.find(x=>x.id===did) : null;
+  const v = d || {pos:S.profile.position||"", innings:"", po:0, a:0, e:0, dp:0};
+  openSheet(`
+    <div class="sh"><h3>${d?"수비 기록 수정":"수비 기록"}</h3><div class="spacer" style="flex:1"></div>
+      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+    <div class="f2">
+      <label class="f"><span>포지션</span><select id="d_pos"><option value="">선택</option>
+        ${POS.map(x=>`<option value="${x.c}" ${v.pos===x.c?"selected":""}>${x.ko}</option>`).join("")}</select></label>
+      <label class="f"><span>수비 이닝 <span style="color:var(--text-3);font-weight:400">/ 정규 ${regInnings(gameLevel(g))}이닝</span></span>
+        <input id="d_inn" inputmode="decimal" value="${esc(v.innings)}" placeholder="예: ${Math.max(1,regInnings(gameLevel(g))-1)}.2"></label>
+    </div>
+    <div class="hint" style="margin:-6px 0 12px">이닝은 야구 표기를 씁니다 — <b>5.2</b> = 5이닝 2아웃</div>
+    <div class="f2">
+      <label class="f"><span>자살 (PO)</span>${stepper("d_po", num(v.po,0), 0)}</label>
+      <label class="f"><span>보살 (A)</span>${stepper("d_a", num(v.a,0), 0)}</label>
+      <label class="f"><span>실책 (E)</span>${stepper("d_e", num(v.e,0), 0)}</label>
+      <label class="f"><span>병살 참여 (DP)</span>${stepper("d_dp", num(v.dp,0), 0)}</label>
+    </div>
+    <div class="sf">${d? delBtn("delDef", `data-gid="${gid}" data-id="${d.id}"`, "이 수비 기록 삭제") : `<button class="btn" data-act="close">취소</button>`}
+      <button class="btn pri" data-act="saveDef" data-gid="${gid}" data-id="${d?d.id:""}">저장</button></div>`);
+}
+
+/* ------------------------------ 영상 시트 ------------------------------ */
+function videoSheet(gid){
+  const g = S.games.find(x=>x.id===gid); if(!g) return;
+  openSheet(`
+    <div class="sh"><h3>영상 추가</h3><div class="spacer" style="flex:1"></div>
+      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+    <div class="filters"><div class="seg" role="group" aria-label="영상 종류">
+      <button data-act="vkind" data-v="file" aria-pressed="true">파일 업로드</button>
+      <button data-act="vkind" data-v="link" aria-pressed="false">링크 등록</button>
+    </div></div>
+    <div id="v_file">
+      <label class="f"><span>동영상 파일</span><input id="v_input" type="file" accept="video/*"></label>
+      <div class="hint" style="margin:-6px 0 12px">이 기기의 브라우저 안에만 저장됩니다. 인터넷 업로드가 아니므로 안전하지만,
+        기기 저장 공간을 사용하니 <b>하이라이트 클립(수십 MB)</b> 위주로 넣는 것을 권합니다.</div>
+      <div id="v_prog" hidden><div class="bar"><i style="width:0%"></i></div><div class="hint" style="margin-top:6px">저장 중…</div></div>
+    </div>
+    <div id="v_link" hidden>
+      <label class="f"><span>영상 주소</span><input id="v_url" inputmode="url" placeholder="https://youtu.be/... 또는 mp4 주소"></label>
+      <div class="hint" style="margin:-6px 0 12px">유튜브·구글 드라이브·Vimeo·mp4 주소는 앱 안에서 바로 재생됩니다.<br>
+        유튜브는 공개 범위를 <b>일부 공개(미등록)</b>로 올려 주세요 — <b>비공개</b> 영상은 유튜브 정책상 어떤 앱·사이트에서도 재생되지 않습니다.
+        일부 공개는 검색에 노출되지 않으니 비공개와 사실상 같습니다.</div>
+    </div>
+    <label class="f"><span>제목</span><input id="v_title" placeholder="예: 3회 좌중간 2루타"></label>
+    <label class="f"><span>연결할 타석 (선택)</span><select id="v_pa"><option value="">연결 안 함</option>
+      ${g.pas.map((p,i)=>`<option value="${p.id}">${i+1}번째 · ${p.inning?p.inning+"회 ":""}${RMAP[p.result]?RMAP[p.result].ko:""}</option>`).join("")}</select></label>
+    <label class="f"><span>메모</span><textarea id="v_note" placeholder="확인할 포인트 등"></textarea></label>
+    <div class="sf"><button class="btn" data-act="close">취소</button>
+      <button class="btn pri" data-act="saveVideo" data-gid="${gid}">추가</button></div>`);
+}
+function ytId(u){ const m=String(u).match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/|live\/|\/v\/)([A-Za-z0-9_-]{11})/); return m?m[1]:null; }
+
+/* 링크를 앱 안에서 재생할 수 있는 형태로 바꿔 줍니다. */
+function embedFor(url){
+  const u  = String(url||"").trim();
+  const ap = apMode();
+  const auto = ap==="off"? 0 : 1, mute = ap==="muted"? 1 : 0;
+  const y = ytId(u);
+  if(y) return {kind:"iframe", site:"youtube",
+    src:`https://www.youtube.com/embed/${y}?autoplay=${auto}&mute=${mute}&playsinline=1&rel=0`};
+  const drive = u.match(/(?:drive|docs)\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([A-Za-z0-9_-]{10,})/);
+  if(drive) return {kind:"iframe", site:"drive", src:"https://drive.google.com/file/d/"+drive[1]+"/preview"};
+  const vimeo = u.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if(vimeo) return {kind:"iframe", site:"vimeo", src:`https://player.vimeo.com/video/${vimeo[1]}?autoplay=${auto}&muted=${mute}`};
+  if(/\.(mp4|webm|ogg|ogv|mov|m4v)(\?|$)/i.test(u)) return {kind:"video", site:"file", src:u};
+  return null;
+}
+function playHint(v, site){
+  if(v.kind !== "link") return "";
+  const yt = site==="youtube"
+    ? `화면이 비어 있다면 유튜브 <b>비공개</b> 영상입니다 — 공개 범위를 <b>일부 공개(미등록)</b>로 바꾸면 재생됩니다. · `
+    : "";
+  return `<div class="hint" style="margin-top:6px">${yt}<a href="${esc(v.url)}" target="_blank" rel="noopener">새 창에서 열기 ↗</a></div>`;
+}
+function openVideoTab(gid, vid){
+  const g = S.games.find(x=>x.id===gid); if(!g) return;
+  const v = g.videos.find(x=>x.id===vid); if(!v) return;
+  const url = v.kind==="link"? v.url : blobURLs[v.id];
+  if(!url){ toast("먼저 재생을 눌러 영상을 불러와 주세요"); return; }
+  let w = null;
+  try{ w = window.open(url, "_blank", "noopener,noreferrer"); }catch(e){ w = null; }
+  if(!w) toast("브라우저가 새 창을 막았습니다");
+}
+function playVideo(gid, vid){
+  const g = S.games.find(x=>x.id===gid); if(!g) return;
+  const v = g.videos.find(x=>x.id===vid); if(!v) return;
+  const card = $(`.vidcard[data-vid="${vid}"]`);
+  const host = card? $(".player", card) : null;
+  const setIcon = ()=>{};   // 재생/정지 아이콘은 쓰지 않습니다
+  if(!host) return;
+
+  // 다시 누르면 닫기
+  if(host.dataset.on === "1"){
+    const cur = $("video", host); if(cur){ try{ cur.pause(); }catch(e){} }
+    host.innerHTML = ""; host.dataset.on = "0";
+    setIcon();
+    return;
+  }
+  host.dataset.on = "1";
+  setIcon();
+
+  const ap = apMode();
+  const mountVideo = (src, site) =>{
+    const tail = playHint(v, site);
+    const attrs = ap==="off"? "" : (ap==="muted"? " autoplay muted" : " autoplay");
+    host.innerHTML = `<video controls playsinline preload="auto"${attrs} src="${src}"></video>` + tail;
+    const el = $("video", host);
+    if(el){
+      if(ap==="muted") el.muted = true;
+      if(ap!=="off"){ const pr = el.play(); if(pr && pr.catch) pr.catch(()=>{}); }
+      el.addEventListener("error", ()=>{
+        host.innerHTML = `<div class="hint">이 형식·주소는 앱 안에서 재생할 수 없습니다.</div>` + tail;
+      }, {once:true});
     }
-    data.exercises.forEach(ex=>{
-        exerciseBody.appendChild(createRow({
-            name: ex.name,
-            sets: ex.sets.length,
-            checkedValues: ex.sets
-        }));
-    });
-}
-function deleteDay(){
-    if(!selectedDate) return;
-    localStorage.removeItem("exercise_"+selectedDate);
-    loadDay(selectedDate);
-}
+  };
 
-// 달력
-let currentYear,currentMonth;
-function renderCalendar(year,month){
-    currentYear=year; currentMonth=month;
-    document.getElementById("currentMonthText").textContent=`${year}년 ${month}월`;
-    const cal=document.getElementById("calendar");
-    cal.innerHTML="";
-    const first=new Date(year,month-1,1);
-    const last=new Date(year,month,0);
-    const start=first.getDay(); const total=last.getDate();
-
-    ["일","월","화","수","목","금","토"].forEach(w=>{ 
-        let div=document.createElement("div"); 
-        div.className="calendar-weekday"; div.textContent=w; 
-        cal.appendChild(div); 
-    });
-
-    for(let i=0;i<start;i++) cal.appendChild(document.createElement("div"));
-    for(let d=1;d<=total;d++){
-        const dd=d.toString().padStart(2,"0"); const mm=month.toString().padStart(2,"0");
-        const dateStr=`${year}-${mm}-${dd}`;
-        const div=document.createElement("div"); div.className="calendar-day"; div.textContent=d;
-        div.dataset.date=dateStr;
-        const today=new Date(); 
-        if(today.getFullYear()==year && today.getMonth()+1==month && today.getDate()==d) div.classList.add("today");
-        div.onclick=()=>{ 
-            document.querySelectorAll(".calendar-day").forEach(c=>c.classList.remove("selected")); 
-            div.classList.add("selected"); 
-            loadDay(dateStr);
-        };
-        cal.appendChild(div);
+  // 링크 영상
+  if(v.kind === "link"){
+    const em = embedFor(v.url);
+    if(!em){
+      host.innerHTML = `<div class="hint">이 주소는 앱 안에서 바로 재생할 수 없는 형태입니다. 구글 포토·네이버 클라우드 등 일부 서비스는 외부 재생을 막습니다.</div>` + playHint(v, "other");
+      return;
     }
+    if(em.kind === "iframe"){
+      host.innerHTML = `<div class="ratio"><iframe src="${esc(em.src)}" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen title="${esc(v.title||"영상")}"></iframe></div>` + playHint(v, em.site);
+    } else mountVideo(esc(em.src), em.site);
+    return;
+  }
+
+  // 기기에 저장한 파일
+  if(blobURLs[v.id]){ mountVideo(blobURLs[v.id], "file"); return; }
+  host.innerHTML = `<div class="hint">불러오는 중…</div>`;
+  idbGet(v.id).then(blob=>{
+    if(!blob){
+      host.innerHTML = `<div class="hint">저장된 파일을 찾을 수 없습니다. 다른 기기에서 불러온 기록이라면 영상 파일은 함께 오지 않습니다.</div>`;
+      setIcon(); host.dataset.on = "0"; return;
+    }
+    blobURLs[v.id] = URL.createObjectURL(blob);
+    mountVideo(blobURLs[v.id], "file");
+  }).catch(e=>{
+    host.innerHTML = `<div class="hint">재생 실패: ${esc(e.message||e)}</div>`;
+    setIcon(); host.dataset.on = "0";
+  });
 }
 
-document.getElementById("prevMonthBtn").onclick = ()=>{
-    currentMonth--; if(currentMonth==0){ currentMonth=12; currentYear--; } renderCalendar(currentYear,currentMonth);
-};
-document.getElementById("nextMonthBtn").onclick = ()=>{
-    currentMonth++; if(currentMonth==13){ currentMonth=1; currentYear++; } renderCalendar(currentYear,currentMonth);
-};
-
-const today=new Date();
-const todayStr = `${today.getFullYear()}-${(today.getMonth()+1).toString().padStart(2,"0")}-${today.getDate().toString().padStart(2,"0")}`;
-selectedDate = todayStr;
-loadDay(todayStr);
-renderCalendar(today.getFullYear(), today.getMonth()+1);
-
-document.getElementById("saveBtn").onclick=saveDay;
-document.getElementById("deleteBtn").onclick=deleteDay;
-
-if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('service-worker.js')
-    .then(()=>console.log('Service Worker 등록됨'))
-    .catch(err=>console.error('Service Worker 등록 실패',err));
+/* ============================ 내보내기 / 불러오기 ============================ */
+let _dlNs = null, _dlTried = false;
+async function dlNs(){
+  if(_dlTried) return _dlNs;
+  _dlTried = true;
+  try{ _dlNs = (window.claude && typeof window.claude.use==="function")? await window.claude.use("downloads") : null; }
+  catch(e){ _dlNs = null; }
+  return _dlNs;
 }
+function anchorDownload(name, blob){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+async function download(name, blob){
+  const ns = await dlNs();
+  if(ns){
+    try{ await ns.save({filename:name, data:blob}); toast("파일을 저장했습니다"); return; }
+    catch(e){
+      const code = e && e.code;
+      if(code === "declined" || code === "rate_limited") return;
+      if(code === "extension_not_enabled" || code === "rejected_extension"){
+        try{ await ns.save({filename:name.replace(/\.[^.]+$/,"")+".txt", data:blob});
+             toast("이 환경에서는 .txt로 저장됩니다"); return; }catch(e2){}
+      }
+      if(code === "too_large"){ toast("파일이 너무 커서 저장할 수 없습니다"); return; }
+    }
+  }
+  anchorDownload(name, blob);
+  toast("파일을 내보냈습니다");
+}
+function stamp(){ const d=new Date(); return `${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}`; }
+function exportJSON(){
+  const out = JSON.parse(JSON.stringify(S));
+  out.exportedAt = new Date().toISOString();
+  download(`baseball-log_${stamp()}.json`, new Blob([JSON.stringify(out,null,1)], {type:"application/json"}));
+}
+function csv(rows){
+  const body = rows.map(r=>r.map(c=>{
+    const s = c==null? "" : String(c);
+    return /[",\n]/.test(s)? '"'+s.replace(/"/g,'""')+'"' : s;
+  }).join(",")).join("\r\n");
+  return new Blob(["﻿"+body], {type:"text/csv;charset=utf-8"});
+}
+function exportCSV(){
+  const rows = [["날짜","상대","구장","홈원정","경기장규격","이닝","상대투수","결과","결과코드","타구방향","타구깊이","추정거리(m)","타점","득점","도루","메모"]];
+  scopedGames().forEach(g=> g.pas.forEach(p=>{
+    const z = p.zone? zoneOf(p.zone, gameLevel(g)) : null; const r = RMAP[p.result];
+    rows.push([g.date, g.opponent, g.venue, g.homeAway, LEVELS[gameLevel(g)].ko, p.inning, p.pitcher, r?r.ko:"", p.result,
+      z?z.label:"", z?z.depth:"", z?Math.round(z.m):"", num(p.rbi,0), num(p.runs,0), num(p.sb,0), p.note||""]);
+  }));
+  if(rows.length===1){ toast("내보낼 타석 기록이 없습니다"); return; }
+  download(`baseball-batting_${stamp()}.csv`, csv(rows));
+}
+function exportDefCSV(){
+  const rows = [["날짜","상대","포지션","이닝","자살","보살","실책","병살"]];
+  scopedGames().forEach(g=> g.def.forEach(d=>{
+    rows.push([g.date, g.opponent, PMAP[d.pos]||d.pos, d.innings, num(d.po,0), num(d.a,0), num(d.e,0), num(d.dp,0)]);
+  }));
+  if(rows.length===1){ toast("내보낼 수비 기록이 없습니다"); return; }
+  download(`baseball-fielding_${stamp()}.csv`, csv(rows));
+}
+function importJSON(){
+  const inp = document.createElement("input");
+  inp.type="file"; inp.accept="application/json,.json";
+  inp.addEventListener("change", ()=>{
+    const f = inp.files && inp.files[0]; if(!f) return;
+    const rd = new FileReader();
+    rd.onload = ()=>{
+      let o; try{ o = JSON.parse(rd.result); }catch(e){ toast("JSON 파일을 읽을 수 없습니다"); return; }
+      if(!o || !Array.isArray(o.games)){ toast("야구 기록 파일이 아닙니다"); return; }
+      o.games.forEach(g=>{ g.pas=g.pas||[]; g.def=g.def||[]; g.videos=g.videos||[]; });
+      ask("불러오기 방법", `파일에 <b>${o.games.length}경기</b>가 들어 있습니다.<br>현재 기기에는 ${S.games.length}경기가 저장되어 있습니다.`,
+        [{label:"현재 기록에 합치기", style:"pri"},{label:"전체 교체", style:"dan"},{label:"취소"}]).then(k=>{
+        if(k===0){
+          const have = new Set(S.games.map(g=>g.id));
+          let add=0;
+          o.games.forEach(g=>{ if(!have.has(g.id)){ S.games.push(g); add++; }
+            else { const cur=S.games.find(x=>x.id===g.id);
+              g.pas.forEach(p=>{ if(!cur.pas.some(x=>x.id===p.id)) cur.pas.push(p); });
+              g.def.forEach(p=>{ if(!cur.def.some(x=>x.id===p.id)) cur.def.push(p); });
+              g.videos.forEach(p=>{ if(!cur.videos.some(x=>x.id===p.id)) cur.videos.push(p); }); } });
+          if(o.profile && !S.profile.name) S.profile = Object.assign(S.profile, o.profile);
+          saveNow(); render(); toast(`${add}경기를 추가했습니다`);
+        } else if(k===1){
+          S.games = o.games; if(o.profile) S.profile = Object.assign(blank().profile, o.profile);
+          S.ui.year="all"; S.ui.gameId=null; saveNow(); render(); toast(`${o.games.length}경기로 교체했습니다`);
+        }
+      });
+    };
+    rd.readAsText(f);
+  });
+  inp.click();
+}
+
+
+/* 다운로드가 막힌 환경(앱 내 뷰어 등)을 위한 대체 경로 */
+function showJSON(){
+  const txt = JSON.stringify(S);
+  openSheet(`<div class="sh"><h3>기록 JSON</h3><div class="spacer" style="flex:1"></div>
+      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+    <div class="hint" style="padding:4px 0 10px">아래 내용을 전체 선택해 복사하고, 메모 앱이나 파일로 저장해 두세요.
+      다른 기기에서 <b>붙여넣기로 불러오기</b>에 넣으면 그대로 복원됩니다.</div>
+    <textarea id="j_out" readonly style="min-height:220px;font-size:12px;line-height:1.45">${esc(txt)}</textarea>
+    <div class="sf"><button class="btn" data-act="close">닫기</button>
+      <button class="btn pri" data-act="copyJSON">클립보드 복사</button></div>`);
+}
+function copyJSON(){
+  const ta = $("#j_out"); if(!ta) return;
+  ta.select(); ta.setSelectionRange(0, ta.value.length);
+  const done = ()=> toast("복사했습니다");
+  if(navigator.clipboard && navigator.clipboard.writeText)
+    navigator.clipboard.writeText(ta.value).then(done).catch(()=>{ try{ document.execCommand("copy"); done(); }catch(e){ toast("복사에 실패했습니다. 직접 선택해 복사해 주세요"); } });
+  else { try{ document.execCommand("copy"); done(); }catch(e){ toast("직접 선택해 복사해 주세요"); } }
+}
+function pasteJSON(){
+  openSheet(`<div class="sh"><h3>붙여넣기로 불러오기</h3><div class="spacer" style="flex:1"></div>
+      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+    <div class="hint" style="padding:4px 0 10px">백업해 둔 JSON 내용을 그대로 붙여넣으세요.</div>
+    <textarea id="j_in" placeholder='{"version":1,"games":[...]}' style="min-height:200px;font-size:12px;line-height:1.45"></textarea>
+    <div class="sf"><button class="btn" data-act="close">취소</button>
+      <button class="btn pri" data-act="applyPaste">불러오기</button></div>`);
+}
+function applyPaste(){
+  let o; try{ o = JSON.parse($("#j_in").value); }catch(e){ toast("JSON 형식이 아닙니다"); return; }
+  if(!o || !Array.isArray(o.games)){ toast("야구 기록 데이터가 아닙니다"); return; }
+  o.games.forEach(g=>{ g.pas=g.pas||[]; g.def=g.def||[]; g.videos=g.videos||[]; });
+  closeSheet();
+  ask("불러오기 방법", `붙여넣은 데이터에 <b>${o.games.length}경기</b>가 있습니다.`,
+    [{label:"현재 기록에 합치기",style:"pri"},{label:"전체 교체",style:"dan"},{label:"취소"}]).then(k=>{
+    if(k===0){ const have=new Set(S.games.map(g=>g.id)); let add=0;
+      o.games.forEach(g=>{ if(!have.has(g.id)){ S.games.push(g); add++; } });
+      saveNow(); render(); toast(add+"경기를 추가했습니다"); }
+    else if(k===1){ S.games=o.games; if(o.profile) S.profile=Object.assign(blank().profile,o.profile);
+      S.ui.year="all"; S.ui.gameId=null; saveNow(); render(); toast("교체했습니다"); }
+  });
+}
+
+/* ------------------------------ 샘플 데이터 ------------------------------ */
+function sampleData(){
+  const rnd = (a)=> a[Math.floor(Math.random()*a.length)];
+  const opps = ["레드윙스","블루호크","그린타이거","시티유니온","리버독스"];
+  const vens = ["시립야구장","제2구장","리버파크"];
+  const pits = ["김성현","박태윤","이도현","최민재"];
+  const codes = ["1B","1B","1B","2B","HR","BB","HBP","K","K","GO","GO","FO","LO","DP","SF","ROE","FC","3B"];
+  const base = new Date(); base.setDate(base.getDate()-70);
+  for(let i=0;i<8;i++){
+    const d = new Date(base.getTime() + i*8*86400000);
+    const date = d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
+    const g = {id:uid(), date, opponent:rnd(opps), venue:rnd(vens), homeAway:i%2?"원정":"홈",
+      myScore:String(2+Math.floor(Math.random()*8)), oppScore:String(1+Math.floor(Math.random()*8)),
+      note:"", pas:[], def:[], videos:[]};
+    const n = 3+Math.floor(Math.random()*2);
+    for(let j=0;j<n;j++){
+      const c = rnd(codes);
+      const r = RMAP[c];
+      let zone=null;
+      if(r.bip){
+        const gm = geom(curLevel());
+        const ang = (Math.random()*84-42)*Math.PI/180;
+        const maxR = fenceR(gm, ang);
+        const dist = c==="HR"? maxR*0.96 : (Math.random()<0.42? gm.baseU*(0.5+Math.random()*0.9) : gm.inU + Math.random()*(maxR-gm.inU)*0.95);
+        zone = clampFair(FIELD.hx + Math.sin(ang)*dist, FIELD.hy - Math.cos(ang)*dist, curLevel());
+      }
+      g.pas.push({id:uid(), inning:1+j*2+Math.floor(Math.random()*2), pitcher:rnd(pits), result:c, zone,
+        rbi: c==="HR"? 1+Math.floor(Math.random()*3) : (r.h||c==="SF")? Math.floor(Math.random()*2):0,
+        runs: c==="HR"?1:(r.h?Math.floor(Math.random()*2):0), sb:(c==="1B"||c==="BB")?Math.floor(Math.random()*2):0, cs:0, note:""});
+    }
+    g.def.push({id:uid(), pos:rnd(["SS","2B","CF","LF","1B"]), innings:String(6+Math.floor(Math.random()*3))+"."+Math.floor(Math.random()*3),
+      po:Math.floor(Math.random()*4), a:Math.floor(Math.random()*4), e:Math.random()<0.25?1:0, dp:Math.random()<0.3?1:0});
+    S.games.push(g);
+  }
+  if(!S.profile.name){ S.profile.name="샘플 선수"; S.profile.team="샘플 클럽"; S.profile.number="7"; S.profile.position="SS"; }
+  saveNow(); render(); toast("샘플 8경기를 추가했습니다");
+}
+
+/* ============================== 이벤트 ============================== */
+function readGameSheet(){
+  return {date:$("#g_date").value||today(), opponent:$("#g_opp").value.trim(), venue:$("#g_venue").value.trim(),
+    homeAway:$("#g_ha").value, level:$("#g_lv").value, myScore:$("#g_ms").value, oppScore:$("#g_os").value, note:$("#g_note").value.trim()};
+}
+document.addEventListener("click", ev=>{
+  const nav = ev.target.closest("nav.tabs button");
+  if(nav){ S.ui.tab = nav.dataset.nav; S.ui.gameId = null; save(); render(); return; }
+
+  const tg = ev.target.closest("[data-toggle]");
+  if(tg){ const box=document.getElementById(tg.dataset.toggle);
+    const open = box.hasAttribute("hidden");
+    if(open) box.removeAttribute("hidden"); else box.setAttribute("hidden","");
+    tg.setAttribute("aria-expanded", String(open)); tg.textContent = open? "차트" : "표"; return; }
+  const bd = ev.target.classList && ev.target.classList.contains("backdrop");
+  if(bd){ closeSheet(); return; }
+
+  const el = ev.target.closest("[data-act]"); if(!el) return;
+  const a = el.dataset.act, id = el.dataset.id, gid = el.dataset.gid, v = el.dataset.v;
+
+  switch(a){
+    case "close": closeSheet(); break;
+    case "nav": S.ui.tab=v; S.ui.gameId=null; save(); render(); break;
+    case "year": S.ui.year=v; save(); render(); break;
+    case "metric": S.ui.metric=v; save(); render(); break;
+    case "level": S.settings.level=v; saveNow(); render(); toast(LEVELS[v].ko+" 규격으로 바꿨습니다"); break;
+    case "saveInn": {
+      const n = clamp(num($("#set_inn").value, LEVELS[curLevel()].inn), 1, 15);
+      S.settings.inningsBy[curLevel()] = n;
+      saveNow(); render(); toast(LEVELS[curLevel()].ko+" 정규 "+n+"이닝으로 설정했습니다"); break; }
+
+    case "newGame": gameSheet(null); break;
+    case "editGame": gameSheet(id); break;
+    case "saveGame": {
+      const d = readGameSheet();
+      if(id){ const g=S.games.find(x=>x.id===id); Object.assign(g,d); }
+      else { const g=Object.assign({id:uid(), pas:[], def:[], videos:[]}, d); S.games.push(g); S.ui.tab="games"; S.ui.gameId=g.id; }
+      saveNow(); closeSheet(); render(); toast("저장했습니다"); break; }
+    case "delGame":
+      ask("경기 삭제","이 경기의 타석·수비·영상 기록이 모두 삭제됩니다. 되돌릴 수 없습니다.",
+        [{label:"삭제",style:"dan"},{label:"취소"}]).then(k=>{
+        if(k!==0) return;
+        const g=S.games.find(x=>x.id===id);
+        (g.videos||[]).filter(x=>x.kind==="file").forEach(x=> idbDel(x.id).catch(()=>{}));
+        S.games = S.games.filter(x=>x.id!==id); S.ui.gameId=null; S.ui.tab="games";
+        saveNow(); render(); toast("삭제했습니다");
+      }); break;
+    case "openGame": S.ui.tab="games"; S.ui.gameId=id; save(); render(); break;
+
+    case "newPA": paSheet(gid, null); break;
+    case "editPA": paSheet(gid, id); break;
+    case "pickResult": {
+      draft.result = (draft.result===v)? "" : v;
+      $$("#modal .chip").forEach(c=> c.setAttribute("aria-pressed", String(c.dataset.v===draft.result)));
+      const canBip = hasBIP(draft.result);
+      const wrap = $("#modal #pa_zone_wrap");
+      if(wrap){
+        wrap.hidden = !canBip;
+        if(!canBip){
+          draft.zone = null;
+          const zm = $("#modal #zmark"); if(zm) zm.innerHTML = "";
+          const zl = $("#modal #pa_zlabel"); if(zl) zl.textContent = "선택 안 됨";
+        } else if(paPaint) paPaint();
+      }
+      break; }
+    case "clearZone": draft.zone=null; $("#modal #zmark").innerHTML=""; $("#modal #pa_zlabel").textContent="선택 안 됨"; break;
+    case "savePA": {
+      if(!draft.result){ toast("타석 결과를 선택해 주세요"); return; }
+      const g = S.games.find(x=>x.id===gid);
+      const rec = {id: id||uid(), inning:num($("#pa_inn").value,1), pitcher:$("#pa_pit").value.trim(),
+        result:draft.result, zone: hasBIP(draft.result)? draft.zone : null, rbi:num($("#pa_rbi").value,0), runs:num($("#pa_run").value,0),
+        sb:num($("#pa_sb").value,0), cs:0, note:$("#pa_note").value.trim()};
+      if(id){ const i=g.pas.findIndex(x=>x.id===id); g.pas[i]=rec; } else g.pas.push(rec);
+      g.pas.sort((x,y)=> num(x.inning,0)-num(y.inning,0));
+      saveNow(); closeSheet(); render(); toast(RMAP[rec.result].ko+" 기록"); break; }
+    case "delPA": {
+      const g=S.games.find(x=>x.id===gid); g.pas=g.pas.filter(x=>x.id!==id);
+      saveNow(); closeSheet(); render(); toast("타석을 삭제했습니다"); break; }
+
+    case "newDef": defSheet(gid, null); break;
+    case "editDef": defSheet(gid, id); break;
+    case "saveDef": {
+      const g=S.games.find(x=>x.id===gid);
+      const rec = {id:id||uid(), pos:$("#d_pos").value, innings:$("#d_inn").value.trim(),
+        po:num($("#d_po").value,0), a:num($("#d_a").value,0), e:num($("#d_e").value,0), dp:num($("#d_dp").value,0)};
+      if(!rec.pos){ toast("포지션을 선택해 주세요"); return; }
+      if(id){ const i=g.def.findIndex(x=>x.id===id); g.def[i]=rec; } else g.def.push(rec);
+      saveNow(); closeSheet(); render(); toast("수비 기록을 저장했습니다"); break; }
+    case "delDef": {
+      const g=S.games.find(x=>x.id===gid); g.def=g.def.filter(x=>x.id!==id);
+      saveNow(); closeSheet(); render(); toast("삭제했습니다"); break; }
+
+    case "newVideo": videoSheet(gid); break;
+    case "vkind":
+      $$("#modal .seg [data-act='vkind']").forEach(b=> b.setAttribute("aria-pressed", String(b.dataset.v===v)));
+      $("#v_file").hidden = v!=="file"; $("#v_link").hidden = v!=="link"; break;
+    case "saveVideo": saveVideo(gid, el); break;
+    case "playVideo": playVideo(gid, id); break;
+    case "openVideo": openVideoTab(gid, id); break;
+    case "autoplay": S.settings.autoplay=v; saveNow(); render(); toast("자동 재생: "+AUTOPLAY[v]); break;
+    case "theme": setTheme(v); break;
+    case "toggleVG": {
+      if(openVG.has(id)) openVG.delete(id); else openVG.add(id);
+      render(); break; }
+    case "delVideo":
+      ask("영상 삭제","이 영상을 기록에서 삭제합니다. 업로드한 파일도 기기에서 지워집니다.",
+        [{label:"삭제",style:"dan"},{label:"취소"}]).then(k=>{
+        if(k!==0) return;
+        const g=S.games.find(x=>x.id===gid);
+        const vv=g.videos.find(x=>x.id===id);
+        if(vv && vv.kind==="file"){ idbDel(id).catch(()=>{});
+          if(blobURLs[id]){ try{ URL.revokeObjectURL(blobURLs[id]); }catch(e){} delete blobURLs[id]; } }
+        g.videos = g.videos.filter(x=>x.id!==id);
+        saveNow(); render(); toast("영상을 삭제했습니다");
+      }); break;
+
+    case "step": {
+      const inp = document.getElementById(el.dataset.t); if(!inp) return;
+      const mn = inp.min!==""? num(inp.min,0) : -Infinity, mx = inp.max!==""? num(inp.max,0) : Infinity;
+      inp.value = String(clamp(num(inp.value,0) + num(el.dataset.d,0), mn, mx)); break; }
+
+    case "saveProfile":
+      S.profile = {name:$("#pf_name").value.trim(), team:$("#pf_team").value.trim(), number:$("#pf_num").value.trim(),
+        position:$("#pf_pos").value, bats:$("#pf_bats").value, throws:$("#pf_thr").value};
+      saveNow(); render(); toast("선수 정보를 저장했습니다"); break;
+
+    case "exportJSON": exportJSON(); break;
+    case "importJSON": importJSON(); break;
+    case "showJSON": showJSON(); break;
+    case "copyJSON": copyJSON(); break;
+    case "pasteJSON": pasteJSON(); break;
+    case "applyPaste": applyPaste(); break;
+    case "exportCSV": exportCSV(); break;
+    case "exportDefCSV": exportDefCSV(); break;
+    case "wipe":
+      ask("전체 기록 삭제","모든 경기·타석·수비·영상 기록이 이 기기에서 완전히 삭제됩니다.<br>먼저 JSON으로 백업하는 것을 권합니다.",
+        [{label:"모두 삭제",style:"dan"},{label:"취소"}]).then(k=>{
+        if(k!==0) return;
+        S.games.forEach(g=>(g.videos||[]).forEach(v=>{ if(v.kind==="file") idbDel(v.id).catch(()=>{}); }));
+        S = blank(); saveNow(); render(); toast("모두 삭제했습니다");
+      }); break;
+  }
+});
+
+function saveVideo(gid, btn){
+  const g = S.games.find(x=>x.id===gid); if(!g) return;
+  const kind = ($("#modal [data-act='vkind'][aria-pressed='true']")||{dataset:{v:"file"}}).dataset.v;
+  const title = $("#v_title").value.trim();
+  const paId = $("#v_pa").value || null;
+  const note = $("#v_note").value.trim();
+  if(kind==="link"){
+    const url = $("#v_url").value.trim();
+    if(!url){ toast("영상 주소를 입력해 주세요"); return; }
+    g.videos.push({id:uid(), kind:"link", url, title:title||url.slice(0,60), paId, note, createdAt:Date.now()});
+    saveNow(); closeSheet(); render(); toast("영상 링크를 추가했습니다"); return;
+  }
+  const f = ($("#v_input").files||[])[0];
+  if(!f){ toast("동영상 파일을 선택해 주세요"); return; }
+  if(f.size > 800*1024*1024){ toast("800MB 이하 파일만 저장할 수 있습니다"); return; }
+  const id = uid();
+  btn.disabled = true; $("#v_prog").hidden = false;
+  $("#v_prog .bar > i").style.width = "40%";
+  idbPut(id, f).then(()=>{
+    $("#v_prog .bar > i").style.width = "100%";
+    g.videos.push({id, kind:"file", name:f.name, mime:f.type, size:f.size,
+      title:title||f.name.replace(/\.[^.]+$/,""), paId, note, createdAt:Date.now()});
+    saveNow(); closeSheet(); render(); toast("영상을 이 기기에 저장했습니다");
+  }).catch(e=>{
+    btn.disabled = false; $("#v_prog").hidden = true;
+    toast("저장 실패: 공간이 부족할 수 있습니다");
+    console.error(e);
+  });
+}
+
+/* ------------------------------ 렌더 / 초기화 ------------------------------ */
+const ENV = {storage:true, idb:true};
+const openVG = new Set();   // 영상 화면에서 펼쳐 둔 경기
+function envBanner(){
+  const v=$("#view"); if(!v) return;
+  if(document.getElementById("envwarn")) return;
+  if(ENV.storage && ENV.idb) return;
+  const d=document.createElement("div"); d.id="envwarn"; d.className="note";
+  d.style.cssText="margin-bottom:12px;border:1px solid var(--border)";
+  d.innerHTML = !ENV.storage
+    ? "이 브라우저(시크릿 모드 등)에서는 기록이 <b>저장되지 않습니다</b>. 일반 창에서 열어 주세요."
+    : "이 환경에서는 동영상 <b>파일 저장</b>을 쓸 수 없습니다. 영상은 <b>링크 등록</b>으로 추가하거나, 이 파일을 웹 주소(http/https)로 열어 주세요.";
+  v.insertBefore(d, v.firstChild);
+}
+let lastTab = null;
+function render(){
+  const v = $("#view");
+  const t = S.ui.tab;
+  const html = (t==="games" && S.ui.gameId)? viewGame(S.ui.gameId)
+    : t==="games"? viewGames()
+    : t==="stats"? viewStats()
+    : t==="videos"? viewVideos()
+    : t==="settings"? viewSettings()
+    : viewHome();
+  v.innerHTML = html;
+  $$("nav.tabs button").forEach(b=>{
+    if(b.dataset.nav===t) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current");
+  });
+  const sb = $("#setBtn");
+  if(sb){ sb.classList.toggle("on", t==="settings"); sb.setAttribute("aria-current", t==="settings"? "page":"false"); }
+  const p = S.profile;
+  $("#subttl").textContent = p.name? [p.name, p.number?"#"+p.number:"", p.team].filter(Boolean).join(" · ") : "기록 · 분석 · 영상";
+  if(lastTab!==t){ window.scrollTo(0,0); lastTab=t; }
+  envBanner();
+  fillQuota();
+}
+function fillQuota(){
+  const els = $$("#quota"); if(!els.length) return;
+  if(navigator.storage && navigator.storage.estimate){
+    navigator.storage.estimate().then(q=>{
+      const used = q.usage||0, quota = q.quota||0;
+      els.forEach(e=> e.innerHTML = `이 브라우저 저장 사용량 <b>${bytes(used)}</b>${quota?` / 약 ${bytes(quota)} 사용 가능`:""}`);
+    }).catch(()=>{ els.forEach(e=> e.textContent="저장 공간 정보를 확인할 수 없습니다"); });
+  } else els.forEach(e=> e.textContent="저장 공간 정보를 확인할 수 없습니다");
+}
+function curTheme(){ return document.documentElement.getAttribute("data-theme") || ""; }
+function setTheme(v){
+  if(v) document.documentElement.setAttribute("data-theme", v);
+  else document.documentElement.removeAttribute("data-theme");
+  try{ v? localStorage.setItem(THEME_KEY, v) : localStorage.removeItem(THEME_KEY); }catch(e){}
+  render();
+}
+(function init(){
+  try{ const th = localStorage.getItem(THEME_KEY); if(th) document.documentElement.setAttribute("data-theme", th); }catch(e){}
+  load();
+  try{ localStorage.setItem("__bb_t","1"); localStorage.removeItem("__bb_t"); }
+  catch(e){ ENV.storage=false; }
+  db().then(()=>{ ENV.idb=true; }).catch(()=>{ ENV.idb=false; envBanner(); });
+  render();
+  window.addEventListener("beforeunload", saveNow);
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape" && $("#modal").innerHTML) closeSheet(); });
+  // 개발용 훅 (자동 검증에 사용)
+  window.__bb = {get S(){return S;}, set S(v){S=v;}, render, save:saveNow, battingOf, fieldingOf, zoneOf, sampleData, inn2outs, RMAP};
+})();
 </script>
 </body>
 </html>
