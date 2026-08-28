@@ -682,7 +682,7 @@ function lineChart(series, opt){
     let d="", started=false;
     ser.pts.forEach((p,i)=>{ if(p.y==null||!isFinite(p.y)){ started=false; return; }
       d += (started? " L":" M") + X(i).toFixed(1)+","+Y(p.y).toFixed(1); started=true; });
-    if(d) s += `<path d="${d.trim()}" fill="none" stroke="${col}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>`;
+    if(d) s += `<path d="${d.trim()}" fill="none" stroke="${col}" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>`;
     // 마지막 지점 강조 + 직접 라벨
     let last=-1; ser.pts.forEach((p,i)=>{ if(p.y!=null&&isFinite(p.y)) last=i; });
     if(last>=0){
