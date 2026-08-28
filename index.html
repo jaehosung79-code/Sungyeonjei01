@@ -455,6 +455,8 @@ const blank = ()=>({
 });
 let S = blank();
 let saveTimer = null;
+let saveFailed = false;      // 마지막 저장이 실패했는지
+let persistState = null;     // 영구 저장 허용 여부 (null=확인 전)
 
 function load(){
   try{
@@ -471,11 +473,20 @@ function load(){
 function save(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(()=>{
-    try{ localStorage.setItem(KEY, JSON.stringify(S)); }
-    catch(e){ toast("저장 실패: 브라우저 저장 공간이 부족합니다"); console.error(e); }
+    try{ localStorage.setItem(KEY, JSON.stringify(S)); saveFailed=false; }
+    catch(e){ saveFailed=true; toast("⚠ 저장되지 않았습니다 — 저장 공간을 확인하세요"); console.error(e); }
   }, 120);
 }
-function saveNow(){ clearTimeout(saveTimer); try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ console.error(e); } }
+function saveNow(){
+  clearTimeout(saveTimer);
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); saveFailed=false; return true; }
+  catch(e){
+    console.error(e);
+    saveFailed = true;
+    toast("⚠ 저장되지 않았습니다 — 저장 공간을 확인하세요");
+    return false;
+  }
+}
 
 /* --------------------------- IndexedDB (영상) --------------------------- */
 const DB_NAME="bb_note_media", STORE="videos";
@@ -1910,14 +1921,33 @@ function render(){
   envBanner();
   fillQuota();
 }
+/* 영구 저장 요청 — 기기 저장공간이 부족할 때 시스템이 기록·영상을
+   임의로 지우지 못하게 합니다. 홈 화면에 추가해 두면 승인될 확률이 높습니다. */
+function askPersist(){
+  if(!(navigator.storage && navigator.storage.persist)){ persistState="unsupported"; return Promise.resolve(); }
+  return navigator.storage.persisted().then(already=>{
+    if(already){ persistState=true; return; }
+    return navigator.storage.persist().then(ok=>{ persistState=!!ok; });
+  }).catch(()=>{ persistState="unsupported"; });
+}
+
 function fillQuota(){
   const els = $$("#quota"); if(!els.length) return;
+  const tag = ()=>{
+    if(persistState===true)  return `<span style="color:var(--good);font-weight:650">● 영구 저장 켜짐</span> — 시스템이 기록과 영상을 임의로 지우지 않습니다.`;
+    if(persistState===false) return `<span style="color:var(--warn);font-weight:650">● 영구 저장 꺼짐</span> — 기기 저장공간이 부족하면 영상이 지워질 수 있습니다. 홈 화면에 추가하고 몇 번 더 사용하면 자동으로 켜집니다.`;
+    return `영구 저장 상태를 확인할 수 없는 브라우저입니다.`;
+  };
+  const warn = saveFailed
+    ? `<br><span style="color:var(--crit);font-weight:650">⚠ 마지막 저장이 실패했습니다.</span> 지금 바로 JSON으로 내보내 두세요.`
+    : "";
+  const draw = txt => els.forEach(e=> e.innerHTML = txt + `<br>` + tag() + warn);
   if(navigator.storage && navigator.storage.estimate){
     navigator.storage.estimate().then(q=>{
       const used = q.usage||0, quota = q.quota||0;
-      els.forEach(e=> e.innerHTML = `이 브라우저 저장 사용량 <b>${bytes(used)}</b>${quota?` / 약 ${bytes(quota)} 사용 가능`:""}`);
-    }).catch(()=>{ els.forEach(e=> e.textContent="저장 공간 정보를 확인할 수 없습니다"); });
-  } else els.forEach(e=> e.textContent="저장 공간 정보를 확인할 수 없습니다");
+      draw(`이 기기 저장 사용량 <b>${bytes(used)}</b>${quota?` / 약 ${bytes(quota)} 사용 가능`:""}`);
+    }).catch(()=> draw("저장 공간 정보를 확인할 수 없습니다"));
+  } else draw("저장 공간 정보를 확인할 수 없습니다");
 }
 function curTheme(){ return document.documentElement.getAttribute("data-theme") || ""; }
 function setTheme(v){
@@ -1933,7 +1963,11 @@ function setTheme(v){
   catch(e){ ENV.storage=false; }
   db().then(()=>{ ENV.idb=true; }).catch(()=>{ ENV.idb=false; envBanner(); });
   render();
+  askPersist().then(fillQuota);
   window.addEventListener("beforeunload", saveNow);
+  // 모바일은 beforeunload가 안 불리는 경우가 많아 화면 이탈 시점에도 저장
+  window.addEventListener("pagehide", saveNow);
+  document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden") saveNow(); });
   document.addEventListener("keydown", e=>{ if(e.key==="Escape" && $("#modal").innerHTML) closeSheet(); });
   // 개발용 훅 (자동 검증에 사용)
   window.__bb = {get S(){return S;}, set S(v){S=v;}, render, save:saveNow, battingOf, fieldingOf, zoneOf, sampleData, inn2outs, RMAP};
