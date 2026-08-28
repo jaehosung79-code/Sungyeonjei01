@@ -633,7 +633,7 @@ function rRight(x,y,w,h,r){
 /* 차트 글자 크기 — 화면에서 카드 설명글(.card .cap, 12px)과 같게 보이도록 맞춥니다.
    SVG는 viewBox(가로 340)가 실제 표시 폭으로 확대·축소되므로,
    그 배율의 역수를 곱해 두면 어느 화면에서나 같은 크기로 보입니다. */
-const CH_W = 340, CH_BASE = 10.5, CH_TARGET = 12;   // .card .cap 과 같은 12px
+const CH_W = 340, CH_BASE = 10.5, CH_TARGET = 11;   // .card .cap 과 같은 12px
 let CFS = CH_BASE, CK = 1;
 function calcChartFont(){
   const host = document.getElementById("view");
