@@ -630,17 +630,17 @@ function rRight(x,y,w,h,r){
 }
 
 /* 꺾은선: 단일/이중 시리즈. pts = [{x, y, tip}] (y=null 허용) */
-/* 차트 글자 크기 — 화면에서 h3(14.5px)와 같은 크기로 보이도록 맞춥니다.
+/* 차트 글자 크기 — 화면에서 카드 설명글(.card .cap, 12px)과 같게 보이도록 맞춥니다.
    SVG는 viewBox(가로 340)가 실제 표시 폭으로 확대·축소되므로,
    그 배율의 역수를 곱해 두면 어느 화면에서나 같은 크기로 보입니다. */
-const CH_W = 340, CH_BASE = 10.5, CH_TARGET = 14.5;
+const CH_W = 340, CH_BASE = 10.5, CH_TARGET = 12;   // .card .cap 과 같은 12px
 let CFS = CH_BASE, CK = 1;
 function calcChartFont(){
   const host = document.getElementById("view");
   const w = host ? host.clientWidth : CH_W;
   const inner = Math.max(220, w - 30);          // 카드 좌우 패딩(14+14)과 테두리
   const cssW = Math.min(620, inner);
-  CFS = clamp(CH_TARGET * CH_W / cssW, 7.5, 22);
+  CFS = clamp(CH_TARGET * CH_W / cssW, 6, 20);
   CK = CFS / CH_BASE;
 }
 function chStyle(extra){ return `style="--cfs:${CFS.toFixed(2)}px${extra?";"+extra:""}"`; }
@@ -1962,8 +1962,8 @@ function askPersist(){
 function fillQuota(){
   const els = $$("#quota"); if(!els.length) return;
   const tag = ()=>{
-    if(persistState===true)  return `<span style="color:var(--good);font-weight:650">● 영구 저장 켜짐</span> — 시스템이 기록과 영상을 임의로 지우지 않습니다.`;
-    if(persistState===false) return `<span style="color:var(--warn);font-weight:650">● 영구 저장 꺼짐</span> — 기기 저장공간이 부족하면 영상이 지워질 수 있습니다. 홈 화면에 추가하고 몇 번 더 사용하면 자동으로 켜집니다.`;
+    if(persistState===true)  return `<span style="color:var(--good);font-weight:650">저장 켜짐</span> — 시스템이 기록과 영상을 임의로 지우지 않습니다.`;
+    if(persistState===false) return `<span style="color:var(--warn);font-weight:650">저장 꺼짐</span> — 기기 저장공간이 부족하면 영상이 지워질 수 있습니다. 홈 화면에 추가하고 몇 번 더 사용하면 자동으로 켜집니다.`;
     return `영구 저장 상태를 확인할 수 없는 브라우저입니다.`;
   };
   const warn = saveFailed
