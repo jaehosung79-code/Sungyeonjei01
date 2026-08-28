@@ -1,11 +1,11 @@
 {
-  "name": "연제 운동 체크 앱",
-  "short_name": "운동체크",
+  "name": "BaseBall DB",
+  "short_name": "BB DB",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#2a7bff",
-  "description": "연제의 운동 체크 앱",
+  "description": "BaseBall DB",
   "icons": [
     {
       "src": "icon-192.png",
