@@ -281,13 +281,13 @@ tfoot td{font-weight:650;border-top:1px solid var(--axis);border-bottom:0}
 /* ---------- charts ---------- */
 .chart{width:100%;max-width:620px;height:auto;display:block;margin:0 auto;overflow:visible;touch-action:pan-y}
 .chart text{font-family:inherit}
-.ax{font-size:10.5px;fill:var(--text-3);font-family:var(--font-ui);font-variant-numeric:tabular-nums}
+.ax{font-size:var(--cfs,10.5px);fill:var(--text-3);font-family:var(--font-ui);font-variant-numeric:tabular-nums}
 .gl{stroke:var(--grid);stroke-width:1}
 .bl{stroke:var(--axis);stroke-width:1}
 .legend{display:flex;gap:12px;flex-wrap:wrap;margin:2px 0 8px;font-size:12px;color:var(--text-2)}
 .legend i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:-1px}
 .legend i.dot{border-radius:50%}
-.dlbl{font-size:11px;font-weight:650;fill:var(--text-1);font-family:var(--font-ui);font-variant-numeric:tabular-nums}
+.dlbl{font-size:var(--cfs,10.5px);font-weight:650;fill:var(--text-1);font-family:var(--font-ui);font-variant-numeric:tabular-nums}
 .tv{margin-top:10px;border-top:1px solid var(--grid);padding-top:8px}
 #tip{
   position:fixed;z-index:80;pointer-events:none;opacity:0;transition:opacity .1s;
@@ -630,9 +630,26 @@ function rRight(x,y,w,h,r){
 }
 
 /* 꺾은선: 단일/이중 시리즈. pts = [{x, y, tip}] (y=null 허용) */
+/* 차트 글자 크기 — 화면에서 h3(14.5px)와 같은 크기로 보이도록 맞춥니다.
+   SVG는 viewBox(가로 340)가 실제 표시 폭으로 확대·축소되므로,
+   그 배율의 역수를 곱해 두면 어느 화면에서나 같은 크기로 보입니다. */
+const CH_W = 340, CH_BASE = 10.5, CH_TARGET = 14.5;
+let CFS = CH_BASE, CK = 1;
+function calcChartFont(){
+  const host = document.getElementById("view");
+  const w = host ? host.clientWidth : CH_W;
+  const inner = Math.max(220, w - 30);          // 카드 좌우 패딩(14+14)과 테두리
+  const cssW = Math.min(620, inner);
+  CFS = clamp(CH_TARGET * CH_W / cssW, 7.5, 22);
+  CK = CFS / CH_BASE;
+}
+function chStyle(extra){ return `style="--cfs:${CFS.toFixed(2)}px${extra?";"+extra:""}"`; }
+
+/* 꺾은선: 단일/이중 시리즈. pts = [{x, y, tip}] (y=null 허용) */
 function lineChart(series, opt){
   opt = opt||{};
-  const W=340, H=opt.height||160, L=38, R=18, T=12, B=26;
+  const W=CH_W, L=Math.round(38*CK), R=Math.round(18*CK), T=Math.round(12*CK), B=Math.round(26*CK);
+  const H=Math.round((opt.height||160) + (B-26) + (T-12));
   const pw=W-L-R, ph=H-T-B;
   const all = series.flatMap(s=>s.pts.map(p=>p.y)).filter(v=>v!=null && isFinite(v));
   if(!all.length) return `<div class="empty">표시할 데이터가 없습니다</div>`;
@@ -645,15 +662,17 @@ function lineChart(series, opt){
   const X = i => L + (n===1? pw/2 : pw*i/(n-1));
   const Y = v => T + ph - ph*(v-t0)/(t1-t0);
   const fm = opt.fmt || avg3;
-  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||"추이 차트")}">`;
+  const dy = CFS*0.34;
+  let s = `<svg class="chart" ${chStyle()} viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||"추이 차트")}">`;
   s += `<g>`;
   ticks.forEach(t=>{ s += `<line class="gl" x1="${L}" x2="${W-R}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/>`
-                        + `<text class="ax" x="${L-6}" y="${(Y(t)+3.5).toFixed(1)}" text-anchor="end">${fm(t)}</text>`; });
+                        + `<text class="ax" x="${L-6}" y="${(Y(t)+dy).toFixed(1)}" text-anchor="end">${fm(t)}</text>`; });
   s += `<line class="bl" x1="${L}" x2="${W-R}" y1="${T+ph}" y2="${T+ph}"/>`;
-  // x축 라벨 (최대 6개)
-  const step = Math.max(1, Math.ceil(n/6));
+  // x축 라벨 — 글자가 커진 만큼 표시 개수를 줄여 겹치지 않게 합니다
+  const maxLbl = Math.max(3, Math.floor(pw / (CFS*3.2)));
+  const step = Math.max(1, Math.ceil(n/maxLbl));
   series[0].pts.forEach((p,i)=>{ if(i%step===0 || i===n-1)
-    s += `<text class="ax" x="${X(i).toFixed(1)}" y="${H-8}" text-anchor="middle">${esc(p.x)}</text>`; });
+    s += `<text class="ax" x="${X(i).toFixed(1)}" y="${(H-B+CFS+2).toFixed(1)}" text-anchor="middle">${esc(p.x)}</text>`; });
   series.forEach((ser,si)=>{
     const col = ser.color;
     let d="", started=false;
@@ -666,7 +685,7 @@ function lineChart(series, opt){
       const lx=X(last), ly=Y(ser.pts[last].y);
       s += `<circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="4.5" fill="${col}" stroke="var(--surface-1)" stroke-width="2"/>`;
       const anchor = last===n-1? "end" : "middle";
-      s += `<text class="dlbl" x="${(lx + (anchor==="end"? 0 : 0)).toFixed(1)}" y="${(ly-10).toFixed(1)}" text-anchor="${anchor}">${fm(ser.pts[last].y)}</text>`;
+      s += `<text class="dlbl" x="${lx.toFixed(1)}" y="${(ly-CFS*0.75).toFixed(1)}" text-anchor="${anchor}">${fm(ser.pts[last].y)}</text>`;
     }
     // 히트 영역
     ser.pts.forEach((p,i)=>{ if(p.y==null||!isFinite(p.y)) return;
@@ -680,7 +699,10 @@ function lineChart(series, opt){
 function colChart(items, opt){
   opt=opt||{};
   if(!items.length) return `<div class="empty">표시할 데이터가 없습니다</div>`;
-  const W=340, H=opt.height||162, L=opt.left!=null?opt.left:34, R=12, T=opt.labelTop?20:14, B=opt.bottom||26;
+  const W=CH_W, R=Math.round(12*CK);
+  const L=Math.round((opt.left!=null?opt.left:34)*CK);
+  const T=Math.round((opt.labelTop?20:14)*CK), B=Math.round((opt.bottom||26)*CK);
+  const H=Math.round((opt.height||162) + (B-26) + (T-(opt.labelTop?20:14)));
   const pw=W-L-R, ph=H-T-B;
   const vals = items.map(d=>num(d.value,0));
   const mx = Math.max.apply(null, vals.concat([opt.minMax||1]));
@@ -690,17 +712,21 @@ function colChart(items, opt){
   const bw = Math.min(24, band*0.62);
   const Y = v => T + ph - ph*v/t1;
   const fm = opt.fmt || (v=> String(Math.round(v*100)/100));
-  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||"막대 차트")}">`;
+  const dy = CFS*0.34;
+  let s = `<svg class="chart" ${chStyle()} viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||"막대 차트")}">`;
   ticks.forEach(t=>{ s += `<line class="gl" x1="${L}" x2="${W-R}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/>`
-    + `<text class="ax" x="${L-6}" y="${(Y(t)+3.5).toFixed(1)}" text-anchor="end">${fm(t)}</text>`; });
+    + `<text class="ax" x="${L-6}" y="${(Y(t)+dy).toFixed(1)}" text-anchor="end">${fm(t)}</text>`; });
   s += `<line class="bl" x1="${L}" x2="${W-R}" y1="${T+ph}" y2="${T+ph}"/>`;
+  // 라벨이 겹칠 만큼 항목이 많으면 건너뛰며 표시
+  const lstep = Math.max(1, Math.ceil(items.length / Math.max(3, Math.floor(pw/(CFS*2.6)))));
   items.forEach((d,i)=>{
     const v=num(d.value,0), x=L+band*i+(band-bw)/2, y=Y(v), h=T+ph-y;
     const col = d.color || opt.color || "var(--s1)";
     if(v>0) s += `<path d="${rTop(x, y, bw, h, 4)}" fill="${col}"/>`;
     s += `<rect x="${(L+band*i+1).toFixed(1)}" y="${T}" width="${(band-2).toFixed(1)}" height="${ph}" fill="transparent" data-tip="${esc(d.tip||(d.label+": "+fm(v)))}"/>`;
-    s += `<text class="ax" x="${(x+bw/2).toFixed(1)}" y="${H-9}" text-anchor="middle">${esc(d.label)}</text>`;
-    if(opt.labelTop && v>0) s += `<text class="dlbl" x="${(x+bw/2).toFixed(1)}" y="${(y-5).toFixed(1)}" text-anchor="middle">${fm(v)}</text>`;
+    if(i%lstep===0 || i===items.length-1)
+      s += `<text class="ax" x="${(x+bw/2).toFixed(1)}" y="${(H-B+CFS+1).toFixed(1)}" text-anchor="middle">${esc(d.label)}</text>`;
+    if(opt.labelTop && v>0) s += `<text class="dlbl" x="${(x+bw/2).toFixed(1)}" y="${(y-CFS*0.42).toFixed(1)}" text-anchor="middle">${fm(v)}</text>`;
   });
   s += `</svg>`;
   return s;
@@ -710,20 +736,21 @@ function colChart(items, opt){
 function hbarChart(items, opt){
   opt=opt||{};
   if(!items.length) return `<div class="empty">표시할 데이터가 없습니다</div>`;
-  const W=340, rowH=opt.rowH||22, L=opt.left||64, R=34, T=4;
+  const W=CH_W, rowH=Math.round((opt.rowH||22)*CK), L=Math.round((opt.left||64)*CK), R=Math.round(34*CK), T=4;
   const H = T + items.length*rowH + 4;
   const pw = W-L-R;
   const mx = Math.max.apply(null, items.map(d=>num(d.value,0)).concat([1]));
-  const bh = Math.min(14, rowH-8);
+  const bh = Math.min(Math.round(14*CK), rowH-Math.round(8*CK));
   const fm = opt.fmt || (v=>String(v));
-  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||"막대 차트")}">`;
+  const dy = CFS*0.34;
+  let s = `<svg class="chart" ${chStyle()} viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||"막대 차트")}">`;
   items.forEach((d,i)=>{
     const v=num(d.value,0), y=T+i*rowH+(rowH-bh)/2, w=pw*v/mx;
     const col=d.color||opt.color||"var(--s1)";
-    s += `<text class="ax" x="${L-8}" y="${(y+bh/2+3.5).toFixed(1)}" text-anchor="end">${esc(d.label)}</text>`;
+    s += `<text class="ax" x="${L-8}" y="${(y+bh/2+dy).toFixed(1)}" text-anchor="end">${esc(d.label)}</text>`;
     s += `<line class="gl" x1="${L}" x2="${L+pw}" y1="${(y+bh/2).toFixed(1)}" y2="${(y+bh/2).toFixed(1)}" opacity=".45"/>`;
     if(v>0) s += `<path d="${rRight(L, y, w, bh, 4)}" fill="${col}"/>`;
-    s += `<text class="dlbl" x="${(L+w+6).toFixed(1)}" y="${(y+bh/2+3.8).toFixed(1)}">${fm(v)}</text>`;
+    s += `<text class="dlbl" x="${(L+w+6).toFixed(1)}" y="${(y+bh/2+dy).toFixed(1)}">${fm(v)}</text>`;
     s += `<rect x="${L}" y="${(T+i*rowH).toFixed(1)}" width="${pw}" height="${rowH}" fill="transparent" data-tip="${esc(d.tip||(d.label+": "+fm(v)))}"/>`;
   });
   s += `</svg>`;
@@ -1902,6 +1929,7 @@ function envBanner(){
 let lastTab = null;
 function render(){
   const v = $("#view");
+  calcChartFont();
   const t = S.ui.tab;
   const html = (t==="games" && S.ui.gameId)? viewGame(S.ui.gameId)
     : t==="games"? viewGames()
@@ -1962,12 +1990,27 @@ function setTheme(v){
   try{ localStorage.setItem("__bb_t","1"); localStorage.removeItem("__bb_t"); }
   catch(e){ ENV.storage=false; }
   db().then(()=>{ ENV.idb=true; }).catch(()=>{ ENV.idb=false; envBanner(); });
+  // 앱은 언제나 홈 화면에서 시작합니다 (마지막에 보던 탭을 복원하지 않음)
+  S.ui.tab = "home"; S.ui.gameId = null;
   render();
   askPersist().then(fillQuota);
   window.addEventListener("beforeunload", saveNow);
+
+  // 화면 회전·창 크기 변경 시 차트 글자 크기를 다시 맞춥니다
+  let rsTimer = null;
+  window.addEventListener("resize", ()=>{
+    clearTimeout(rsTimer);
+    rsTimer = setTimeout(()=>{ const before = CFS; calcChartFont();
+      if(Math.abs(before-CFS) > 0.2) render(); }, 200);
+  });
   // 모바일은 beforeunload가 안 불리는 경우가 많아 화면 이탈 시점에도 저장
   window.addEventListener("pagehide", saveNow);
-  document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden") saveNow(); });
+  document.addEventListener("visibilitychange", ()=>{
+    if(document.visibilityState==="hidden"){ saveNow(); return; }
+    // 앱으로 돌아왔을 때 홈 화면으로. 단 입력 중(시트가 열려 있음)이면 그대로 둡니다.
+    if($("#modal").innerHTML) return;
+    if(S.ui.tab!=="home" || S.ui.gameId){ S.ui.tab="home"; S.ui.gameId=null; saveNow(); render(); }
+  });
   document.addEventListener("keydown", e=>{ if(e.key==="Escape" && $("#modal").innerHTML) closeSheet(); });
   // 개발용 훅 (자동 검증에 사용)
   window.__bb = {get S(){return S;}, set S(v){S=v;}, render, save:saveNow, battingOf, fieldingOf, zoneOf, sampleData, inn2outs, RMAP};
