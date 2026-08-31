@@ -276,6 +276,7 @@ select{outline:none;-webkit-appearance:none;appearance:none;background-image:lin
 .badge.ob{background:color-mix(in srgb,var(--s3) 16%,transparent);color:var(--s3)}
 .badge.out{background:var(--surface-2);color:var(--text-3)}
 .badge.prac{background:color-mix(in srgb,var(--s2) 15%,transparent);color:var(--s2)}
+.badge.off{background:#0C4A60;color:#fff}
 details.dtl{border:1px solid var(--border);border-radius:12px;background:var(--surface-1);padding:0 12px;margin-bottom:12px}
 details.dtl > summary{cursor:pointer;padding:12px 0;font-size:13px;font-weight:600;color:var(--text-2);list-style:none}
 details.dtl > summary::-webkit-details-marker{display:none}
@@ -961,7 +962,7 @@ function filterRow(){
   return `<div class="filters">${yseg}${tseg}</div>`;
 }
 function typeBadge(g){
-  return gameType(g)==="practice"? `<span class="badge prac">연습</span>` : `<span class="badge">정식</span>`;
+  return gameType(g)==="practice"? `<span class="badge prac">연습</span>` : `<span class="badge off">정식</span>`;
 }
 function tile(lb, v, sub){
   return `<div class="tile"><div class="lb">${esc(lb)}</div><div class="v">${v}${sub?`<small>${sub}</small>`:""}</div></div>`;
