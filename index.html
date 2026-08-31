@@ -1921,7 +1921,7 @@ function readGameSheet(){
 }
 document.addEventListener("click", ev=>{
   const nav = ev.target.closest("nav.tabs button");
-  if(nav){ S.ui.tab = nav.dataset.nav; S.ui.gameId = null; save(); render(); return; }
+  if(nav){ navGo(nav.dataset.nav, null); save(); render(); return; }
 
   const tg = ev.target.closest("[data-toggle]");
   if(tg){ const box=document.getElementById(tg.dataset.toggle);
@@ -1936,7 +1936,7 @@ document.addEventListener("click", ev=>{
 
   switch(a){
     case "close": closeSheet(); break;
-    case "nav": S.ui.tab=v; S.ui.gameId=null; save(); render(); break;
+    case "nav": navGo(v, null); save(); render(); break;
     case "year": S.ui.year=v; save(); render(); break;
     case "gtype": S.ui.gtype=v; save(); render(); break;
     case "pickGType": {
@@ -1954,7 +1954,7 @@ document.addEventListener("click", ev=>{
     case "saveGame": {
       const d = readGameSheet();
       if(id){ const g=S.games.find(x=>x.id===id); Object.assign(g,d); }
-      else { const g=Object.assign({id:uid(), pas:[], def:[], videos:[]}, d); S.games.push(g); S.ui.tab="games"; S.ui.gameId=g.id; }
+      else { const g=Object.assign({id:uid(), pas:[], def:[], videos:[]}, d); S.games.push(g); navGo("games", g.id); }
       saveNow(); closeSheet(); render(); toast("저장했습니다"); break; }
     case "delGame":
       ask("경기 삭제","이 경기의 타석·수비·영상 기록이 모두 삭제됩니다. 되돌릴 수 없습니다.",
@@ -1962,10 +1962,10 @@ document.addEventListener("click", ev=>{
         if(k!==0) return;
         const g=S.games.find(x=>x.id===id);
         (g.videos||[]).filter(x=>x.kind==="file").forEach(x=> idbDel(x.id).catch(()=>{}));
-        S.games = S.games.filter(x=>x.id!==id); S.ui.gameId=null; S.ui.tab="games";
+        S.games = S.games.filter(x=>x.id!==id); S.ui.gameId=null; S.ui.tab="games"; navReset();
         saveNow(); render(); toast("삭제했습니다");
       }); break;
-    case "openGame": S.ui.tab="games"; S.ui.gameId=id; save(); render(); break;
+    case "openGame": navGo("games", id); save(); render(); break;
 
     case "newPA": paSheet(gid, null); break;
     case "editPA": paSheet(gid, id); break;
@@ -2128,37 +2128,89 @@ function saveVideo(gid, btn){
 }
 
 /* --------------------- 뒤로(되돌아가기) 버튼 처리 ---------------------
-   한 번 누르면 홈으로, 홈에서 두 번 연속 누르면 앱을 나갑니다.
-   (시트가 열려 있으면 먼저 시트를 닫습니다)
+   한 번 누르면 바로 앞 화면으로, 홈 화면에서 두 번 연속 누르면 앱을 나갑니다.
+   (시트·팝업이 열려 있으면 그것부터 닫습니다)
+   file:// 로 열었을 때처럼 pushState 를 쓸 수 없는 환경에서는 주소 뒤
+   해시(#p)로 대신 기록해 두어, 어떤 기기에서도 한 번에 나가지 않게 합니다.
    -------------------------------------------------------------------- */
-let backArmed = 0;
-function pushBackState(){ try{ history.pushState({bb:"app"}, ""); }catch(e){} }
+const BB_HASH = "#p";
+let backMode  = "state";   // "state" | "hash"
+let backArmed = 0;         // 홈에서 뒤로를 한 번 누른 시각
+let backTimer = null;
+let bbSelfHash = false;    // 우리가 직접 바꾼 해시인지 구분
+let bbLastEvt = 0;         // popstate/hashchange 중복 처리 방지
+
+/* 화면 이동 기록 — 뒤로를 누르면 "전 단계" 화면으로 돌아갑니다 */
+const navStack = [];
+function navGo(tab, gameId){
+  const g = gameId || null;
+  if(S.ui.tab===tab && (S.ui.gameId||null)===g) return;
+  navStack.push({tab:S.ui.tab, gameId:S.ui.gameId||null});
+  if(navStack.length > 40) navStack.shift();
+  S.ui.tab = tab; S.ui.gameId = g;
+}
+function navReset(){ navStack.length = 0; }
+
+function pushBackState(){
+  if(backMode==="state"){
+    try{ history.pushState({bb:"app"}, ""); return; }catch(e){ backMode = "hash"; }
+  }
+  try{ if(location.hash !== BB_HASH){ bbSelfHash = true; location.hash = BB_HASH; } }catch(e){}
+}
+function armExit(){
+  backArmed = Date.now();
+  toast("한 번 더 누르면 앱을 나갑니다");
+  clearTimeout(backTimer);
+  // 2초 안에 다시 누르지 않으면 다시 안전한 상태로 되돌립니다
+  backTimer = setTimeout(()=>{ backArmed = 0; pushBackState(); }, 2000);
+}
+function backSafe(){ backArmed = 0; clearTimeout(backTimer); pushBackState(); }
+
+function onBackPressed(){
+  // 1) 열려 있는 시트/모달 먼저 닫기
+  const m = $("#modal");
+  if(m && m.innerHTML){ closeSheet(); backSafe(); return; }
+  // 2) 바로 앞(전 단계) 화면으로
+  if(navStack.length){
+    const p = navStack.pop();
+    S.ui.tab = p.tab; S.ui.gameId = p.gameId; save(); render();
+    backSafe(); return;
+  }
+  // 3) 이동 기록이 없는데 홈이 아니면 홈으로
+  if(S.ui.gameId || S.ui.tab!=="home"){
+    S.ui.gameId = null; S.ui.tab = "home"; save(); render();
+    backSafe(); return;
+  }
+  // 4) 홈에서 첫 번째 — 안내만 하고 기록을 다시 쌓지 않습니다.
+  //    그래서 2초 안에 한 번 더 누르면 시스템이 그대로 앱을 종료합니다.
+  saveNow();
+  if(Date.now() - backArmed < 2000){ backArmed = 0; return; }
+  armExit();
+}
+function handleBack(){
+  const now = Date.now();
+  if(now - bbLastEvt < 120) return;   // popstate + hashchange 중복 방지
+  bbLastEvt = now;
+  onBackPressed();
+}
 function initBackButton(){
-  if(!window.history || !history.pushState) return;
-  try{ history.replaceState({bb:"root"}, ""); }catch(e){}
-  pushBackState();
-  window.addEventListener("popstate", ()=>{
-    // 1) 열려 있는 시트/모달 먼저 닫기
-    const m = $("#modal");
-    if(m && m.innerHTML){ closeSheet(); pushBackState(); return; }
-    // 2) 홈이 아니면 홈으로
-    if(S.ui.gameId || S.ui.tab!=="home"){
-      S.ui.gameId = null; S.ui.tab = "home"; save(); render();
-      backArmed = 0; pushBackState(); return;
-    }
-    // 3) 홈에서 두 번 연속(2초 이내) 누르면 나가기
-    const now = Date.now();
-    if(now - backArmed < 2000){
-      saveNow();
-      try{ window.close(); }catch(e){}
-      try{ history.back(); }catch(e){}
-      // 나가지 못한 경우(이전 페이지가 없을 때)에는 앱을 계속 쓸 수 있도록 되돌립니다
-      setTimeout(()=>{ backArmed = 0; pushBackState(); }, 600);
-      return;
-    }
-    backArmed = now;
-    toast("한 번 더 누르면 앱을 나갑니다");
-    pushBackState();
+  if(!window.history) return;
+  // pushState 가 실제로 되는 환경인지 확인합니다 (file:// 등에서는 막혀 있습니다)
+  try{
+    history.replaceState({bb:"root"}, "");
+    history.pushState({bb:"app"}, "");
+    backMode = (history.state && history.state.bb==="app") ? "state" : "hash";
+  }catch(e){ backMode = "hash"; }
+  if(backMode==="hash"){
+    // 페이지가 다 뜨기 전에 해시를 바꾸면 기록이 "추가"되지 않고 "덮어쓰기" 되므로
+    // 로드가 끝난 뒤에 한 칸 쌓아 둡니다
+    if(document.readyState==="complete") setTimeout(pushBackState, 0);
+    else window.addEventListener("load", ()=> setTimeout(pushBackState, 0), {once:true});
+  }
+  window.addEventListener("popstate", handleBack);
+  window.addEventListener("hashchange", ()=>{
+    if(bbSelfHash){ bbSelfHash = false; return; }
+    handleBack();
   });
 }
 
@@ -2262,11 +2314,11 @@ function setTheme(v){
     if(document.visibilityState==="hidden"){ saveNow(); return; }
     // 앱으로 돌아왔을 때 홈 화면으로. 단 입력 중(시트가 열려 있음)이면 그대로 둡니다.
     if($("#modal").innerHTML) return;
-    if(S.ui.tab!=="home" || S.ui.gameId){ S.ui.tab="home"; S.ui.gameId=null; saveNow(); render(); }
+    if(S.ui.tab!=="home" || S.ui.gameId){ S.ui.tab="home"; S.ui.gameId=null; navReset(); saveNow(); render(); }
   });
   document.addEventListener("keydown", e=>{ if(e.key==="Escape" && $("#modal").innerHTML) closeSheet(); });
   // 개발용 훅 (자동 검증에 사용)
-  window.__bb = {get S(){return S;}, set S(v){S=v;}, render, save:saveNow, battingOf, fieldingOf, zoneOf, sampleData, inn2outs, RMAP};
+  window.__bb = {get S(){return S;}, set S(v){S=v;}, get backMode(){return backMode;}, navStack, render, save:saveNow, battingOf, fieldingOf, zoneOf, sampleData, inn2outs, RMAP};
 })();
 </script>
 </body>
