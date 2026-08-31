@@ -2239,9 +2239,10 @@ function setTheme(v){
   try{ localStorage.setItem("__bb_t","1"); localStorage.removeItem("__bb_t"); }
   catch(e){ ENV.storage=false; }
   db().then(()=>{ ENV.idb=true; }).catch(()=>{ ENV.idb=false; envBanner(); });
-  // 앱은 언제나 홈 화면 · 전체 보기로 시작합니다 (마지막에 보던 탭·필터를 복원하지 않음)
+  // 앱은 언제나 홈 화면에서, 경기 종류는 "전체"로 시작합니다
+  // (시즌 선택은 마지막에 보던 것을 그대로 유지합니다)
   S.ui.tab = "home"; S.ui.gameId = null;
-  S.ui.gtype = "all"; S.ui.year = "all";
+  S.ui.gtype = "all";
   render();
   askPersist().then(fillQuota);
   initBackButton();
