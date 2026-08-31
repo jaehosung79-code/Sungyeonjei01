@@ -2128,17 +2128,23 @@ function saveVideo(gid, btn){
 }
 
 /* --------------------- 뒤로(되돌아가기) 버튼 처리 ---------------------
-   한 번 누르면 바로 앞 화면으로, 홈 화면에서 두 번 연속 누르면 앱을 나갑니다.
+   한 번 누르면 바로 앞 화면으로, 홈 화면에서 한 번 더 누르면 앱을 나갑니다.
    (시트·팝업이 열려 있으면 그것부터 닫습니다)
-   file:// 로 열었을 때처럼 pushState 를 쓸 수 없는 환경에서는 주소 뒤
-   해시(#p)로 대신 기록해 두어, 어떤 기기에서도 한 번에 나가지 않게 합니다.
+
+   ★ 중요 — 웹앱(홈 화면에 설치)에서 한 번에 종료되던 원인
+   크롬은 "사용자가 손대지 않은 사이에 페이지가 몰래 쌓아 둔 방문 기록"을
+   뒤로가기에서 그냥 건너뜁니다(history manipulation intervention).
+   그래서 앱이 열릴 때 미리 쌓아 두면 설치형 웹앱에서는 무시되고 바로 종료됩니다.
+   → 화면을 터치·클릭하는 그 순간에 예비 기록을 쌓아 두는 방식으로 바꿨습니다.
    -------------------------------------------------------------------- */
-const BB_HASH = "#p";
-let backMode  = "state";   // "state" | "hash"
-let backArmed = 0;         // 홈에서 뒤로를 한 번 누른 시각
-let backTimer = null;
-let bbSelfHash = false;    // 우리가 직접 바꾼 해시인지 구분
-let bbLastEvt = 0;         // popstate/hashchange 중복 처리 방지
+const BB_HASH  = "#p";
+const BB_GUARD = 5;        // 미리 쌓아 둘 예비 기록 수
+let backMode   = "state";  // "state"(pushState) | "hash"(file:// 등 대체 수단)
+let guard      = 0;        // 지금 쌓여 있는 예비 기록 수 (0 = 뒤로 누르면 종료)
+let backArmed  = 0;        // 홈에서 "한 번 더" 안내를 띄운 시각
+let bbSelf     = 0;        // 우리가 직접 바꾼 해시 수
+let bbLastEvt  = 0;        // popstate/hashchange 중복 처리 방지
+let bbSkip     = false;    // 우리가 부른 history.go() 무시용
 
 /* 화면 이동 기록 — 뒤로를 누르면 "전 단계" 화면으로 돌아갑니다 */
 const navStack = [];
@@ -2151,66 +2157,86 @@ function navGo(tab, gameId){
 }
 function navReset(){ navStack.length = 0; }
 
-function pushBackState(){
+/* 예비 기록 한 칸 쌓기 — 반드시 사용자의 터치/클릭 도중에만 부릅니다 */
+function bbPush(){
+  const n = guard + 1;
   if(backMode==="state"){
-    try{ history.pushState({bb:"app"}, ""); return; }catch(e){ backMode = "hash"; }
+    try{ history.pushState({bb:n}, ""); guard = n; return true; }
+    catch(e){ backMode = "hash"; }
   }
-  try{ if(location.hash !== BB_HASH){ bbSelfHash = true; location.hash = BB_HASH; } }catch(e){}
+  try{ bbSelf++; location.hash = BB_HASH + n; guard = n; return true; }
+  catch(e){ bbSelf = Math.max(0, bbSelf-1); return false; }
 }
-function armExit(){
-  backArmed = Date.now();
-  toast("한 번 더 누르면 앱을 나갑니다");
-  clearTimeout(backTimer);
-  // 2초 안에 다시 누르지 않으면 다시 안전한 상태로 되돌립니다
-  backTimer = setTimeout(()=>{ backArmed = 0; pushBackState(); }, 2000);
+function topUpGuard(){
+  if(!window.history) return;
+  let n = 0;
+  while(guard < BB_GUARD && n++ < BB_GUARD){ if(!bbPush()) break; }
 }
-function backSafe(){ backArmed = 0; clearTimeout(backTimer); pushBackState(); }
+/* 현재 방문 기록 위치(0 = 앱의 첫 화면 기록) */
+function bbIndex(e){
+  if(backMode==="state"){
+    const s = e && e.state;
+    return (s && typeof s.bb==="number") ? s.bb : 0;
+  }
+  const m = /^#p(\d+)$/.exec(location.hash||"");
+  return m ? +m[1] : 0;
+}
+/* 남은 예비 기록을 모두 비웁니다 → 다음 뒤로가기는 시스템이 앱을 종료 */
+function bbDrain(){
+  if(guard <= 0){ guard = 0; return; }
+  const n = guard; guard = 0; bbSkip = true;
+  try{ history.go(-n); }catch(e){ bbSkip = false; }
+  setTimeout(()=>{ bbSkip = false; }, 800);
+}
 
 function onBackPressed(){
   // 1) 열려 있는 시트/모달 먼저 닫기
   const m = $("#modal");
-  if(m && m.innerHTML){ closeSheet(); backSafe(); return; }
+  if(m && m.innerHTML){ closeSheet(); backArmed = 0; return; }
   // 2) 바로 앞(전 단계) 화면으로
   if(navStack.length){
     const p = navStack.pop();
     S.ui.tab = p.tab; S.ui.gameId = p.gameId; save(); render();
-    backSafe(); return;
+    backArmed = 0; return;
   }
   // 3) 이동 기록이 없는데 홈이 아니면 홈으로
   if(S.ui.gameId || S.ui.tab!=="home"){
     S.ui.gameId = null; S.ui.tab = "home"; save(); render();
-    backSafe(); return;
+    backArmed = 0; return;
   }
-  // 4) 홈에서 첫 번째 — 안내만 하고 기록을 다시 쌓지 않습니다.
-  //    그래서 2초 안에 한 번 더 누르면 시스템이 그대로 앱을 종료합니다.
+  // 4) 홈 — 안내를 띄우고 예비 기록을 비웁니다.
+  //    한 번 더 누르면 시스템이 그대로 앱을 종료합니다.
+  //    (화면을 다시 만지면 예비 기록이 다시 쌓여 안전해집니다)
   saveNow();
-  if(Date.now() - backArmed < 2000){ backArmed = 0; return; }
-  armExit();
+  if(Date.now() - backArmed > 1200){
+    backArmed = Date.now();
+    toast("한 번 더 누르면 앱을 나갑니다");
+  }
+  bbDrain();
 }
-function handleBack(){
+function handleBack(e){
+  const ni = bbIndex(e);
+  const goingBack = ni < guard;
+  guard = ni;
+  if(bbSkip){ bbSkip = false; return; }   // 우리가 부른 history.go()
+  if(!goingBack) return;                  // 앞으로 가기는 그대로 둡니다
   const now = Date.now();
-  if(now - bbLastEvt < 120) return;   // popstate + hashchange 중복 방지
+  if(now - bbLastEvt < 120) return;       // popstate + hashchange 중복 방지
   bbLastEvt = now;
   onBackPressed();
 }
 function initBackButton(){
   if(!window.history) return;
-  // pushState 가 실제로 되는 환경인지 확인합니다 (file:// 등에서는 막혀 있습니다)
-  try{
-    history.replaceState({bb:"root"}, "");
-    history.pushState({bb:"app"}, "");
-    backMode = (history.state && history.state.bb==="app") ? "state" : "hash";
-  }catch(e){ backMode = "hash"; }
-  if(backMode==="hash"){
-    // 페이지가 다 뜨기 전에 해시를 바꾸면 기록이 "추가"되지 않고 "덮어쓰기" 되므로
-    // 로드가 끝난 뒤에 한 칸 쌓아 둡니다
-    if(document.readyState==="complete") setTimeout(pushBackState, 0);
-    else window.addEventListener("load", ()=> setTimeout(pushBackState, 0), {once:true});
-  }
+  if(!history.pushState) backMode = "hash";
+  // 앱이 열릴 때는 아무것도 쌓지 않습니다(크롬이 건너뛰기 때문).
+  // 사용자가 화면을 처음 만지는 순간 예비 기록을 쌓습니다.
+  ["pointerdown","touchstart","mousedown","keydown"].forEach(t=>{
+    window.addEventListener(t, topUpGuard, {capture:true, passive:true});
+  });
   window.addEventListener("popstate", handleBack);
-  window.addEventListener("hashchange", ()=>{
-    if(bbSelfHash){ bbSelfHash = false; return; }
-    handleBack();
+  window.addEventListener("hashchange", e=>{
+    if(bbSelf > 0){ bbSelf--; return; }
+    handleBack(e);
   });
 }
 
@@ -2318,7 +2344,7 @@ function setTheme(v){
   });
   document.addEventListener("keydown", e=>{ if(e.key==="Escape" && $("#modal").innerHTML) closeSheet(); });
   // 개발용 훅 (자동 검증에 사용)
-  window.__bb = {get S(){return S;}, set S(v){S=v;}, get backMode(){return backMode;}, navStack, render, save:saveNow, battingOf, fieldingOf, zoneOf, sampleData, inn2outs, RMAP};
+  window.__bb = {get S(){return S;}, set S(v){S=v;}, get backMode(){return backMode;}, get guard(){return guard;}, navStack, render, save:saveNow, battingOf, fieldingOf, zoneOf, sampleData, inn2outs, RMAP};
 })();
 </script>
 </body>
