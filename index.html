@@ -1232,9 +1232,9 @@ function viewStats(){
 }
 
 /* ------------------------------- 영상 ------------------------------- */
-function videoCard(v, g){
+function videoCard(v, g, lite){
   const sub = [];
-  if(v.kind==="file") sub.push(bytes(v.size)+" · 이 기기에 저장");
+  if(v.kind==="file") sub.push(lite? bytes(v.size) : bytes(v.size)+" · 이 기기에 저장");
   else sub.push("링크");
   const lt = videoLinkText(v, g);
   if(lt) sub.push(lt);
@@ -1244,8 +1244,8 @@ function videoCard(v, g){
         <span class="tx">${esc(v.title||v.name||"영상")}</span>
       </button>
       ${v.kind==="link"?`<button class="iconbtn sm" data-act="openVideo" data-gid="${g.id}" data-id="${v.id}" title="새 창에서 열기" aria-label="새 창에서 열기">↗</button>`:""}
-      <button class="iconbtn sm" data-act="editVideo" data-gid="${g.id}" data-id="${v.id}" title="영상 정보 수정" aria-label="영상 정보 수정">${ICON_EDIT}</button>
-      ${delBtn("delVideo", `data-gid="${g.id}" data-id="${v.id}"`, "영상 삭제")}
+      ${lite? "" : `<button class="iconbtn sm" data-act="editVideo" data-gid="${g.id}" data-id="${v.id}" title="영상 정보 수정" aria-label="영상 정보 수정">${ICON_EDIT}</button>
+      ${delBtn("delVideo", `data-gid="${g.id}" data-id="${v.id}"`, "영상 삭제")}`}
     </div>
     <div class="hint">${esc(sub.join(" · "))}${v.note?" — "+esc(v.note):""}</div>
     <div class="player" style="margin-top:8px"></div>
@@ -1271,7 +1271,7 @@ function viewVideos(){
           <span class="chev" aria-hidden="true">▼</span>
         </button>
         <div class="vlist" ${open?"":"hidden"}>
-          ${g.videos.map(v=>videoCard(v,g)).join("")}
+          ${g.videos.map(v=>videoCard(v,g,true)).join("")}
           <div class="btnrow" style="margin-top:4px">
             <button class="btn sm" data-act="openGame" data-id="${g.id}">경기 기록 보기</button>
             <button class="btn sm pri nb" data-act="newVideo" data-gid="${g.id}">+ 영상 추가</button>
