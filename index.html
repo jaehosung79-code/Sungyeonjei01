@@ -177,6 +177,12 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
   cursor:pointer;color:var(--text-2);white-space:nowrap;min-height:34px;
 }
 .seg button[aria-pressed="true"]{background:var(--surface-1);color:var(--text-1);font-weight:650;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+/* 배경·테두리 없는 필터 — 선택 표시는 아래 네비게이션 바와 같은 방식(색 + 굵기) */
+.seg{min-width:0;flex:0 1 auto}
+.seg.plain{background:none;padding:0;gap:16px;border-radius:0;flex:0 0 auto;overflow:visible}
+.seg.plain button{padding:6px 0;border-radius:0;font-size:12.5px;color:var(--text-3);font-weight:500}
+.seg.plain button[aria-pressed="true"]{background:none;box-shadow:none;color:var(--accent-ink);font-weight:650}
+.filters .right{margin-left:auto}
 
 /* ---------- buttons / forms ---------- */
 .btn{
@@ -948,7 +954,7 @@ function filterRow(){
     + items.map(([v,l])=>`<button data-act="year" data-v="${v}" aria-pressed="${S.ui.year===v}">${l}</button>`).join("")
     + `</div>` : "";
   const cur = S.ui.gtype||"all";
-  const tseg = `<div class="seg" role="group" aria-label="경기 종류 선택">`
+  const tseg = `<div class="seg plain right" role="group" aria-label="경기 종류 선택">`
     + [["all","전체"],["official","정식경기"],["practice","연습경기"]]
         .map(([v,l])=>`<button data-act="gtype" data-v="${v}" aria-pressed="${cur===v}">${l}</button>`).join("")
     + `</div>`;
@@ -2233,8 +2239,9 @@ function setTheme(v){
   try{ localStorage.setItem("__bb_t","1"); localStorage.removeItem("__bb_t"); }
   catch(e){ ENV.storage=false; }
   db().then(()=>{ ENV.idb=true; }).catch(()=>{ ENV.idb=false; envBanner(); });
-  // 앱은 언제나 홈 화면에서 시작합니다 (마지막에 보던 탭을 복원하지 않음)
+  // 앱은 언제나 홈 화면 · 전체 보기로 시작합니다 (마지막에 보던 탭·필터를 복원하지 않음)
   S.ui.tab = "home"; S.ui.gameId = null;
+  S.ui.gtype = "all"; S.ui.year = "all";
   render();
   askPersist().then(fillQuota);
   initBackButton();
