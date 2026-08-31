@@ -1,7 +1,7 @@
 {
-  "name": "야구 기록 노트",
-  "short_name": "야구노트",
-  "description": "타석·수비 기록과 경기 영상을 남기고 차트로 분석하는 야구 노트",
+  "name": "YJ BaseBall Note ",
+  "short_name": "YJ BaseBall ",
+  "description": "연제의 타석·수비 기록과 경기 영상을 남기고 차트로 분석하는 야구 노트",
   "lang": "ko",
   "start_url": "./",
   "scope": "./",
