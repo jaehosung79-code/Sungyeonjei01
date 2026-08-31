@@ -8,20 +8,6 @@
 <meta name="theme-color" content="#f9f9f7">
 <meta name="description" content="야구 경기 기록·분석 노트 — 타석별 상세 기록, 수비 기록, 차트 분석, 경기 영상 보관">
 <title>야구 기록 노트</title>
-<link rel="manifest" href="./manifest.json">
-<link rel="icon" href="./icon-192.png">
-<link rel="apple-touch-icon" href="./icon-192.png">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="야구노트">
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () {
-      navigator.serviceWorker.register('./sw.js')
-        .then(function (reg) { console.log('SW 등록 완료', reg.scope); })
-        .catch(function (err) { console.warn('SW 등록 실패', err); });
-    });
-  }
-</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
@@ -34,9 +20,6 @@
   --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
   --neutral:#898781;
   --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
-  --btn:#A3C6C4; --btn-ink:#0b0b0b; --btn-ring:#7fa9a7;
-  --chart:#D96846;
-  --accent-ink:#3f6b69;
   --field:#eef3ea; --dirt:#f3e7d6; --fieldline:#c9d3c1;
   --shadow:0 1px 2px rgba(11,11,11,.05), 0 6px 20px rgba(11,11,11,.05);
   --r:14px; --r-sm:10px;
@@ -51,8 +34,7 @@
     --text-1:#ffffff; --text-2:#c3c2b7; --text-3:#898781;
     --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
     --s1:#3987e5; --s2:#d95926; --s3:#199e70;
-    --neutral:#898781; --accent-ink:#A3C6C4;
-    --chart:#D96846;
+    --neutral:#898781;
     --field:#18211a; --dirt:#26201a; --fieldline:#2f3a30;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
   }
@@ -63,13 +45,13 @@
   --text-1:#ffffff; --text-2:#c3c2b7; --text-3:#898781;
   --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
   --s1:#3987e5; --s2:#d95926; --s3:#199e70;
-  --neutral:#898781; --accent-ink:#A3C6C4;
-  --chart:#D96846;
+  --neutral:#898781;
   --field:#18211a; --dirt:#26201a; --fieldline:#2f3a30;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
 }
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
 html,body{margin:0;padding:0}
 body{
   background:var(--surface-0); color:var(--text-1);
@@ -110,11 +92,6 @@ a{color:var(--s1)}
   font-size:16px; line-height:1;
 }
 .iconbtn:active{background:var(--surface-2)}
-.iconbtn svg{display:block}
-.iconbtn.del{color:var(--crit);border:0;background:none;flex:0 0 auto}
-.iconbtn.del:active{background:none;opacity:.55}
-.iconbtn.sm{width:34px;height:34px;border-radius:10px}
-.iconbtn.on{background:var(--btn);border-color:var(--btn-ring);color:var(--btn-ink)}
 
 .wrap{max-width:1080px;margin:0 auto;padding:14px 14px 24px}
 @media(min-width:820px){ .wrap{padding:20px} }
@@ -125,16 +102,16 @@ nav.tabs{
   background:color-mix(in srgb, var(--surface-1) 92%, transparent);
   backdrop-filter:saturate(180%) blur(14px);
   border-top:1px solid var(--border);
-  display:grid;grid-template-columns:repeat(4,1fr);
+  display:grid;grid-template-columns:repeat(5,1fr);
   padding-bottom:env(safe-area-inset-bottom);
 }
 nav.tabs button{
   background:none;border:0;padding:8px 2px 9px;cursor:pointer;
   display:flex;flex-direction:column;align-items:center;gap:3px;
-  color:var(--text-3);font-size:12px;min-height:var(--nav-h);justify-content:center;
+  color:var(--text-3);font-size:11px;min-height:var(--nav-h);justify-content:center;
 }
 nav.tabs button .ic{font-size:19px;line-height:1}
-nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
+nav.tabs button[aria-current="page"]{color:var(--s1);font-weight:650}
 
 /* ---------- cards ---------- */
 .card{
@@ -153,7 +130,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
   padding:16px 16px 14px;margin-bottom:12px;box-shadow:var(--shadow);
 }
 .hero .lb{font-size:12.5px;color:var(--text-2)}
-.hero .fig{font-size:52px;font-weight:680;letter-spacing:-.03em;line-height:1.02;margin:2px 0 4px;color:#E2495B}
+.hero .fig{font-size:52px;font-weight:680;letter-spacing:-.03em;line-height:1.02;margin:2px 0 4px}
 .hero .meta{font-size:12.5px;color:var(--text-3)}
 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 @media(min-width:560px){ .tiles{grid-template-columns:repeat(6,1fr)} }
@@ -184,11 +161,9 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
   min-height:44px; display:inline-flex;align-items:center;justify-content:center;gap:6px;
 }
 .btn:active{background:var(--surface-2)}
-.btn.pri{background:rgba(255,255,255,.10);border-color:var(--btn-ring);color:#a52a2a;font-weight:500}
-.btn.pri:active{filter:brightness(.93)}
-.btn.nb{border-color:transparent}
+.btn.pri{background:var(--s1);border-color:var(--s1);color:#fff}
 .btn.dan{color:var(--crit);border-color:color-mix(in srgb,var(--crit) 35%,transparent)}
-.btn.sm{padding:6px 10px;min-height:34px;font-size:12px;border-radius:10px;font-weight:500}
+.btn.sm{padding:6px 10px;min-height:34px;font-size:12.5px;border-radius:10px;font-weight:500}
 .btn.block{width:100%}
 .btnrow{display:flex;gap:8px;flex-wrap:wrap}
 
@@ -218,6 +193,9 @@ select{outline:none;-webkit-appearance:none;appearance:none;background-image:lin
 .chip.g-hit[aria-pressed="true"]{background:var(--s1);border-color:var(--s1)}
 .chip.g-onbase[aria-pressed="true"]{background:var(--s3);border-color:var(--s3)}
 .chip.g-out[aria-pressed="true"]{background:var(--neutral);border-color:var(--neutral);color:var(--surface-1)}
+.chip.g-dout[aria-pressed="true"]{background:var(--s3);border-color:var(--s3);color:#fff}
+.chip.g-derr[aria-pressed="true"]{background:var(--crit);border-color:var(--crit);color:#fff}
+.chip.g-detc[aria-pressed="true"]{background:var(--neutral);border-color:var(--neutral);color:var(--surface-1)}
 .chipgroup{margin-bottom:10px}
 .chipgroup > .gl{font-size:11.5px;color:var(--text-3);margin-bottom:5px;font-weight:600;letter-spacing:.02em}
 
@@ -265,6 +243,13 @@ select{outline:none;-webkit-appearance:none;appearance:none;background-image:lin
 .badge.hit{background:color-mix(in srgb,var(--s1) 15%,transparent);color:var(--s1)}
 .badge.ob{background:color-mix(in srgb,var(--s3) 16%,transparent);color:var(--s3)}
 .badge.out{background:var(--surface-2);color:var(--text-3)}
+.badge.prac{background:color-mix(in srgb,var(--s2) 15%,transparent);color:var(--s2)}
+details.dtl{border:1px solid var(--border);border-radius:12px;background:var(--surface-1);padding:0 12px;margin-bottom:12px}
+details.dtl > summary{cursor:pointer;padding:12px 0;font-size:13px;font-weight:600;color:var(--text-2);list-style:none}
+details.dtl > summary::-webkit-details-marker{display:none}
+details.dtl > summary::before{content:"▸ ";color:var(--text-3)}
+details.dtl[open] > summary::before{content:"▾ "}
+details.dtl > .dtlbody{padding-bottom:4px}
 
 .empty{
   text-align:center;padding:34px 18px;color:var(--text-3);font-size:13.5px;
@@ -285,13 +270,13 @@ tfoot td{font-weight:650;border-top:1px solid var(--axis);border-bottom:0}
 /* ---------- charts ---------- */
 .chart{width:100%;max-width:620px;height:auto;display:block;margin:0 auto;overflow:visible;touch-action:pan-y}
 .chart text{font-family:inherit}
-.ax{font-size:var(--cfs,10.5px);fill:var(--text-3);font-family:var(--font-ui);font-variant-numeric:tabular-nums}
+.ax{font-size:10.5px;fill:var(--text-3);font-family:var(--font-ui);font-variant-numeric:tabular-nums}
 .gl{stroke:var(--grid);stroke-width:1}
 .bl{stroke:var(--axis);stroke-width:1}
 .legend{display:flex;gap:12px;flex-wrap:wrap;margin:2px 0 8px;font-size:12px;color:var(--text-2)}
 .legend i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:-1px}
 .legend i.dot{border-radius:50%}
-.dlbl{font-size:var(--cfs,10.5px);font-weight:650;fill:var(--text-1);font-family:var(--font-ui);font-variant-numeric:tabular-nums}
+.dlbl{font-size:11px;font-weight:650;fill:var(--text-1);font-family:var(--font-ui);font-variant-numeric:tabular-nums}
 .tv{margin-top:10px;border-top:1px solid var(--grid);padding-top:8px}
 #tip{
   position:fixed;z-index:80;pointer-events:none;opacity:0;transition:opacity .1s;
@@ -305,23 +290,6 @@ tfoot td{font-weight:650;border-top:1px solid var(--axis);border-bottom:0}
 video{width:100%;border-radius:var(--r-sm);background:#000;display:block}
 .vidcard{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px;margin-bottom:8px}
 .vidcard .vh{display:flex;gap:8px;align-items:center;margin-bottom:8px}
-.vtitle{
-  flex:1;min-width:0;display:flex;align-items:center;text-align:left;
-  background:none;border:0;padding:6px 2px;cursor:pointer;font-size:14px;font-weight:600;
-  min-height:38px;color:var(--accent-ink);
-}
-.vtitle .tx{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.vtitle:active{opacity:.7}
-.vgame{
-  width:100%;display:flex;align-items:center;gap:10px;background:none;border:0;cursor:pointer;
-  padding:4px 0;text-align:left;color:var(--text-1);min-height:44px;
-}
-.vgame .gt{flex:1;min-width:0}
-.vgame .gt .t{font-size:14.5px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.vgame .gt .s{font-size:12px;color:var(--text-3);margin-top:1px}
-.vgame .chev{transition:transform .18s;color:var(--text-3);font-size:13px}
-.vgame[aria-expanded="true"] .chev{transform:rotate(180deg)}
-.vlist{margin-top:10px;border-top:1px solid var(--grid);padding-top:10px}
 .vidcard .vh .t{flex:1;min-width:0;font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ratio{position:relative;padding-top:56.25%;border-radius:var(--r-sm);overflow:hidden;background:#000}
 .ratio > *{position:absolute;inset:0;width:100%;height:100%;border:0}
@@ -349,12 +317,7 @@ video{width:100%;border-radius:var(--r-sm);background:#000;display:block}
     </div>
   </div>
   <div class="spacer"></div>
-  <button class="iconbtn" id="setBtn" data-act="nav" data-v="settings" title="설정" aria-label="설정">
-    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
-      <circle cx="12" cy="12" r="3.1"/>
-      <path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-.97 1.47V21a2 2 0 1 1-4 0v-.11a1.6 1.6 0 0 0-1.05-1.46 1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.6 1.6 0 0 0 .32-1.77 1.6 1.6 0 0 0-1.47-.97H3a2 2 0 1 1 0-4h.11a1.6 1.6 0 0 0 1.46-1.05 1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.6 1.6 0 0 0 1.77.32H9a1.6 1.6 0 0 0 .97-1.47V3a2 2 0 1 1 4 0v.11a1.6 1.6 0 0 0 .97 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.6 1.6 0 0 0-.32 1.77V9a1.6 1.6 0 0 0 1.47.97H21a2 2 0 1 1 0 4h-.11a1.6 1.6 0 0 0-1.47.97z" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </button>
+  <button class="iconbtn" id="themeBtn" title="밝게/어둡게" aria-label="테마 전환">◐</button>
 </header>
 
 <main class="wrap" id="view" tabindex="-1"></main>
@@ -364,6 +327,7 @@ video{width:100%;border-radius:var(--r-sm);background:#000;display:block}
   <button data-nav="games"><span class="ic" aria-hidden="true">▤</span>경기</button>
   <button data-nav="stats"><span class="ic" aria-hidden="true">▮</span>분석</button>
   <button data-nav="videos"><span class="ic" aria-hidden="true">▶</span>영상</button>
+  <button data-nav="settings"><span class="ic" aria-hidden="true">⚙</span>설정</button>
 </nav>
 
 <div id="tip" role="status" aria-live="polite"></div>
@@ -411,6 +375,28 @@ const POS = [
 ];
 const PMAP = Object.fromEntries(POS.map(p=>[p.c,p.ko]));
 
+// 경기 종류 (정식 / 연습)
+const GAME_TYPES = {official:{ko:"정식경기", short:"정식"}, practice:{ko:"연습경기", short:"연습"}};
+const GTYPE_KEYS = ["official","practice"];
+function gameType(g){ return (g && GAME_TYPES[g.type])? g.type : "official"; }
+
+// 수비 결과 정의 (po: 자살, a: 보살, e: 실책, dp: 병살)
+const DEF_RESULTS = [
+  {c:"PO",  ko:"자살 (직접 아웃)",  sk:"자살",      g:"out", po:1},
+  {c:"A",   ko:"보살 (송구 아웃)",  sk:"보살",      g:"out", a:1},
+  {c:"DP",  ko:"병살 처리",         sk:"병살 처리", g:"out", po:1, a:1, dp:1},
+  {c:"NP",  ko:"호수비",            sk:"호수비",    g:"out"},
+  {c:"EF",  ko:"포구 실책",         sk:"포구 실책", g:"err", e:1},
+  {c:"ET",  ko:"송구 실책",         sk:"송구 실책", g:"err", e:1},
+  {c:"EM",  ko:"수비 실수 (기록 없음)", sk:"수비 실수", g:"err"},
+  {c:"INN", ko:"이닝 수비 (특이사항 없음)", sk:"이닝 수비", g:"etc"}
+];
+const DMAP = Object.fromEntries(DEF_RESULTS.map(r=>[r.c,r]));
+function dko(code){ const r=DMAP[code]; return r? (r.sk||r.ko) : ""; }
+const DGLABEL = {out:"아웃 처리 · 호수비", err:"실책 · 실수", etc:"기타"};
+const DGBADGE = {out:"ob", err:"l", etc:"out"};
+const DGCHIP  = {out:"g-dout", err:"g-derr", etc:"g-detc"};
+
 // 경기장 규격 (루간 거리 / 좌우 폴 / 중앙 펜스, 단위: m)
 const LEVELS = {
   elem: {ko:"초등 (리틀)",  base:18.29, lf:65, cf:70,  mound:14.02, inn:6, note:"루간 18.3m · 외야 65~70m"},
@@ -454,14 +440,22 @@ const blank = ()=>({
   version:1,
   profile:{ name:"", team:"", number:"", position:"", bats:"우타", throws:"우투" },
   games:[],
-  settings:{ level:"elem", inningsBy:{elem:6, mid:7, high:7, univ:9}, autoplay:"sound" },
-  ui:{ tab:"home", year:"all", metric:"avg" }
+  settings:{ level:"elem", inningsBy:{elem:6, mid:7, high:7, univ:9} },
+  ui:{ tab:"home", year:"all", gtype:"all", metric:"avg" }
 });
 let S = blank();
 let saveTimer = null;
-let saveFailed = false;      // 마지막 저장이 실패했는지
-let persistState = null;     // 영구 저장 허용 여부 (null=확인 전)
 
+// 불러온 기록을 현재 형식에 맞춰 보정
+function normalizeGames(list){
+  (list||[]).forEach(g=>{
+    g.pas=g.pas||[]; g.def=g.def||[]; g.videos=g.videos||[];
+    if(!GAME_TYPES[g.type]) g.type = "official";
+    g.def.forEach(d=>{ if(d.note==null) d.note=""; if(d.result==null) d.result=""; if(d.inning==null) d.inning=0; });
+    g.videos.forEach(v=>{ if(v.defId==null) v.defId=null; if(v.paId==null) v.paId=null; });
+  });
+  return list;
+}
 function load(){
   try{
     const raw = localStorage.getItem(KEY);
@@ -469,7 +463,10 @@ function load(){
       S.settings.inningsBy = Object.assign(blank().settings.inningsBy, (o.settings&&o.settings.inningsBy)||{}); }
   }catch(e){ console.warn("저장 데이터를 읽지 못했습니다.", e); }
   if(!Array.isArray(S.games)) S.games = [];
+  if(!S.ui.gtype) S.ui.gtype = "all";
   S.games.forEach(g=>{ g.pas=g.pas||[]; g.def=g.def||[]; g.videos=g.videos||[];
+    if(!GAME_TYPES[g.type]) g.type = "official";          // 예전 기록은 정식경기로
+    g.def.forEach(d=>{ if(d.note==null) d.note=""; if(d.result==null) d.result=""; if(d.inning==null) d.inning=0; });
     // 삼진·볼넷 등 타구가 없는 결과에 남아 있던 타구 위치는 정리
     g.pas.forEach(p=>{ if(p.zone && !(RMAP[p.result] && RMAP[p.result].bip)) p.zone = null; });
   });
@@ -477,20 +474,11 @@ function load(){
 function save(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(()=>{
-    try{ localStorage.setItem(KEY, JSON.stringify(S)); saveFailed=false; }
-    catch(e){ saveFailed=true; toast("⚠ 저장되지 않았습니다 — 저장 공간을 확인하세요"); console.error(e); }
+    try{ localStorage.setItem(KEY, JSON.stringify(S)); }
+    catch(e){ toast("저장 실패: 브라우저 저장 공간이 부족합니다"); console.error(e); }
   }, 120);
 }
-function saveNow(){
-  clearTimeout(saveTimer);
-  try{ localStorage.setItem(KEY, JSON.stringify(S)); saveFailed=false; return true; }
-  catch(e){
-    console.error(e);
-    saveFailed = true;
-    toast("⚠ 저장되지 않았습니다 — 저장 공간을 확인하세요");
-    return false;
-  }
-}
+function saveNow(){ clearTimeout(saveTimer); try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ console.error(e); } }
 
 /* --------------------------- IndexedDB (영상) --------------------------- */
 const DB_NAME="bb_note_media", STORE="videos";
@@ -567,10 +555,11 @@ function years(){
   return Array.from(set).sort().reverse();
 }
 function scopedGames(){
-  const y = S.ui.year;
+  const y = S.ui.year, ty = S.ui.gtype||"all";
   const gs = S.games.slice().sort((a,b)=> (a.date||"").localeCompare(b.date||"") || (a.id>b.id?1:-1));
-  return y==="all"? gs : gs.filter(g=>(g.date||"").startsWith(y));
+  return gs.filter(g=> (y==="all" || (g.date||"").startsWith(y)) && (ty==="all" || gameType(g)===ty));
 }
+function gtypeLabel(){ const t=S.ui.gtype||"all"; return t==="all"? "전체 경기" : GAME_TYPES[t].ko; }
 function allPAs(gs){ return (gs||scopedGames()).flatMap(g=>g.pas.map(p=>Object.assign({_g:g},p))); }
 function allDef(gs){ return (gs||scopedGames()).flatMap(g=>g.def.map(d=>Object.assign({_g:g},d))); }
 function curLevel(){ return (S.settings && LEVELS[S.settings.level])? S.settings.level : "high"; }
@@ -581,8 +570,6 @@ function regInnings(lv){
   return (v && isFinite(v) && v>0)? v : LEVELS[k].inn;
 }
 function hasBIP(code){ return !!(RMAP[code] && RMAP[code].bip); }
-const AUTOPLAY = {sound:"소리와 함께", muted:"음소거로", off:"수동"};
-function apMode(){ const v=S.settings && S.settings.autoplay; return AUTOPLAY[v]? v : "sound"; }
 function gameResult(g){
   const a=num(g.myScore,NaN), b=num(g.oppScore,NaN);
   if(!isFinite(a)||!isFinite(b)) return null;
@@ -634,26 +621,9 @@ function rRight(x,y,w,h,r){
 }
 
 /* 꺾은선: 단일/이중 시리즈. pts = [{x, y, tip}] (y=null 허용) */
-/* 차트 글자 크기 — 화면에서 카드 설명글(.card .cap, 12px)과 같게 보이도록 맞춥니다.
-   SVG는 viewBox(가로 340)가 실제 표시 폭으로 확대·축소되므로,
-   그 배율의 역수를 곱해 두면 어느 화면에서나 같은 크기로 보입니다. */
-const CH_W = 340, CH_BASE = 10.5, CH_TARGET = 12;   // .card .cap 과 같은 12px
-let CFS = CH_BASE, CK = 1;
-function calcChartFont(){
-  const host = document.getElementById("view");
-  const w = host ? host.clientWidth : CH_W;
-  const inner = Math.max(220, w - 30);          // 카드 좌우 패딩(14+14)과 테두리
-  const cssW = Math.min(620, inner);
-  CFS = clamp(CH_TARGET * CH_W / cssW, 6, 20);
-  CK = CFS / CH_BASE;
-}
-function chStyle(extra){ return `style="--cfs:${CFS.toFixed(2)}px${extra?";"+extra:""}"`; }
-
-/* 꺾은선: 단일/이중 시리즈. pts = [{x, y, tip}] (y=null 허용) */
 function lineChart(series, opt){
   opt = opt||{};
-  const W=CH_W, L=Math.round(38*CK), R=Math.round(18*CK), T=Math.round(12*CK), B=Math.round(26*CK);
-  const H=Math.round((opt.height||160) + (B-26) + (T-12));
+  const W=340, H=opt.height||160, L=38, R=18, T=12, B=26;
   const pw=W-L-R, ph=H-T-B;
   const all = series.flatMap(s=>s.pts.map(p=>p.y)).filter(v=>v!=null && isFinite(v));
   if(!all.length) return `<div class="empty">표시할 데이터가 없습니다</div>`;
@@ -666,30 +636,28 @@ function lineChart(series, opt){
   const X = i => L + (n===1? pw/2 : pw*i/(n-1));
   const Y = v => T + ph - ph*(v-t0)/(t1-t0);
   const fm = opt.fmt || avg3;
-  const dy = CFS*0.34;
-  let s = `<svg class="chart" ${chStyle()} viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||"추이 차트")}">`;
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||"추이 차트")}">`;
   s += `<g>`;
   ticks.forEach(t=>{ s += `<line class="gl" x1="${L}" x2="${W-R}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/>`
-                        + `<text class="ax" x="${L-6}" y="${(Y(t)+dy).toFixed(1)}" text-anchor="end">${fm(t)}</text>`; });
+                        + `<text class="ax" x="${L-6}" y="${(Y(t)+3.5).toFixed(1)}" text-anchor="end">${fm(t)}</text>`; });
   s += `<line class="bl" x1="${L}" x2="${W-R}" y1="${T+ph}" y2="${T+ph}"/>`;
-  // x축 라벨 — 글자가 커진 만큼 표시 개수를 줄여 겹치지 않게 합니다
-  const maxLbl = Math.max(3, Math.floor(pw / (CFS*3.2)));
-  const step = Math.max(1, Math.ceil(n/maxLbl));
+  // x축 라벨 (최대 6개)
+  const step = Math.max(1, Math.ceil(n/6));
   series[0].pts.forEach((p,i)=>{ if(i%step===0 || i===n-1)
-    s += `<text class="ax" x="${X(i).toFixed(1)}" y="${(H-B+CFS+2).toFixed(1)}" text-anchor="middle">${esc(p.x)}</text>`; });
+    s += `<text class="ax" x="${X(i).toFixed(1)}" y="${H-8}" text-anchor="middle">${esc(p.x)}</text>`; });
   series.forEach((ser,si)=>{
     const col = ser.color;
     let d="", started=false;
     ser.pts.forEach((p,i)=>{ if(p.y==null||!isFinite(p.y)){ started=false; return; }
       d += (started? " L":" M") + X(i).toFixed(1)+","+Y(p.y).toFixed(1); started=true; });
-    if(d) s += `<path d="${d.trim()}" fill="none" stroke="${col}" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    if(d) s += `<path d="${d.trim()}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
     // 마지막 지점 강조 + 직접 라벨
     let last=-1; ser.pts.forEach((p,i)=>{ if(p.y!=null&&isFinite(p.y)) last=i; });
     if(last>=0){
       const lx=X(last), ly=Y(ser.pts[last].y);
       s += `<circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="4.5" fill="${col}" stroke="var(--surface-1)" stroke-width="2"/>`;
       const anchor = last===n-1? "end" : "middle";
-      s += `<text class="dlbl" x="${lx.toFixed(1)}" y="${(ly-CFS*0.75).toFixed(1)}" text-anchor="${anchor}">${fm(ser.pts[last].y)}</text>`;
+      s += `<text class="dlbl" x="${(lx + (anchor==="end"? 0 : 0)).toFixed(1)}" y="${(ly-10).toFixed(1)}" text-anchor="${anchor}">${fm(ser.pts[last].y)}</text>`;
     }
     // 히트 영역
     ser.pts.forEach((p,i)=>{ if(p.y==null||!isFinite(p.y)) return;
@@ -703,10 +671,7 @@ function lineChart(series, opt){
 function colChart(items, opt){
   opt=opt||{};
   if(!items.length) return `<div class="empty">표시할 데이터가 없습니다</div>`;
-  const W=CH_W, R=Math.round(12*CK);
-  const L=Math.round((opt.left!=null?opt.left:34)*CK);
-  const T=Math.round((opt.labelTop?20:14)*CK), B=Math.round((opt.bottom||26)*CK);
-  const H=Math.round((opt.height||162) + (B-26) + (T-(opt.labelTop?20:14)));
+  const W=340, H=opt.height||162, L=opt.left!=null?opt.left:34, R=12, T=opt.labelTop?20:14, B=opt.bottom||26;
   const pw=W-L-R, ph=H-T-B;
   const vals = items.map(d=>num(d.value,0));
   const mx = Math.max.apply(null, vals.concat([opt.minMax||1]));
@@ -716,21 +681,17 @@ function colChart(items, opt){
   const bw = Math.min(24, band*0.62);
   const Y = v => T + ph - ph*v/t1;
   const fm = opt.fmt || (v=> String(Math.round(v*100)/100));
-  const dy = CFS*0.34;
-  let s = `<svg class="chart" ${chStyle()} viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||"막대 차트")}">`;
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||"막대 차트")}">`;
   ticks.forEach(t=>{ s += `<line class="gl" x1="${L}" x2="${W-R}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/>`
-    + `<text class="ax" x="${L-6}" y="${(Y(t)+dy).toFixed(1)}" text-anchor="end">${fm(t)}</text>`; });
+    + `<text class="ax" x="${L-6}" y="${(Y(t)+3.5).toFixed(1)}" text-anchor="end">${fm(t)}</text>`; });
   s += `<line class="bl" x1="${L}" x2="${W-R}" y1="${T+ph}" y2="${T+ph}"/>`;
-  // 라벨이 겹칠 만큼 항목이 많으면 건너뛰며 표시
-  const lstep = Math.max(1, Math.ceil(items.length / Math.max(3, Math.floor(pw/(CFS*2.6)))));
   items.forEach((d,i)=>{
     const v=num(d.value,0), x=L+band*i+(band-bw)/2, y=Y(v), h=T+ph-y;
-    const col = d.color || opt.color || "var(--chart)";
+    const col = d.color || opt.color || "var(--s1)";
     if(v>0) s += `<path d="${rTop(x, y, bw, h, 4)}" fill="${col}"/>`;
     s += `<rect x="${(L+band*i+1).toFixed(1)}" y="${T}" width="${(band-2).toFixed(1)}" height="${ph}" fill="transparent" data-tip="${esc(d.tip||(d.label+": "+fm(v)))}"/>`;
-    if(i%lstep===0 || i===items.length-1)
-      s += `<text class="ax" x="${(x+bw/2).toFixed(1)}" y="${(H-B+CFS+1).toFixed(1)}" text-anchor="middle">${esc(d.label)}</text>`;
-    if(opt.labelTop && v>0) s += `<text class="dlbl" x="${(x+bw/2).toFixed(1)}" y="${(y-CFS*0.42).toFixed(1)}" text-anchor="middle">${fm(v)}</text>`;
+    s += `<text class="ax" x="${(x+bw/2).toFixed(1)}" y="${H-9}" text-anchor="middle">${esc(d.label)}</text>`;
+    if(opt.labelTop && v>0) s += `<text class="dlbl" x="${(x+bw/2).toFixed(1)}" y="${(y-5).toFixed(1)}" text-anchor="middle">${fm(v)}</text>`;
   });
   s += `</svg>`;
   return s;
@@ -740,21 +701,20 @@ function colChart(items, opt){
 function hbarChart(items, opt){
   opt=opt||{};
   if(!items.length) return `<div class="empty">표시할 데이터가 없습니다</div>`;
-  const W=CH_W, rowH=Math.round((opt.rowH||22)*CK), L=Math.round((opt.left||64)*CK), R=Math.round(34*CK), T=4;
+  const W=340, rowH=opt.rowH||22, L=opt.left||64, R=34, T=4;
   const H = T + items.length*rowH + 4;
   const pw = W-L-R;
   const mx = Math.max.apply(null, items.map(d=>num(d.value,0)).concat([1]));
-  const bh = Math.min(Math.round(14*CK), rowH-Math.round(8*CK));
+  const bh = Math.min(14, rowH-8);
   const fm = opt.fmt || (v=>String(v));
-  const dy = CFS*0.34;
-  let s = `<svg class="chart" ${chStyle()} viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||"막대 차트")}">`;
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||"막대 차트")}">`;
   items.forEach((d,i)=>{
     const v=num(d.value,0), y=T+i*rowH+(rowH-bh)/2, w=pw*v/mx;
-    const col=d.color||opt.color||"var(--chart)";
-    s += `<text class="ax" x="${L-8}" y="${(y+bh/2+dy).toFixed(1)}" text-anchor="end">${esc(d.label)}</text>`;
+    const col=d.color||opt.color||"var(--s1)";
+    s += `<text class="ax" x="${L-8}" y="${(y+bh/2+3.5).toFixed(1)}" text-anchor="end">${esc(d.label)}</text>`;
     s += `<line class="gl" x1="${L}" x2="${L+pw}" y1="${(y+bh/2).toFixed(1)}" y2="${(y+bh/2).toFixed(1)}" opacity=".45"/>`;
     if(v>0) s += `<path d="${rRight(L, y, w, bh, 4)}" fill="${col}"/>`;
-    s += `<text class="dlbl" x="${(L+w+6).toFixed(1)}" y="${(y+bh/2+dy).toFixed(1)}">${fm(v)}</text>`;
+    s += `<text class="dlbl" x="${(L+w+6).toFixed(1)}" y="${(y+bh/2+3.8).toFixed(1)}">${fm(v)}</text>`;
     s += `<rect x="${L}" y="${(T+i*rowH).toFixed(1)}" width="${pw}" height="${rowH}" fill="transparent" data-tip="${esc(d.tip||(d.label+": "+fm(v)))}"/>`;
   });
   s += `</svg>`;
@@ -889,18 +849,22 @@ function tableHTML(head, rows, foot){
 
 /* ============================== 화면 ============================== */
 const METRICS = {avg:{ko:"타율",k:"AVG"}, obp:{ko:"출루율",k:"OBP"}, slg:{ko:"장타율",k:"SLG"}, ops:{ko:"OPS",k:"OPS"}};
-const ICON_MINUS = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path d="M8 12h8" stroke-linecap="round"/></svg>';
-function delBtn(act, attrs, label){
-  return `<button class="iconbtn del" data-act="${act}" ${attrs} title="${esc(label)}" aria-label="${esc(label)}">${ICON_MINUS}</button>`;
-}
 
 function filterRow(){
   const ys = years();
-  if(!ys.length) return "";
   const items = [["all","전체"]].concat(ys.map(y=>[y, y.slice(2)+"시즌"]));
-  return `<div class="filters"><div class="seg" role="group" aria-label="시즌 선택">`
+  const yseg = ys.length? `<div class="seg" role="group" aria-label="시즌 선택">`
     + items.map(([v,l])=>`<button data-act="year" data-v="${v}" aria-pressed="${S.ui.year===v}">${l}</button>`).join("")
-    + `</div></div>`;
+    + `</div>` : "";
+  const cur = S.ui.gtype||"all";
+  const tseg = `<div class="seg" role="group" aria-label="경기 종류 선택">`
+    + [["all","전체"],["official","정식경기"],["practice","연습경기"]]
+        .map(([v,l])=>`<button data-act="gtype" data-v="${v}" aria-pressed="${cur===v}">${l}</button>`).join("")
+    + `</div>`;
+  return `<div class="filters">${yseg}${tseg}</div>`;
+}
+function typeBadge(g){
+  return gameType(g)==="practice"? `<span class="badge prac">연습</span>` : `<span class="badge">정식</span>`;
 }
 function tile(lb, v, sub){
   return `<div class="tile"><div class="lb">${esc(lb)}</div><div class="v">${v}${sub?`<small>${sub}</small>`:""}</div></div>`;
@@ -932,7 +896,7 @@ function viewHome(){
   if(!S.games.length){
     return `<div class="empty"><span class="big">⚾</span>
       아직 기록이 없습니다.<br>첫 경기를 추가하고 타석을 기록해 보세요.
-      <div style="margin-top:12px" class="hint">아래 <b>경기</b> 탭에서 첫 경기를 추가할 수 있습니다.</div></div>`;
+      <div style="margin-top:14px"><button class="btn pri" data-act="newGame">+ 새 경기 기록</button></div></div>`;
   }
 
   // 누적 지표 추이
@@ -954,7 +918,7 @@ function viewHome(){
   + `<div class="hero">
       <div class="lb">${METRICS[m].ko}</div>
       <div class="fig">${avg3(b[mk])}</div>
-      <div class="meta">${gs.length}경기 · ${b.PA}타석 ${b.AB}타수 ${b.H}안타 ${b.HR}홈런 ${b.RBI}타점</div>
+      <div class="meta">${gtypeLabel()} ${gs.length}경기 · ${b.PA}타석 ${b.AB}타수 ${b.H}안타 ${b.HR}홈런 ${b.RBI}타점</div>
       <div class="filters" style="margin:12px 0 0"><div class="seg" role="group" aria-label="지표 선택">`
       + Object.keys(METRICS).map(k=>`<button data-act="metric" data-v="${k}" aria-pressed="${m===k}">${METRICS[k].ko}</button>`).join("")
       + `</div></div></div>`
@@ -963,7 +927,7 @@ function viewHome(){
       + tile("볼넷", b.BB) + tile("삼진", b.SO) + tile("도루", b.SB)
     + `</div>`
   + chartCard("누적 "+METRICS[m].ko+" 추이", "경기를 치를수록 지표가 어떻게 수렴하는지 보여줍니다. 마지막 값이 현재 시즌 기록입니다.",
-      lineChart([{pts, color:"var(--chart)"}], {aria:"누적 "+METRICS[m].ko+" 추이", fmt:avg3}), trendTbl)
+      lineChart([{pts, color:"var(--s1)"}], {aria:"누적 "+METRICS[m].ko+" 추이", fmt:avg3}), trendTbl)
   + chartCard("최근 경기 안타", recent.length+"경기 · 경기당 안타 수",
       colChart(hitCols, {aria:"경기별 안타 수", labelTop:true, fmt:v=>String(Math.round(v))}),
       tableHTML(["경기","상대","타수","안타","타점","타율"], recent.map(g=>{const t=battingOf(g.pas);
@@ -974,7 +938,7 @@ function viewHome(){
   + (f.INN>0? `<div class="card"><div class="hd"><div style="flex:1"><h3>수비</h3>
       <div class="cap">기록된 수비 이닝 ${fmtInn(f.outs)} · 수비율 ${avg3(f.FPCT)}</div></div></div>
       <div class="tiles">${tile("이닝", fmtInn(f.outs))+tile("자살", f.PO)+tile("보살", f.A)+tile("실책", f.E)+tile("병살", f.DP)+tile("수비율", avg3(f.FPCT))}</div></div>`:"")
-  ;
+  + `<button class="btn pri block" data-act="newGame" style="margin-top:4px">+ 새 경기 기록</button>`;
 }
 
 function gameRow(g){
@@ -984,7 +948,7 @@ function gameRow(g){
   const sc = (g.myScore!==""&&g.myScore!=null&&g.oppScore!==""&&g.oppScore!=null)? `${g.myScore}:${g.oppScore}` : "";
   return `<div class="row" data-act="openGame" data-id="${g.id}">
     <div class="main">
-      <div class="t">${badge} ${esc(g.opponent||"상대 미입력")} ${sc?`<span style="color:var(--text-3);font-weight:500">${sc}</span>`:""}</div>
+      <div class="t">${typeBadge(g)} ${badge} ${esc(g.opponent||"상대 미입력")} ${sc?`<span style="color:var(--text-3);font-weight:500">${sc}</span>`:""}</div>
       <div class="s">${esc(fmtDate(g.date))}${g.venue?" · "+esc(g.venue):""}${g.videos.length?" · 영상 "+g.videos.length:""}</div>
     </div>
     <div class="r">${t.PA? `${t.AB}타수 ${t.H}안타${t.RBI?" "+t.RBI+"타점":""}<br><span style="color:var(--text-3)">${avg3(t.AVG)}</span>`:`<span style="color:var(--text-3)">타석 미기록</span>`}</div>
@@ -994,7 +958,7 @@ function gameRow(g){
 /* ------------------------------ 경기 목록 ------------------------------ */
 function viewGames(){
   const gs = scopedGames().slice().reverse();
-  return `<button class="btn pri block nb" data-act="newGame" style="margin-bottom:12px">+ 새 경기 기록</button>`
+  return `<button class="btn pri block" data-act="newGame" style="margin-bottom:12px">+ 새 경기 기록</button>`
   + filterRow()
   + (gs.length? `<div class="list">${gs.map(gameRow).join("")}</div>`
               : `<div class="empty"><span class="big">▤</span>이 시즌에 기록된 경기가 없습니다</div>`);
@@ -1015,24 +979,26 @@ function viewGame(id){
       <div class="r" style="color:var(--text-3)">›</div>
     </div>`).join("") : `<div class="hint">타석 기록이 없습니다. 아래 버튼으로 추가하세요.</div>`;
 
-  const defList = g.def.length? g.def.map(d=>`
-    <div class="row" data-act="editDef" data-gid="${g.id}" data-id="${d.id}">
-      <div class="main"><div class="t">${esc(PMAP[d.pos]||d.pos||"-")}</div>
-        <div class="s">${fmtInn(inn2outs(d.innings))}이닝 · 자살 ${num(d.po,0)} 보살 ${num(d.a,0)} 실책 ${num(d.e,0)}${num(d.dp,0)?" 병살 "+num(d.dp,0):""}</div></div>
+  const defSorted = g.def.slice().sort((a,b)=> num(a.inning,0)-num(b.inning,0));
+  const defList = g.def.length? defSorted.map(d=>{
+    const r = DMAP[d.result];
+    return `<div class="row" data-act="editDef" data-gid="${g.id}" data-id="${d.id}">
+      <div style="width:34px;text-align:center;color:var(--text-3);font-size:12px;font-variant-numeric:tabular-nums">${num(d.inning,0)? num(d.inning,0)+"회" : "-"}</div>
+      <div class="main"><div class="t">${r?`<span class="badge ${DGBADGE[r.g]}">${dko(d.result)}</span> `:""}<span style="font-weight:500;color:var(--text-2);font-size:13px">${esc(PMAP[d.pos]||d.pos||"-")}</span></div>
+        <div class="s">${esc(defLine(d))||"&nbsp;"}</div></div>
       <div class="r" style="color:var(--text-3)">›</div>
-    </div>`).join("") : `<div class="hint">수비 기록이 없습니다.</div>`;
+    </div>`;}).join("") : `<div class="hint">수비 기록이 없습니다. 아래 버튼으로 추가하세요.</div>`;
 
   const vidList = g.videos.length? g.videos.map(v=>videoCard(v,g)).join("") : `<div class="hint">등록된 영상이 없습니다.</div>`;
 
   return `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
       <button class="btn sm" data-act="nav" data-v="games">‹ 경기 목록</button><div class="spacer" style="flex:1"></div>
       <button class="btn sm" data-act="editGame" data-id="${g.id}">경기 정보 수정</button>
-      ${delBtn("delGame", `data-id="${g.id}"`, "이 경기 기록 삭제")}
     </div>
     <div class="card">
       <div class="hd"><div style="flex:1">
-        <h3>${res?`<span class="badge ${res==="승"?"w":res==="패"?"l":""}">${res}</span> `:""}${esc(g.opponent||"상대 미입력")}</h3>
-        <div class="cap">${esc(fmtDateLong(g.date))}${g.venue?" · "+esc(g.venue):""}${g.homeAway?" · "+esc(g.homeAway):""}
+        <h3>${typeBadge(g)} ${res?`<span class="badge ${res==="승"?"w":res==="패"?"l":""}">${res}</span> `:""}${esc(g.opponent||"상대 미입력")}</h3>
+        <div class="cap">${esc(GAME_TYPES[gameType(g)].ko)} · ${esc(fmtDateLong(g.date))}${g.venue?" · "+esc(g.venue):""}${g.homeAway?" · "+esc(g.homeAway):""}
         ${(g.myScore!==""&&g.oppScore!=="")?` · ${esc(String(g.myScore))} : ${esc(String(g.oppScore))}`:""}
         · <span style="color:var(--text-2)">${esc(LEVELS[gameLevel(g)].ko)} 규격</span></div>
       </div></div>
@@ -1041,7 +1007,7 @@ function viewGame(id){
     </div>
     <div class="card">
       <div class="hd"><div style="flex:1"><h3>타석 기록</h3><div class="cap">${g.pas.length}타석</div></div>
-        <button class="btn sm pri nb" data-act="newPA" data-gid="${g.id}">+ 타석</button></div>
+        <button class="btn sm pri" data-act="newPA" data-gid="${g.id}">+ 타석</button></div>
       <div class="list">${paList}</div>
     </div>
     ${pas.some(p=>p.zone && hasBIP(p.result))? chartCard("이 경기 타구 방향", `${esc(LEVELS[gameLevel(g)].ko)} 규격 (${esc(LEVELS[gameLevel(g)].note)}) · 정규 ${regInnings(gameLevel(g))}이닝 · 점을 누르면 상세가 표시됩니다`,
@@ -1050,15 +1016,15 @@ function viewGame(id){
           return [o.i+1, esc(RMAP[o.p.result].ko), esc(z.label), Math.round(z.m)+"m"];}))) : ""}
     <div class="card">
       <div class="hd"><div style="flex:1"><h3>수비 기록</h3><div class="cap">${f.INN? fmtInn(f.outs)+"이닝 · 수비율 "+avg3(f.FPCT) : "미기록"}</div></div>
-        <button class="btn sm pri nb" data-act="newDef" data-gid="${g.id}">+ 포지션</button></div>
+        <button class="btn sm pri" data-act="newDef" data-gid="${g.id}">+ 수비</button></div>
       <div class="list">${defList}</div>
     </div>
     <div class="card">
       <div class="hd"><div style="flex:1"><h3>경기 영상</h3><div class="cap">${g.videos.length}개</div></div>
-        <button class="btn sm pri nb" data-act="newVideo" data-gid="${g.id}">+ 영상</button></div>
+        <button class="btn sm pri" data-act="newVideo" data-gid="${g.id}">+ 영상</button></div>
       ${vidList}
     </div>
-`;
+    <button class="btn dan block" data-act="delGame" data-id="${g.id}">이 경기 기록 삭제</button>`;
 }
 
 /* ------------------------------- 분석 ------------------------------- */
@@ -1069,7 +1035,7 @@ function viewStats(){
 
   // 결과 분포
   const dist = RESULTS.map(r=>({label:r.ko, value:pas.filter(p=>p.result===r.c).length,
-      color: r.g==="hit"?"var(--chart)": r.g==="onbase"?"var(--s3)":"var(--neutral)"}))
+      color: r.g==="hit"?"var(--s1)": r.g==="onbase"?"var(--s3)":"var(--neutral)"}))
     .filter(d=>d.value>0).sort((a,c)=>c.value-a.value);
   dist.forEach(d=>{ d.tip = `<b>${esc(d.label)}</b><br>${d.value}회 · 전체 타석의 ${pct1(d.value/Math.max(pas.length,1))}`; });
 
@@ -1107,6 +1073,13 @@ function viewStats(){
   pas.forEach(p=>{ const k=(p.pitcher||"").trim(); if(!k) return; (byP[k]=byP[k]||[]).push(p); });
   const pitchers = Object.keys(byP).map(k=>({name:k, t:battingOf(byP[k])})).sort((a,c)=>c.t.PA-a.t.PA);
 
+  // 수비 결과 분포
+  const defPlays = defs.filter(d=>d.result);
+  const defDist = DEF_RESULTS.map(r=>({label:r.ko, value:defPlays.filter(d=>d.result===r.c).length,
+      color: r.g==="out"?"var(--s3)": r.g==="err"?"var(--crit)":"var(--neutral)"}))
+    .filter(d=>d.value>0).sort((a,c)=>c.value-a.value);
+  defDist.forEach(d=>{ d.tip = `<b>${esc(d.label)}</b><br>${d.value}회 · 수비 기록의 ${pct1(d.value/Math.max(defPlays.length,1))}`; });
+
   // 포지션별 수비
   const byPos = {};
   defs.forEach(d=>{ (byPos[d.pos]=byPos[d.pos]||[]).push(d); });
@@ -1122,7 +1095,7 @@ function viewStats(){
 
   return filterRow()
   + `<div class="card"><div class="hd"><div style="flex:1"><h3>시즌 요약</h3>
-      <div class="cap">${S.ui.year==="all"?"전체 기간":S.ui.year+"시즌"} · ${gs.length}경기 ${b.PA}타석</div></div></div>${summary}</div>`
+      <div class="cap">${S.ui.year==="all"?"전체 기간":S.ui.year+"시즌"} · ${gtypeLabel()} · ${gs.length}경기 ${b.PA}타석</div></div></div>${summary}</div>`
   + chartCard("타구 방향 (스프레이 차트)", `타구 위치가 기록된 인플레이 타구 ${bip.length}개 · 그림은 ${esc(LEVELS[curLevel()].ko)} 규격 (${esc(LEVELS[curLevel()].note)})`,
       sprayChart(pas, curLevel()),
       bip.length? tableHTML(["날짜","이닝","결과","위치","추정 거리"], bip.map(p=>{const z=zoneOf(p.zone, gameLevel(p._g));
@@ -1148,6 +1121,9 @@ function viewStats(){
       <div class="cap">투수 이름을 입력한 타석만 집계됩니다</div></div></div>
       ${tableHTML(["투수","타석","타수","안타","홈런","삼진","타율","OPS"],
         pitchers.map(p=>[esc(p.name), p.t.PA, p.t.AB, p.t.H, p.t.HR, p.t.SO, avg3(p.t.AVG), avg3(p.t.OPS)]))}</div>` : "")
+  + (defDist.length? chartCard("수비 결과 분포", `결과를 입력한 수비 기록 ${defPlays.length}건`,
+      hbarChart(defDist, {aria:"수비 결과 분포", left:118, fmt:v=>String(Math.round(v))}),
+      tableHTML(["결과","횟수","비중"], defDist.map(d=>[d.label, d.value, pct1(d.value/Math.max(defPlays.length,1))]))) : "")
   + (posRows.length? `<div class="card"><div class="hd"><div style="flex:1"><h3>포지션별 수비</h3>
       <div class="cap">수비율 = (자살+보살) / (자살+보살+실책)</div></div></div>
       ${tableHTML(["포지션","이닝","자살","보살","실책","병살","수비율"],
@@ -1159,18 +1135,18 @@ function viewStats(){
 
 /* ------------------------------- 영상 ------------------------------- */
 function videoCard(v, g){
-  const link = v.paId? (g.pas.find(p=>p.id===v.paId)) : null;
   const sub = [];
   if(v.kind==="file") sub.push(bytes(v.size)+" · 이 기기에 저장");
   else sub.push("링크");
-  if(link) sub.push(RMAP[link.result]? (link.inning?link.inning+"회 ":"")+RMAP[link.result].ko+" 타석" : "타석 연결");
+  const lt = videoLinkText(v, g);
+  if(lt) sub.push(lt);
   return `<div class="vidcard" data-vid="${v.id}">
     <div class="vh">
-      <button class="vtitle" data-act="playVideo" data-gid="${g.id}" data-id="${v.id}">
-        <span class="tx">${esc(v.title||v.name||"영상")}</span>
-      </button>
-      ${v.kind==="link"?`<button class="iconbtn sm" data-act="openVideo" data-gid="${g.id}" data-id="${v.id}" title="새 창에서 열기" aria-label="새 창에서 열기">↗</button>`:""}
-      ${delBtn("delVideo", `data-gid="${g.id}" data-id="${v.id}"`, "영상 삭제")}
+      <div class="t">${esc(v.title||v.name||"영상")}</div>
+      <button class="btn sm pri" data-act="playVideo" data-gid="${g.id}" data-id="${v.id}">재생 ▶</button>
+      ${v.kind==="link"?`<button class="btn sm" data-act="openVideo" data-gid="${g.id}" data-id="${v.id}" title="새 창에서 열기" aria-label="새 창에서 열기">↗</button>`:""}
+      <button class="btn sm" data-act="editVideo" data-gid="${g.id}" data-id="${v.id}">수정</button>
+      <button class="btn sm dan" data-act="delVideo" data-gid="${g.id}" data-id="${v.id}">삭제</button>
     </div>
     <div class="hint">${esc(sub.join(" · "))}${v.note?" — "+esc(v.note):""}</div>
     <div class="player" style="margin-top:8px"></div>
@@ -1185,25 +1161,12 @@ function viewVideos(){
   + `<div class="card"><div class="hd"><div style="flex:1"><h3>영상 보관함</h3>
       <div class="cap">${cnt}개 · 기기 저장 용량 ${bytes(total)}</div></div></div>
       <div id="quota" class="hint">저장 공간 확인 중…</div></div>`
-  + (withV.length? withV.map(g=>{
-      const open = openVG.has(g.id);
-      return `<div class="card">
-        <button class="vgame" data-act="toggleVG" data-id="${g.id}" aria-expanded="${open}">
-          <div class="gt">
-            <div class="t">${esc(fmtDate(g.date))} vs ${esc(g.opponent||"-")}</div>
-            <div class="s">영상 ${g.videos.length}개${g.venue?" · "+esc(g.venue):""}</div>
-          </div>
-          <span class="chev" aria-hidden="true">▼</span>
-        </button>
-        <div class="vlist" ${open?"":"hidden"}>
-          ${g.videos.map(v=>videoCard(v,g)).join("")}
-          <div class="btnrow" style="margin-top:4px">
-            <button class="btn sm" data-act="openGame" data-id="${g.id}">경기 기록 보기</button>
-            <button class="btn sm pri nb" data-act="newVideo" data-gid="${g.id}">+ 영상 추가</button>
-          </div>
-        </div>
-      </div>`;
-    }).join("")
+  + (withV.length? withV.map(g=>`<div class="card">
+      <div class="hd"><div style="flex:1"><h3>${esc(fmtDate(g.date))} vs ${esc(g.opponent||"-")}</h3>
+      <div class="cap">${g.videos.length}개 영상</div></div>
+      <button class="btn sm" data-act="openGame" data-id="${g.id}">경기</button>
+      <button class="btn sm pri" data-act="newVideo" data-gid="${g.id}">+ 영상</button></div>
+      ${g.videos.map(v=>videoCard(v,g)).join("")}</div>`).join("")
     : `<div class="empty"><span class="big">▶</span>등록된 영상이 없습니다<br>
        <span class="hint">경기 상세 화면에서 영상을 추가할 수 있습니다</span></div>`);
 }
@@ -1224,7 +1187,7 @@ function viewSettings(){
       <label class="f"><span>타석</span><select id="pf_bats">${["우타","좌타","양타"].map(x=>`<option ${p.bats===x?"selected":""}>${x}</option>`).join("")}</select></label>
       <label class="f"><span>투구</span><select id="pf_thr">${["우투","좌투"].map(x=>`<option ${p.throws===x?"selected":""}>${x}</option>`).join("")}</select></label>
     </div>
-    <button class="btn pri block nb" data-act="saveProfile">선수 정보 저장</button></div>
+    <button class="btn pri block" data-act="saveProfile">선수 정보 저장</button></div>
 
     <div class="card"><div class="hd"><div style="flex:1"><h3>경기장 규격</h3>
       <div class="cap">타구 위치 그림과 추정 거리에 쓰입니다. 경기마다 다른 구장을 쓸 때는 경기 정보에서 따로 지정할 수 있습니다.</div></div></div>
@@ -1239,23 +1202,6 @@ function viewSettings(){
       <div class="hint" style="margin-top:8px">리그·대회마다 다릅니다(리틀 6이닝, 중등·고교 주말리그 7이닝, 전국대회·대학 9이닝 등).
         소속 리그 기준으로 바꿔 두면 타석 입력과 이닝별 차트 범위가 그에 맞춰집니다.</div>
       <div style="margin-top:10px">${fieldSVG("", {aria:"선택한 규격의 경기장", maxw:300, level:curLevel()})}</div>
-    </div>
-
-    <div class="card"><div class="hd"><div style="flex:1"><h3>화면 테마</h3>
-      <div class="cap">기본값은 휴대폰·PC의 설정을 그대로 따릅니다.</div></div></div>
-      <div class="filters" style="margin-bottom:0"><div class="seg" role="group" aria-label="화면 테마">
-        ${[["","시스템"],["light","밝게"],["dark","어둡게"]].map(([v,l])=>
-          `<button data-act="theme" data-v="${v}" aria-pressed="${curTheme()===v}">${l}</button>`).join("")}
-      </div></div>
-    </div>
-
-    <div class="card"><div class="hd"><div style="flex:1"><h3>영상 재생</h3>
-      <div class="cap">누르는 즉시 재생을 시작할지 정합니다.</div></div></div>
-      <div class="filters" style="margin-bottom:8px"><div class="seg" role="group" aria-label="자동 재생 방식">
-        ${Object.keys(AUTOPLAY).map(k=>`<button data-act="autoplay" data-v="${k}" aria-pressed="${apMode()===k}">${AUTOPLAY[k]}</button>`).join("")}
-      </div></div>
-      <div class="hint">브라우저가 소리 있는 자동 재생을 막는 경우가 있습니다. 눌렀는데 바로 시작되지 않으면 <b>음소거로</b>를 골라 보세요 — 재생 후 플레이어에서 음소거를 풀 수 있습니다.<br>
-        유튜브 링크는 공개 범위가 <b>일부 공개(미등록)</b>여야 앱 안에서 재생됩니다. <b>비공개</b>는 유튜브 정책상 임베드가 차단됩니다.</div>
     </div>
 
     <div class="card"><div class="hd"><div style="flex:1"><h3>백업 / 복원</h3>
@@ -1290,9 +1236,8 @@ function viewSettings(){
       </div></div>
 
     <div class="card"><div class="hd"><div style="flex:1"><h3>데이터 관리</h3></div></div>
-      <div class="btnrow" style="align-items:center">
-        ${delBtn("wipe", "", "전체 기록 삭제")}
-        <span class="hint">전체 기록 삭제</span>
+      <div class="btnrow">
+        <button class="btn dan" data-act="wipe">전체 기록 삭제</button>
       </div>
       <div class="hint" style="margin-top:8px">삭제 전에 <b>JSON 내보내기</b>로 백업해 두세요. 삭제하면 되돌릴 수 없습니다.</div></div>`;
 }
@@ -1326,12 +1271,20 @@ function stepper(id, val, min, max){
 /* ---------------------------- 경기 정보 시트 ---------------------------- */
 function gameSheet(id){
   const g = id? S.games.find(x=>x.id===id) : null;
-  const d = g || {date:today(), opponent:"", venue:"", homeAway:"홈", myScore:"", oppScore:"", note:"", level:""};
+  const d = g || {date:today(), opponent:"", venue:"", homeAway:"홈", myScore:"", oppScore:"", note:"", level:"", type:"official"};
+  const gt = gameType(d);
   const venues = Array.from(new Set(S.games.map(x=>x.venue).filter(Boolean)));
   const opps = Array.from(new Set(S.games.map(x=>x.opponent).filter(Boolean)));
   openSheet(`
     <div class="sh"><h3>${g?"경기 정보 수정":"새 경기"}</h3><div class="spacer" style="flex:1"></div>
       <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+    <div class="f" style="margin-bottom:12px">
+      <span style="display:block;font-size:12.5px;color:var(--text-2);margin-bottom:5px;font-weight:550">경기 종류</span>
+      <div class="seg" role="group" aria-label="경기 종류" style="width:100%">
+        ${GTYPE_KEYS.map(k=>`<button type="button" data-act="pickGType" data-v="${k}" aria-pressed="${gt===k}" style="flex:1">${GAME_TYPES[k].ko}</button>`).join("")}
+      </div>
+      <input id="g_type" type="hidden" value="${gt}">
+    </div>
     <label class="f"><span>경기 날짜</span><input id="g_date" type="date" value="${esc(d.date)}"></label>
     <label class="f"><span>상대 팀</span><input id="g_opp" value="${esc(d.opponent)}" list="dl_opp" placeholder="상대 팀 이름">
       <datalist id="dl_opp">${opps.map(o=>`<option value="${esc(o)}">`).join("")}</datalist></label>
@@ -1391,7 +1344,7 @@ function paSheet(gid, pid){
       <label class="f"><span>도루</span>${stepper("pa_sb", num(draft.sb,0), 0, 4)}</label>
     </div>
     <label class="f"><span>메모</span><textarea id="pa_note" placeholder="볼카운트, 구종, 느낀 점 등">${esc(draft.note)}</textarea></label>
-    <div class="sf">${p? delBtn("delPA", `data-gid="${gid}" data-id="${p.id}"`, "이 타석 삭제") : `<button class="btn" data-act="close">취소</button>`}
+    <div class="sf">${p?`<button class="btn dan" data-act="delPA" data-gid="${gid}" data-id="${p.id}">삭제</button>`:`<button class="btn" data-act="close">취소</button>`}
       <button class="btn pri" data-act="savePA" data-gid="${gid}" data-id="${p?p.id:""}">저장</button></div>`,
   sheet=>{
     const svg = sheet.querySelector("#pafield");
@@ -1417,82 +1370,146 @@ function paSheet(gid, pid){
 }
 
 /* ------------------------------ 수비 시트 ------------------------------ */
+let ddraft = null;   // 수비 시트에서 고른 결과
 function defSheet(gid, did){
   const g = S.games.find(x=>x.id===gid); if(!g) return;
   const d = did? g.def.find(x=>x.id===did) : null;
-  const v = d || {pos:S.profile.position||"", innings:"", po:0, a:0, e:0, dp:0};
+  const last = g.def.length? g.def[g.def.length-1] : null;
+  const v = d || {pos:(last&&last.pos)||S.profile.position||"", inning:(last? num(last.inning,0)+1 : 1),
+                  result:"", innings:"", po:0, a:0, e:0, dp:0, note:""};
+  const LV = gameLevel(g);
+  ddraft = {result: v.result||""};
+  const openDetail = !!(d && !v.result);   // 예전 방식으로 적어 둔 기록은 세부칸을 펼쳐서 보여줌
+  const groups = ["out","err","etc"].map(gk=>`
+    <div class="chipgroup"><div class="gl">${DGLABEL[gk]}</div><div class="chips">
+      ${DEF_RESULTS.filter(r=>r.g===gk).map(r=>`<button type="button" class="chip dchip ${DGCHIP[gk]}" data-act="pickDefResult" data-v="${r.c}"
+        aria-pressed="${ddraft.result===r.c}">${r.ko}</button>`).join("")}
+    </div></div>`).join("");
+
   openSheet(`
     <div class="sh"><h3>${d?"수비 기록 수정":"수비 기록"}</h3><div class="spacer" style="flex:1"></div>
       <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
     <div class="f2">
       <label class="f"><span>포지션</span><select id="d_pos"><option value="">선택</option>
         ${POS.map(x=>`<option value="${x.c}" ${v.pos===x.c?"selected":""}>${x.ko}</option>`).join("")}</select></label>
-      <label class="f"><span>수비 이닝 <span style="color:var(--text-3);font-weight:400">/ 정규 ${regInnings(gameLevel(g))}이닝</span></span>
-        <input id="d_inn" inputmode="decimal" value="${esc(v.innings)}" placeholder="예: ${Math.max(1,regInnings(gameLevel(g))-1)}.2"></label>
+      <label class="f"><span>이닝 <span style="color:var(--text-3);font-weight:400">/ 정규 ${regInnings(LV)}이닝</span></span>
+        ${stepper("d_inning", clamp(num(v.inning,1)||1,1,regInnings(LV)+3), 1, regInnings(LV)+3)}</label>
     </div>
-    <div class="hint" style="margin:-6px 0 12px">이닝은 야구 표기를 씁니다 — <b>5.2</b> = 5이닝 2아웃</div>
-    <div class="f2">
-      <label class="f"><span>자살 (PO)</span>${stepper("d_po", num(v.po,0), 0)}</label>
-      <label class="f"><span>보살 (A)</span>${stepper("d_a", num(v.a,0), 0)}</label>
-      <label class="f"><span>실책 (E)</span>${stepper("d_e", num(v.e,0), 0)}</label>
-      <label class="f"><span>병살 참여 (DP)</span>${stepper("d_dp", num(v.dp,0), 0)}</label>
-    </div>
-    <div class="sf">${d? delBtn("delDef", `data-gid="${gid}" data-id="${d.id}"`, "이 수비 기록 삭제") : `<button class="btn" data-act="close">취소</button>`}
+    <div style="margin-bottom:6px"><span style="display:block;font-size:12.5px;color:var(--text-2);margin-bottom:6px;font-weight:550">수비 결과</span>${groups}</div>
+    <label class="f"><span>메모</span><textarea id="d_note" placeholder="타구 방향, 상황, 아쉬웠던 점 등">${esc(v.note||"")}</textarea></label>
+    <details class="dtl" ${openDetail?"open":""}>
+      <summary>세부 기록 · 수비 이닝 직접 입력</summary>
+      <div class="dtlbody">
+        <div class="hint" style="margin:0 0 10px">결과를 고르면 자동으로 채워집니다. 필요하면 직접 고쳐 주세요.</div>
+        <label class="f"><span>수비 이닝 <span style="color:var(--text-3);font-weight:400">— 이 경기에서 지킨 총 이닝 (한 번만 입력)</span></span>
+          <input id="d_inn" inputmode="decimal" value="${esc(v.innings||"")}" placeholder="예: ${Math.max(1,regInnings(LV)-1)}.2"></label>
+        <div class="hint" style="margin:-6px 0 12px">이닝은 야구 표기를 씁니다 — <b>5.2</b> = 5이닝 2아웃</div>
+        <div class="f2">
+          <label class="f"><span>자살 (PO)</span>${stepper("d_po", num(v.po,0), 0)}</label>
+          <label class="f"><span>보살 (A)</span>${stepper("d_a", num(v.a,0), 0)}</label>
+          <label class="f"><span>실책 (E)</span>${stepper("d_e", num(v.e,0), 0)}</label>
+          <label class="f"><span>병살 참여 (DP)</span>${stepper("d_dp", num(v.dp,0), 0)}</label>
+        </div>
+      </div>
+    </details>
+    <div class="sf">${d?`<button class="btn dan" data-act="delDef" data-gid="${gid}" data-id="${d.id}">삭제</button>`:`<button class="btn" data-act="close">취소</button>`}
       <button class="btn pri" data-act="saveDef" data-gid="${gid}" data-id="${d?d.id:""}">저장</button></div>`);
+}
+// 수비 기록 한 줄 설명
+function defLine(d){
+  const bits=[];
+  const o = inn2outs(d.innings);
+  if(o) bits.push(fmtInn(o)+"이닝");
+  if(num(d.po,0)) bits.push("자살 "+num(d.po,0));
+  if(num(d.a,0))  bits.push("보살 "+num(d.a,0));
+  if(num(d.e,0))  bits.push("실책 "+num(d.e,0));
+  if(num(d.dp,0)) bits.push("병살 "+num(d.dp,0));
+  if(d.note) bits.push(String(d.note).replace(/\s+/g," ").slice(0,40));
+  return bits.join(" · ");
 }
 
 /* ------------------------------ 영상 시트 ------------------------------ */
-function videoSheet(gid){
+// 영상에 연결할 수 있는 장면 = 타석 + 수비
+function paOptions(g, sel){
+  return g.pas.map((p,i)=>`<option value="${p.id}" ${sel===p.id?"selected":""}>${i+1}번째 · ${p.inning?p.inning+"회 ":""}${RMAP[p.result]?RMAP[p.result].ko:"결과 미입력"}</option>`).join("");
+}
+function defOptions(g, sel){
+  return g.def.slice().sort((a,b)=>num(a.inning,0)-num(b.inning,0))
+    .map(d=>`<option value="${d.id}" ${sel===d.id?"selected":""}>${num(d.inning,0)?num(d.inning,0)+"회 · ":""}${esc(PMAP[d.pos]||d.pos||"-")}${d.result?" · "+dko(d.result):""}</option>`).join("");
+}
+function videoSheet(gid, vid){
   const g = S.games.find(x=>x.id===gid); if(!g) return;
+  const v = vid? g.videos.find(x=>x.id===vid) : null;
+  const kind = v? v.kind : "file";
+  const linkKind = v? (v.defId? "def" : v.paId? "pa" : "") : "";
   openSheet(`
-    <div class="sh"><h3>영상 추가</h3><div class="spacer" style="flex:1"></div>
+    <div class="sh"><h3>${v?"영상 수정":"영상 추가"}</h3><div class="spacer" style="flex:1"></div>
       <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
-    <div class="filters"><div class="seg" role="group" aria-label="영상 종류">
+    ${v? `<div class="hint" style="margin:0 0 12px">${v.kind==="file"?`파일: <b>${esc(v.name||"")}</b> (${bytes(v.size)}) — 파일 자체는 바꿀 수 없습니다. 다른 파일을 넣으려면 삭제 후 다시 추가해 주세요.`:"링크 영상"}</div>`
+      : `<div class="filters"><div class="seg" role="group" aria-label="영상 종류">
       <button data-act="vkind" data-v="file" aria-pressed="true">파일 업로드</button>
       <button data-act="vkind" data-v="link" aria-pressed="false">링크 등록</button>
-    </div></div>
-    <div id="v_file">
+    </div></div>`}
+    ${v? "" : `<div id="v_file">
       <label class="f"><span>동영상 파일</span><input id="v_input" type="file" accept="video/*"></label>
       <div class="hint" style="margin:-6px 0 12px">이 기기의 브라우저 안에만 저장됩니다. 인터넷 업로드가 아니므로 안전하지만,
         기기 저장 공간을 사용하니 <b>하이라이트 클립(수십 MB)</b> 위주로 넣는 것을 권합니다.</div>
       <div id="v_prog" hidden><div class="bar"><i style="width:0%"></i></div><div class="hint" style="margin-top:6px">저장 중…</div></div>
+    </div>`}
+    <div id="v_link" ${(v && v.kind==="link")? "" : "hidden"}>
+      <label class="f"><span>영상 주소</span><input id="v_url" inputmode="url" value="${v&&v.kind==="link"?esc(v.url):""}" placeholder="https://youtu.be/... 또는 mp4 주소"></label>
+      <div class="hint" style="margin:-6px 0 12px">유튜브 주소는 앱 안에서 바로 재생됩니다. 구글 드라이브 등 다른 링크는 새 창으로 열립니다.</div>
     </div>
-    <div id="v_link" hidden>
-      <label class="f"><span>영상 주소</span><input id="v_url" inputmode="url" placeholder="https://youtu.be/... 또는 mp4 주소"></label>
-      <div class="hint" style="margin:-6px 0 12px">유튜브·구글 드라이브·Vimeo·mp4 주소는 앱 안에서 바로 재생됩니다.<br>
-        유튜브는 공개 범위를 <b>일부 공개(미등록)</b>로 올려 주세요 — <b>비공개</b> 영상은 유튜브 정책상 어떤 앱·사이트에서도 재생되지 않습니다.
-        일부 공개는 검색에 노출되지 않으니 비공개와 사실상 같습니다.</div>
+    <label class="f"><span>제목</span><input id="v_title" value="${v?esc(v.title||""):""}" placeholder="예: 3회 좌중간 2루타"></label>
+    <div class="f2">
+      <label class="f"><span>연결할 장면</span><select id="v_target">
+        <option value="" ${linkKind===""?"selected":""}>연결 안 함</option>
+        <option value="pa" ${linkKind==="pa"?"selected":""}>타석 기록</option>
+        <option value="def" ${linkKind==="def"?"selected":""}>수비 기록</option></select></label>
+      <label class="f" id="v_pa_wrap" ${linkKind==="pa"?"":"hidden"}><span>타석 선택</span>
+        <select id="v_pa">${g.pas.length? paOptions(g, v&&v.paId) : `<option value="">기록된 타석 없음</option>`}</select></label>
+      <label class="f" id="v_def_wrap" ${linkKind==="def"?"":"hidden"}><span>수비 선택</span>
+        <select id="v_def">${g.def.length? defOptions(g, v&&v.defId) : `<option value="">기록된 수비 없음</option>`}</select></label>
     </div>
-    <label class="f"><span>제목</span><input id="v_title" placeholder="예: 3회 좌중간 2루타"></label>
-    <label class="f"><span>연결할 타석 (선택)</span><select id="v_pa"><option value="">연결 안 함</option>
-      ${g.pas.map((p,i)=>`<option value="${p.id}">${i+1}번째 · ${p.inning?p.inning+"회 ":""}${RMAP[p.result]?RMAP[p.result].ko:""}</option>`).join("")}</select></label>
-    <label class="f"><span>메모</span><textarea id="v_note" placeholder="확인할 포인트 등"></textarea></label>
+    <label class="f"><span>메모</span><textarea id="v_note" placeholder="확인할 포인트 등">${v?esc(v.note||""):""}</textarea></label>
     <div class="sf"><button class="btn" data-act="close">취소</button>
-      <button class="btn pri" data-act="saveVideo" data-gid="${gid}">추가</button></div>`);
+      <button class="btn pri" data-act="${v?"updateVideo":"saveVideo"}" data-gid="${gid}" data-id="${v?v.id:""}">${v?"저장":"추가"}</button></div>`,
+  sheet=>{
+    const sel = sheet.querySelector("#v_target");
+    const sync = ()=>{
+      sheet.querySelector("#v_pa_wrap").hidden  = sel.value!=="pa";
+      sheet.querySelector("#v_def_wrap").hidden = sel.value!=="def";
+    };
+    sel.addEventListener("change", sync); sync();
+  });
 }
-function ytId(u){ const m=String(u).match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/|live\/|\/v\/)([A-Za-z0-9_-]{11})/); return m?m[1]:null; }
+// 영상에 연결된 장면 설명
+function videoLinkText(v, g){
+  if(v.defId){
+    const d = g.def.find(x=>x.id===v.defId);
+    if(d) return "수비 " + (num(d.inning,0)?num(d.inning,0)+"회 ":"") + (PMAP[d.pos]||d.pos||"") + (d.result?" "+dko(d.result):"");
+    return "수비 연결";
+  }
+  if(v.paId){
+    const p = g.pas.find(x=>x.id===v.paId);
+    if(p) return "타석 " + (p.inning?p.inning+"회 ":"") + (RMAP[p.result]?RMAP[p.result].ko:"");
+    return "타석 연결";
+  }
+  return "";
+}
+function ytId(u){ const m=String(u).match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/); return m?m[1]:null; }
 
 /* 링크를 앱 안에서 재생할 수 있는 형태로 바꿔 줍니다. */
 function embedFor(url){
-  const u  = String(url||"").trim();
-  const ap = apMode();
-  const auto = ap==="off"? 0 : 1, mute = ap==="muted"? 1 : 0;
+  const u = String(url||"").trim();
   const y = ytId(u);
-  if(y) return {kind:"iframe", site:"youtube",
-    src:`https://www.youtube.com/embed/${y}?autoplay=${auto}&mute=${mute}&playsinline=1&rel=0`};
-  const drive = u.match(/(?:drive|docs)\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([A-Za-z0-9_-]{10,})/);
-  if(drive) return {kind:"iframe", site:"drive", src:"https://drive.google.com/file/d/"+drive[1]+"/preview"};
+  if(y) return {kind:"iframe", src:"https://www.youtube.com/embed/"+y+"?autoplay=1&playsinline=1&rel=0"};
+  const drive = u.match(/drive\.google\.com\/file\/d\/([A-Za-z0-9_-]+)/);
+  if(drive) return {kind:"iframe", src:"https://drive.google.com/file/d/"+drive[1]+"/preview"};
   const vimeo = u.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-  if(vimeo) return {kind:"iframe", site:"vimeo", src:`https://player.vimeo.com/video/${vimeo[1]}?autoplay=${auto}&muted=${mute}`};
-  if(/\.(mp4|webm|ogg|ogv|mov|m4v)(\?|$)/i.test(u)) return {kind:"video", site:"file", src:u};
+  if(vimeo) return {kind:"iframe", src:"https://player.vimeo.com/video/"+vimeo[1]+"?autoplay=1"};
+  if(/\.(mp4|webm|ogg|ogv|mov|m4v)(\?|$)/i.test(u)) return {kind:"video", src:u};
   return null;
-}
-function playHint(v, site){
-  if(v.kind !== "link") return "";
-  const yt = site==="youtube"
-    ? `화면이 비어 있다면 유튜브 <b>비공개</b> 영상입니다 — 공개 범위를 <b>일부 공개(미등록)</b>로 바꾸면 재생됩니다. · `
-    : "";
-  return `<div class="hint" style="margin-top:6px">${yt}<a href="${esc(v.url)}" target="_blank" rel="noopener">새 창에서 열기 ↗</a></div>`;
 }
 function openVideoTab(gid, vid){
   const g = S.games.find(x=>x.id===gid); if(!g) return;
@@ -1508,30 +1525,30 @@ function playVideo(gid, vid){
   const v = g.videos.find(x=>x.id===vid); if(!v) return;
   const card = $(`.vidcard[data-vid="${vid}"]`);
   const host = card? $(".player", card) : null;
-  const setIcon = ()=>{};   // 재생/정지 아이콘은 쓰지 않습니다
+  const btn  = card? $('[data-act="playVideo"]', card) : null;
   if(!host) return;
 
   // 다시 누르면 닫기
   if(host.dataset.on === "1"){
     const cur = $("video", host); if(cur){ try{ cur.pause(); }catch(e){} }
     host.innerHTML = ""; host.dataset.on = "0";
-    setIcon();
+    if(btn) btn.textContent = "재생 ▶";
     return;
   }
   host.dataset.on = "1";
-  setIcon();
+  if(btn) btn.textContent = "닫기";
 
-  const ap = apMode();
-  const mountVideo = (src, site) =>{
-    const tail = playHint(v, site);
-    const attrs = ap==="off"? "" : (ap==="muted"? " autoplay muted" : " autoplay");
-    host.innerHTML = `<video controls playsinline preload="auto"${attrs} src="${src}"></video>` + tail;
+  const escape = v.kind==="link"
+    ? `<div class="hint" style="margin-top:6px">재생되지 않으면 <a href="${esc(v.url)}" target="_blank" rel="noopener">새 창에서 열기 ↗</a></div>`
+    : "";
+  const mountVideo = src =>{
+    host.innerHTML = `<video controls autoplay playsinline preload="auto" src="${src}"></video>` + escape;
     const el = $("video", host);
     if(el){
-      if(ap==="muted") el.muted = true;
-      if(ap!=="off"){ const pr = el.play(); if(pr && pr.catch) pr.catch(()=>{}); }
+      const pr = el.play();
+      if(pr && pr.catch) pr.catch(()=>{});           // 자동재생이 막히면 재생 버튼만 노출
       el.addEventListener("error", ()=>{
-        host.innerHTML = `<div class="hint">이 형식·주소는 앱 안에서 재생할 수 없습니다.</div>` + tail;
+        host.innerHTML = `<div class="hint">이 형식·주소는 앱 안에서 재생할 수 없습니다.</div>` + escape;
       }, {once:true});
     }
   };
@@ -1540,28 +1557,28 @@ function playVideo(gid, vid){
   if(v.kind === "link"){
     const em = embedFor(v.url);
     if(!em){
-      host.innerHTML = `<div class="hint">이 주소는 앱 안에서 바로 재생할 수 없는 형태입니다. 구글 포토·네이버 클라우드 등 일부 서비스는 외부 재생을 막습니다.</div>` + playHint(v, "other");
+      host.innerHTML = `<div class="hint">이 주소는 앱 안에서 바로 재생할 수 없는 형태입니다.</div>` + escape;
       return;
     }
     if(em.kind === "iframe"){
-      host.innerHTML = `<div class="ratio"><iframe src="${esc(em.src)}" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen title="${esc(v.title||"영상")}"></iframe></div>` + playHint(v, em.site);
-    } else mountVideo(esc(em.src), em.site);
+      host.innerHTML = `<div class="ratio"><iframe src="${esc(em.src)}" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen title="${esc(v.title||"영상")}"></iframe></div>` + escape;
+    } else mountVideo(esc(em.src));
     return;
   }
 
   // 기기에 저장한 파일
-  if(blobURLs[v.id]){ mountVideo(blobURLs[v.id], "file"); return; }
+  if(blobURLs[v.id]){ mountVideo(blobURLs[v.id]); return; }
   host.innerHTML = `<div class="hint">불러오는 중…</div>`;
   idbGet(v.id).then(blob=>{
     if(!blob){
       host.innerHTML = `<div class="hint">저장된 파일을 찾을 수 없습니다. 다른 기기에서 불러온 기록이라면 영상 파일은 함께 오지 않습니다.</div>`;
-      setIcon(); host.dataset.on = "0"; return;
+      if(btn) btn.textContent = "재생 ▶"; host.dataset.on = "0"; return;
     }
     blobURLs[v.id] = URL.createObjectURL(blob);
-    mountVideo(blobURLs[v.id], "file");
+    mountVideo(blobURLs[v.id]);
   }).catch(e=>{
     host.innerHTML = `<div class="hint">재생 실패: ${esc(e.message||e)}</div>`;
-    setIcon(); host.dataset.on = "0";
+    if(btn) btn.textContent = "재생 ▶"; host.dataset.on = "0";
   });
 }
 
@@ -1611,19 +1628,20 @@ function csv(rows){
   return new Blob(["﻿"+body], {type:"text/csv;charset=utf-8"});
 }
 function exportCSV(){
-  const rows = [["날짜","상대","구장","홈원정","경기장규격","이닝","상대투수","결과","결과코드","타구방향","타구깊이","추정거리(m)","타점","득점","도루","메모"]];
+  const rows = [["날짜","상대","경기종류","구장","홈원정","경기장규격","이닝","상대투수","결과","결과코드","타구방향","타구깊이","추정거리(m)","타점","득점","도루","메모"]];
   scopedGames().forEach(g=> g.pas.forEach(p=>{
     const z = p.zone? zoneOf(p.zone, gameLevel(g)) : null; const r = RMAP[p.result];
-    rows.push([g.date, g.opponent, g.venue, g.homeAway, LEVELS[gameLevel(g)].ko, p.inning, p.pitcher, r?r.ko:"", p.result,
+    rows.push([g.date, g.opponent, GAME_TYPES[gameType(g)].ko, g.venue, g.homeAway, LEVELS[gameLevel(g)].ko, p.inning, p.pitcher, r?r.ko:"", p.result,
       z?z.label:"", z?z.depth:"", z?Math.round(z.m):"", num(p.rbi,0), num(p.runs,0), num(p.sb,0), p.note||""]);
   }));
   if(rows.length===1){ toast("내보낼 타석 기록이 없습니다"); return; }
   download(`baseball-batting_${stamp()}.csv`, csv(rows));
 }
 function exportDefCSV(){
-  const rows = [["날짜","상대","포지션","이닝","자살","보살","실책","병살"]];
+  const rows = [["날짜","상대","경기종류","이닝","포지션","결과","결과코드","수비이닝","자살","보살","실책","병살","메모"]];
   scopedGames().forEach(g=> g.def.forEach(d=>{
-    rows.push([g.date, g.opponent, PMAP[d.pos]||d.pos, d.innings, num(d.po,0), num(d.a,0), num(d.e,0), num(d.dp,0)]);
+    rows.push([g.date, g.opponent, GAME_TYPES[gameType(g)].ko, num(d.inning,0)||"", PMAP[d.pos]||d.pos,
+      DMAP[d.result]?DMAP[d.result].ko:"", d.result||"", d.innings, num(d.po,0), num(d.a,0), num(d.e,0), num(d.dp,0), d.note||""]);
   }));
   if(rows.length===1){ toast("내보낼 수비 기록이 없습니다"); return; }
   download(`baseball-fielding_${stamp()}.csv`, csv(rows));
@@ -1637,7 +1655,7 @@ function importJSON(){
     rd.onload = ()=>{
       let o; try{ o = JSON.parse(rd.result); }catch(e){ toast("JSON 파일을 읽을 수 없습니다"); return; }
       if(!o || !Array.isArray(o.games)){ toast("야구 기록 파일이 아닙니다"); return; }
-      o.games.forEach(g=>{ g.pas=g.pas||[]; g.def=g.def||[]; g.videos=g.videos||[]; });
+      normalizeGames(o.games);
       ask("불러오기 방법", `파일에 <b>${o.games.length}경기</b>가 들어 있습니다.<br>현재 기기에는 ${S.games.length}경기가 저장되어 있습니다.`,
         [{label:"현재 기록에 합치기", style:"pri"},{label:"전체 교체", style:"dan"},{label:"취소"}]).then(k=>{
         if(k===0){
@@ -1692,7 +1710,7 @@ function pasteJSON(){
 function applyPaste(){
   let o; try{ o = JSON.parse($("#j_in").value); }catch(e){ toast("JSON 형식이 아닙니다"); return; }
   if(!o || !Array.isArray(o.games)){ toast("야구 기록 데이터가 아닙니다"); return; }
-  o.games.forEach(g=>{ g.pas=g.pas||[]; g.def=g.def||[]; g.videos=g.videos||[]; });
+  normalizeGames(o.games);
   closeSheet();
   ask("불러오기 방법", `붙여넣은 데이터에 <b>${o.games.length}경기</b>가 있습니다.`,
     [{label:"현재 기록에 합치기",style:"pri"},{label:"전체 교체",style:"dan"},{label:"취소"}]).then(k=>{
@@ -1715,7 +1733,7 @@ function sampleData(){
   for(let i=0;i<8;i++){
     const d = new Date(base.getTime() + i*8*86400000);
     const date = d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
-    const g = {id:uid(), date, opponent:rnd(opps), venue:rnd(vens), homeAway:i%2?"원정":"홈",
+    const g = {id:uid(), date, opponent:rnd(opps), venue:rnd(vens), homeAway:i%2?"원정":"홈", type:(i%3===0?"practice":"official"),
       myScore:String(2+Math.floor(Math.random()*8)), oppScore:String(1+Math.floor(Math.random()*8)),
       note:"", pas:[], def:[], videos:[]};
     const n = 3+Math.floor(Math.random()*2);
@@ -1734,8 +1752,19 @@ function sampleData(){
         rbi: c==="HR"? 1+Math.floor(Math.random()*3) : (r.h||c==="SF")? Math.floor(Math.random()*2):0,
         runs: c==="HR"?1:(r.h?Math.floor(Math.random()*2):0), sb:(c==="1B"||c==="BB")?Math.floor(Math.random()*2):0, cs:0, note:""});
     }
-    g.def.push({id:uid(), pos:rnd(["SS","2B","CF","LF","1B"]), innings:String(6+Math.floor(Math.random()*3))+"."+Math.floor(Math.random()*3),
-      po:Math.floor(Math.random()*4), a:Math.floor(Math.random()*4), e:Math.random()<0.25?1:0, dp:Math.random()<0.3?1:0});
+    // 수비 — 출장 이닝 1건 + 이닝별 수비 장면 몇 건
+    const dpos = rnd(["SS","2B","CF","LF","1B"]);
+    g.def.push({id:uid(), pos:dpos, inning:1, result:"INN",
+      innings:String(5+Math.floor(Math.random()*3))+"."+Math.floor(Math.random()*3),
+      po:0, a:0, e:0, dp:0, note:"선발 출장"});
+    const dcodes = ["PO","A","A","DP","NP","EF","ET"];
+    const dn = 2+Math.floor(Math.random()*3);
+    for(let k=0;k<dn;k++){
+      const dc = rnd(dcodes), dr = DMAP[dc];
+      g.def.push({id:uid(), pos:dpos, inning:2+k*2-Math.floor(Math.random()*2), result:dc, innings:"",
+        po:dr.po||0, a:dr.a||0, e:dr.e||0, dp:dr.dp||0, note:""});
+    }
+    g.def.sort((x,y)=> num(x.inning,0)-num(y.inning,0));
     S.games.push(g);
   }
   if(!S.profile.name){ S.profile.name="샘플 선수"; S.profile.team="샘플 클럽"; S.profile.number="7"; S.profile.position="SS"; }
@@ -1745,12 +1774,13 @@ function sampleData(){
 /* ============================== 이벤트 ============================== */
 function readGameSheet(){
   return {date:$("#g_date").value||today(), opponent:$("#g_opp").value.trim(), venue:$("#g_venue").value.trim(),
-    homeAway:$("#g_ha").value, level:$("#g_lv").value, myScore:$("#g_ms").value, oppScore:$("#g_os").value, note:$("#g_note").value.trim()};
+    homeAway:$("#g_ha").value, level:$("#g_lv").value, type:($("#g_type").value||"official"),
+    myScore:$("#g_ms").value, oppScore:$("#g_os").value, note:$("#g_note").value.trim()};
 }
 document.addEventListener("click", ev=>{
   const nav = ev.target.closest("nav.tabs button");
   if(nav){ S.ui.tab = nav.dataset.nav; S.ui.gameId = null; save(); render(); return; }
-
+  if(ev.target.id==="themeBtn"){ toggleTheme(); return; }
   const tg = ev.target.closest("[data-toggle]");
   if(tg){ const box=document.getElementById(tg.dataset.toggle);
     const open = box.hasAttribute("hidden");
@@ -1766,6 +1796,10 @@ document.addEventListener("click", ev=>{
     case "close": closeSheet(); break;
     case "nav": S.ui.tab=v; S.ui.gameId=null; save(); render(); break;
     case "year": S.ui.year=v; save(); render(); break;
+    case "gtype": S.ui.gtype=v; save(); render(); break;
+    case "pickGType": {
+      $$("#modal [data-act='pickGType']").forEach(b=> b.setAttribute("aria-pressed", String(b.dataset.v===v)));
+      const h=$("#g_type"); if(h) h.value=v; break; }
     case "metric": S.ui.metric=v; save(); render(); break;
     case "level": S.settings.level=v; saveNow(); render(); toast(LEVELS[v].ko+" 규격으로 바꿨습니다"); break;
     case "saveInn": {
@@ -1823,29 +1857,38 @@ document.addEventListener("click", ev=>{
 
     case "newDef": defSheet(gid, null); break;
     case "editDef": defSheet(gid, id); break;
+    case "pickDefResult": {
+      ddraft.result = (ddraft.result===v)? "" : v;
+      $$("#modal .chip.dchip").forEach(c=> c.setAttribute("aria-pressed", String(c.dataset.v===ddraft.result)));
+      const r = DMAP[ddraft.result];
+      if(r){
+        const set=(k,n)=>{ const el=$("#modal #"+k); if(el) el.value=String(n); };
+        set("d_po", r.po||0); set("d_a", r.a||0); set("d_e", r.e||0); set("d_dp", r.dp||0);
+      }
+      break; }
     case "saveDef": {
       const g=S.games.find(x=>x.id===gid);
-      const rec = {id:id||uid(), pos:$("#d_pos").value, innings:$("#d_inn").value.trim(),
+      const rec = {id:id||uid(), pos:$("#d_pos").value, inning:num($("#d_inning").value,0),
+        result: ddraft? ddraft.result : "", innings:$("#d_inn").value.trim(), note:$("#d_note").value.trim(),
         po:num($("#d_po").value,0), a:num($("#d_a").value,0), e:num($("#d_e").value,0), dp:num($("#d_dp").value,0)};
       if(!rec.pos){ toast("포지션을 선택해 주세요"); return; }
+      if(!rec.result && !(rec.po||rec.a||rec.e||rec.dp||inn2outs(rec.innings))){ toast("수비 결과를 선택해 주세요"); return; }
       if(id){ const i=g.def.findIndex(x=>x.id===id); g.def[i]=rec; } else g.def.push(rec);
-      saveNow(); closeSheet(); render(); toast("수비 기록을 저장했습니다"); break; }
+      g.def.sort((x,y)=> num(x.inning,0)-num(y.inning,0));
+      saveNow(); closeSheet(); render(); toast(rec.result? dko(rec.result)+" 기록" : "수비 기록을 저장했습니다"); break; }
     case "delDef": {
       const g=S.games.find(x=>x.id===gid); g.def=g.def.filter(x=>x.id!==id);
       saveNow(); closeSheet(); render(); toast("삭제했습니다"); break; }
 
-    case "newVideo": videoSheet(gid); break;
+    case "newVideo": videoSheet(gid, null); break;
+    case "editVideo": videoSheet(gid, id); break;
+    case "updateVideo": updateVideo(gid, id); break;
     case "vkind":
       $$("#modal .seg [data-act='vkind']").forEach(b=> b.setAttribute("aria-pressed", String(b.dataset.v===v)));
       $("#v_file").hidden = v!=="file"; $("#v_link").hidden = v!=="link"; break;
     case "saveVideo": saveVideo(gid, el); break;
     case "playVideo": playVideo(gid, id); break;
     case "openVideo": openVideoTab(gid, id); break;
-    case "autoplay": S.settings.autoplay=v; saveNow(); render(); toast("자동 재생: "+AUTOPLAY[v]); break;
-    case "theme": setTheme(v); break;
-    case "toggleVG": {
-      if(openVG.has(id)) openVG.delete(id); else openVG.add(id);
-      render(); break; }
     case "delVideo":
       ask("영상 삭제","이 영상을 기록에서 삭제합니다. 업로드한 파일도 기기에서 지워집니다.",
         [{label:"삭제",style:"dan"},{label:"취소"}]).then(k=>{
@@ -1886,16 +1929,37 @@ document.addEventListener("click", ev=>{
   }
 });
 
+function readVideoLink(){
+  const t = $("#v_target").value;
+  if(t==="pa")  return {paId: $("#v_pa").value || null,  defId:null};
+  if(t==="def") return {paId:null, defId: $("#v_def").value || null};
+  return {paId:null, defId:null};
+}
+function updateVideo(gid, vid){
+  const g = S.games.find(x=>x.id===gid); if(!g) return;
+  const v = g.videos.find(x=>x.id===vid); if(!v) return;
+  const lk = readVideoLink();
+  if(v.kind==="link"){
+    const url = $("#v_url").value.trim();
+    if(!url){ toast("영상 주소를 입력해 주세요"); return; }
+    v.url = url;
+  }
+  v.title = $("#v_title").value.trim() || v.title;
+  v.note  = $("#v_note").value.trim();
+  v.paId  = lk.paId; v.defId = lk.defId;
+  saveNow(); closeSheet(); render(); toast("영상 정보를 수정했습니다");
+}
 function saveVideo(gid, btn){
   const g = S.games.find(x=>x.id===gid); if(!g) return;
   const kind = ($("#modal [data-act='vkind'][aria-pressed='true']")||{dataset:{v:"file"}}).dataset.v;
   const title = $("#v_title").value.trim();
-  const paId = $("#v_pa").value || null;
+  const lk = readVideoLink();
+  const paId = lk.paId, defId = lk.defId;
   const note = $("#v_note").value.trim();
   if(kind==="link"){
     const url = $("#v_url").value.trim();
     if(!url){ toast("영상 주소를 입력해 주세요"); return; }
-    g.videos.push({id:uid(), kind:"link", url, title:title||url.slice(0,60), paId, note, createdAt:Date.now()});
+    g.videos.push({id:uid(), kind:"link", url, title:title||url.slice(0,60), paId, defId, note, createdAt:Date.now()});
     saveNow(); closeSheet(); render(); toast("영상 링크를 추가했습니다"); return;
   }
   const f = ($("#v_input").files||[])[0];
@@ -1907,7 +1971,7 @@ function saveVideo(gid, btn){
   idbPut(id, f).then(()=>{
     $("#v_prog .bar > i").style.width = "100%";
     g.videos.push({id, kind:"file", name:f.name, mime:f.type, size:f.size,
-      title:title||f.name.replace(/\.[^.]+$/,""), paId, note, createdAt:Date.now()});
+      title:title||f.name.replace(/\.[^.]+$/,""), paId, defId, note, createdAt:Date.now()});
     saveNow(); closeSheet(); render(); toast("영상을 이 기기에 저장했습니다");
   }).catch(e=>{
     btn.disabled = false; $("#v_prog").hidden = true;
@@ -1916,9 +1980,43 @@ function saveVideo(gid, btn){
   });
 }
 
+/* --------------------- 뒤로(되돌아가기) 버튼 처리 ---------------------
+   한 번 누르면 홈으로, 홈에서 두 번 연속 누르면 앱을 나갑니다.
+   (시트가 열려 있으면 먼저 시트를 닫습니다)
+   -------------------------------------------------------------------- */
+let backArmed = 0;
+function pushBackState(){ try{ history.pushState({bb:"app"}, ""); }catch(e){} }
+function initBackButton(){
+  if(!window.history || !history.pushState) return;
+  try{ history.replaceState({bb:"root"}, ""); }catch(e){}
+  pushBackState();
+  window.addEventListener("popstate", ()=>{
+    // 1) 열려 있는 시트/모달 먼저 닫기
+    const m = $("#modal");
+    if(m && m.innerHTML){ closeSheet(); pushBackState(); return; }
+    // 2) 홈이 아니면 홈으로
+    if(S.ui.gameId || S.ui.tab!=="home"){
+      S.ui.gameId = null; S.ui.tab = "home"; save(); render();
+      backArmed = 0; pushBackState(); return;
+    }
+    // 3) 홈에서 두 번 연속(2초 이내) 누르면 나가기
+    const now = Date.now();
+    if(now - backArmed < 2000){
+      saveNow();
+      try{ window.close(); }catch(e){}
+      try{ history.back(); }catch(e){}
+      // 나가지 못한 경우(이전 페이지가 없을 때)에는 앱을 계속 쓸 수 있도록 되돌립니다
+      setTimeout(()=>{ backArmed = 0; pushBackState(); }, 600);
+      return;
+    }
+    backArmed = now;
+    toast("한 번 더 누르면 앱을 나갑니다");
+    pushBackState();
+  });
+}
+
 /* ------------------------------ 렌더 / 초기화 ------------------------------ */
 const ENV = {storage:true, idb:true};
-const openVG = new Set();   // 영상 화면에서 펼쳐 둔 경기
 function envBanner(){
   const v=$("#view"); if(!v) return;
   if(document.getElementById("envwarn")) return;
@@ -1933,7 +2031,6 @@ function envBanner(){
 let lastTab = null;
 function render(){
   const v = $("#view");
-  calcChartFont();
   const t = S.ui.tab;
   const html = (t==="games" && S.ui.gameId)? viewGame(S.ui.gameId)
     : t==="games"? viewGames()
@@ -1945,47 +2042,27 @@ function render(){
   $$("nav.tabs button").forEach(b=>{
     if(b.dataset.nav===t) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current");
   });
-  const sb = $("#setBtn");
-  if(sb){ sb.classList.toggle("on", t==="settings"); sb.setAttribute("aria-current", t==="settings"? "page":"false"); }
   const p = S.profile;
   $("#subttl").textContent = p.name? [p.name, p.number?"#"+p.number:"", p.team].filter(Boolean).join(" · ") : "기록 · 분석 · 영상";
   if(lastTab!==t){ window.scrollTo(0,0); lastTab=t; }
   envBanner();
   fillQuota();
 }
-/* 영구 저장 요청 — 기기 저장공간이 부족할 때 시스템이 기록·영상을
-   임의로 지우지 못하게 합니다. 홈 화면에 추가해 두면 승인될 확률이 높습니다. */
-function askPersist(){
-  if(!(navigator.storage && navigator.storage.persist)){ persistState="unsupported"; return Promise.resolve(); }
-  return navigator.storage.persisted().then(already=>{
-    if(already){ persistState=true; return; }
-    return navigator.storage.persist().then(ok=>{ persistState=!!ok; });
-  }).catch(()=>{ persistState="unsupported"; });
-}
-
 function fillQuota(){
   const els = $$("#quota"); if(!els.length) return;
-  const tag = ()=>{
-    if(persistState===true)  return `<span style="color:var(--good);font-weight:650">자동 저장 켜짐`;
-    if(persistState===false) return `<span style="color:var(--warn);font-weight:650">자동 저장 꺼짐</span> - 기기 저장공간 부족`;
-    return `영구 저장 상태를 확인할 수 없는 브라우저입니다.`;
-  };
-  const warn = saveFailed
-    ? `<br><span style="color:var(--crit);font-weight:650">⚠ 마지막 저장이 실패했습니다.</span> 지금 바로 JSON으로 내보내 두세요.`
-    : "";
-  const draw = txt => els.forEach(e=> e.innerHTML = txt + `<br>` + tag() + warn);
   if(navigator.storage && navigator.storage.estimate){
     navigator.storage.estimate().then(q=>{
       const used = q.usage||0, quota = q.quota||0;
-      draw(`이 기기 저장 사용량 <b>${bytes(used)}</b>${quota?` / 약 ${bytes(quota)} 사용 가능`:""}`);
-    }).catch(()=> draw("저장 공간 정보를 확인할 수 없습니다"));
-  } else draw("저장 공간 정보를 확인할 수 없습니다");
+      els.forEach(e=> e.innerHTML = `이 브라우저 저장 사용량 <b>${bytes(used)}</b>${quota?` / 약 ${bytes(quota)} 사용 가능`:""}`);
+    }).catch(()=>{ els.forEach(e=> e.textContent="저장 공간 정보를 확인할 수 없습니다"); });
+  } else els.forEach(e=> e.textContent="저장 공간 정보를 확인할 수 없습니다");
 }
-function curTheme(){ return document.documentElement.getAttribute("data-theme") || ""; }
-function setTheme(v){
-  if(v) document.documentElement.setAttribute("data-theme", v);
-  else document.documentElement.removeAttribute("data-theme");
-  try{ v? localStorage.setItem(THEME_KEY, v) : localStorage.removeItem(THEME_KEY); }catch(e){}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute("data-theme");
+  const sysDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const next = cur? (cur==="dark"?"light":"dark") : (sysDark?"light":"dark");
+  document.documentElement.setAttribute("data-theme", next);
+  try{ localStorage.setItem(THEME_KEY, next); }catch(e){}
   render();
 }
 (function init(){
@@ -1994,27 +2071,9 @@ function setTheme(v){
   try{ localStorage.setItem("__bb_t","1"); localStorage.removeItem("__bb_t"); }
   catch(e){ ENV.storage=false; }
   db().then(()=>{ ENV.idb=true; }).catch(()=>{ ENV.idb=false; envBanner(); });
-  // 앱은 언제나 홈 화면에서 시작합니다 (마지막에 보던 탭을 복원하지 않음)
-  S.ui.tab = "home"; S.ui.gameId = null;
   render();
-  askPersist().then(fillQuota);
+  initBackButton();
   window.addEventListener("beforeunload", saveNow);
-
-  // 화면 회전·창 크기 변경 시 차트 글자 크기를 다시 맞춥니다
-  let rsTimer = null;
-  window.addEventListener("resize", ()=>{
-    clearTimeout(rsTimer);
-    rsTimer = setTimeout(()=>{ const before = CFS; calcChartFont();
-      if(Math.abs(before-CFS) > 0.2) render(); }, 200);
-  });
-  // 모바일은 beforeunload가 안 불리는 경우가 많아 화면 이탈 시점에도 저장
-  window.addEventListener("pagehide", saveNow);
-  document.addEventListener("visibilitychange", ()=>{
-    if(document.visibilityState==="hidden"){ saveNow(); return; }
-    // 앱으로 돌아왔을 때 홈 화면으로. 단 입력 중(시트가 열려 있음)이면 그대로 둡니다.
-    if($("#modal").innerHTML) return;
-    if(S.ui.tab!=="home" || S.ui.gameId){ S.ui.tab="home"; S.ui.gameId=null; saveNow(); render(); }
-  });
   document.addEventListener("keydown", e=>{ if(e.key==="Escape" && $("#modal").innerHTML) closeSheet(); });
   // 개발용 훅 (자동 검증에 사용)
   window.__bb = {get S(){return S;}, set S(v){S=v;}, render, save:saveNow, battingOf, fieldingOf, zoneOf, sampleData, inn2outs, RMAP};
