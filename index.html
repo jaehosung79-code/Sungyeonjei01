@@ -236,6 +236,12 @@ select{outline:none;-webkit-appearance:none;appearance:none;background-image:lin
 .chip.g-pball[aria-pressed="true"]{background:var(--s1);border-color:var(--s1);color:#fff}
 .chip.g-pinplay[aria-pressed="true"]{background:var(--s3);border-color:var(--s3);color:#fff}
 .chip.g-phbp[aria-pressed="true"]{background:var(--crit);border-color:var(--crit);color:#fff}
+.fieldcmp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+@media(min-width:760px){ .fieldcmp{grid-template-columns:repeat(4,1fr)} }
+.fieldcmp figure{margin:0;padding:8px;border:1px solid var(--border);border-radius:12px;background:var(--surface-1)}
+.fieldcmp figure.on{border-color:var(--btn-ring);background:color-mix(in srgb,var(--btn) 12%,var(--surface-1))}
+.fieldcmp figcaption{font-size:12px;font-weight:650;margin-bottom:2px}
+.fieldcmp .sub{font-size:11px;color:var(--text-3);line-height:1.35;margin-bottom:4px}
 .pblock{border:1px solid var(--border);border-radius:12px;background:var(--surface-1);padding:12px;margin-bottom:12px}
 .pblock .gl2{font-size:12.5px;font-weight:650;color:var(--text-2);margin:2px 0 8px}
 .pblock .gl2 span{font-weight:400;color:var(--text-3);font-size:11.5px}
@@ -541,9 +547,27 @@ let saveFailed = false;      // 마지막 저장이 실패했는지
 let persistState = null;     // 영구 저장 허용 여부 (null=확인 전)
 
 // 불러온 기록을 현재 형식에 맞춰 보정
+/* 예전 버전은 규격마다 배율이 달랐습니다. 저장된 타구 위치를 같은 거리(m)를 유지한 채
+   새 공통 배율 좌표로 옮깁니다. (z2 표시가 있으면 이미 변환된 기록) */
+function migrateZone(p, lv){
+  const z = p && p.zone;
+  if(!z || z.z2) return;
+  const L = LEVELS[lv] || LEVELS.high;
+  const uOld = FIELD.R / L.cf;                       // 옛 배율
+  const dx = z.x - FIELD.hx, dy = FIELD.hy - z.y;
+  const dist = Math.hypot(dx, dy);
+  const ang = Math.atan2(dx, Math.max(dy, 0.001));
+  const m = dist / uOld;                             // 실제 거리(m) — 이 값은 그대로 보존
+  const g = geom(lv);
+  const r = Math.min(m * g.u, fenceR(g, ang) - 2);
+  const np = polar(g, clamp(ang, -44*Math.PI/180, 44*Math.PI/180), Math.max(r, g.baseU*0.18));
+  p.zone = {x:+np[0].toFixed(1), y:+np[1].toFixed(1), z2:1};
+}
 function normalizeGames(list){
   (list||[]).forEach(g=>{
     g.pas=g.pas||[]; g.def=g.def||[]; g.videos=g.videos||[];
+    const lv = (g && LEVELS[g.level])? g.level : ((S.settings && LEVELS[S.settings.level])? S.settings.level : "high");
+    g.pas.forEach(p=> migrateZone(p, lv));
     if(!GAME_TYPES[g.type]) g.type = "official";
     g.def.forEach(d=>{ if(d.note==null) d.note=""; if(d.result==null) d.result=""; if(d.inning==null) d.inning=0;
       if(d.pit){ d.pit.pitches = Array.isArray(d.pit.pitches)? d.pit.pitches : []; if(d.pit.dec==null) d.pit.dec=""; } });
@@ -980,12 +1004,15 @@ function hbarChart(items, opt){
 }
 
 /* --------------------------- 야구장 좌표계 --------------------------- */
-/* 캔버스는 고정(320x300). 중앙 펜스가 항상 캔버스 끝(R)에 닿게 두고,
-   내야·좌우 펜스 비율만 규격에 따라 달라지므로 "외야가 짧은 구장"이 그대로 보입니다. */
+/* 캔버스는 고정(320x300). 모든 규격이 "같은 배율(1m = 같은 픽셀)"을 쓰므로
+   초등 구장은 실제로 작게, 대학·성인 구장은 크게 그려집니다.
+   배율 기준은 가장 큰 규격(중앙 펜스)이 캔버스 끝(R)에 닿도록 잡습니다. */
 const FIELD = {W:320, H:300, hx:160, hy:270, R:212};
+const MAX_CF = Math.max.apply(null, LEVEL_KEYS.map(k=>LEVELS[k].cf));   // 122m (대학·성인)
+const UPM = FIELD.R / MAX_CF;                                          // 1m 당 픽셀 (모든 규격 공통)
 function geom(lv){
   const L = LEVELS[lv] || LEVELS.high;
-  const u = FIELD.R / L.cf;
+  const u = UPM;
   return {L, u, cfU:L.cf*u, lfU:L.lf*u, baseU:L.base*u, moundU:L.mound*u,
           inU:L.base*u*1.47, dirtU:L.base*u*1.62};
 }
@@ -1006,16 +1033,53 @@ function arcPath(g, radius){
   for(let i=0;i<=N;i++){ const ang=-A + 2*A*i/N; const p=polar(g, ang, radius); pts.push(p[0].toFixed(1)+" "+p[1].toFixed(1)); }
   return "M "+pts.join(" L ");
 }
+/* 규격별 외야 담장 안내선 (비교용) */
+function refFence(lv){
+  const g = geom(lv);
+  return `<path d="M ${fencePath(g).join(" L ")}" fill="none" stroke="var(--axis)" stroke-width="1" stroke-dasharray="3 4" opacity=".55"/>`;
+}
+/* 홈에서의 거리 눈금 (20m 간격) — k는 표시 배율 보정(잘라낸 그림에서 글자가 커지지 않게) */
+function distRuler(g, k){
+  k = k || 1;
+  let s="";
+  const fs = (9*k).toFixed(1), sw = (0.9*k).toFixed(2);
+  for(let m=20; m<=Math.round(g.L.cf); m+=20){
+    const r = m*g.u;
+    if(r > fenceR(g, 0)-4) break;
+    s += `<path d="${arcPath(g, r)}" fill="none" stroke="var(--axis)" stroke-width="${sw}" stroke-dasharray="${(2*k).toFixed(1)} ${(5*k).toFixed(1)}" opacity=".65"/>`;
+    const pp = polar(g, -Math.PI/4*0.88, r);
+    s += `<text x="${pp[0].toFixed(1)}" y="${(pp[1]-2*k).toFixed(1)}" text-anchor="middle" fill="var(--text-3)" `
+      + `stroke="var(--surface-1)" stroke-width="${(2.4*k).toFixed(1)}" paint-order="stroke" style="font-size:${fs}px">${m}m</text>`;
+  }
+  return s;
+}
+/* 표시 영역 — fit이면 구장(+표시할 점)에 딱 맞게 잘라 빈 공간을 없앱니다 */
+function fieldVB(g, opt){
+  if(!opt.fit) return {x:0, y:0, w:FIELD.W, h:FIELD.H};
+  const m = 10;
+  let half = g.lfU*Math.SQRT1_2 + m;
+  let y0 = FIELD.hy - g.cfU - m;
+  const y1 = FIELD.hy + 18;
+  (opt.include||[]).forEach(q=>{
+    half = Math.max(half, Math.abs(q.x - FIELD.hx) + 9);
+    y0 = Math.min(y0, q.y - 9);
+  });
+  return {x:+(FIELD.hx-half).toFixed(1), y:+y0.toFixed(1), w:+(half*2).toFixed(1), h:+(y1-y0).toFixed(1)};
+}
 function fieldSVG(inner, opt){
   opt=opt||{};
   const g = geom(opt.level || curLevel());
   const F = FIELD;
+  const vb = fieldVB(g, opt);
   const fence = fencePath(g);
   const fair = `M ${F.hx} ${F.hy} L ` + fence.join(" L ") + " Z";
   const b = g.baseU/Math.SQRT2;
   const p1=[F.hx+b, F.hy-b], p2=[F.hx, F.hy-g.baseU*Math.SQRT2], p3=[F.hx-b, F.hy-b];
-  let s = `<svg class="chart" viewBox="0 0 ${F.W} ${F.H}" role="img" aria-label="${esc(opt.aria||"타구 방향 차트")}" `
+  let s = `<svg class="chart" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" data-vb="${vb.x} ${vb.y} ${vb.w} ${vb.h}" role="img" aria-label="${esc(opt.aria||"타구 방향 차트")}" `
         + `style="max-width:${opt.maxw||400}px"${opt.id?` id="${opt.id}"`:""}>`;
+  if(opt.ref && g.L.cf < MAX_CF){
+    LEVEL_KEYS.filter(k=>LEVELS[k].cf > g.L.cf).forEach(k=>{ s += refFence(k); });
+  }
   s += `<path d="${fair}" fill="var(--field)"/>`;
   s += `<path d="${arcPath(g, g.dirtU)} L ${F.hx} ${F.hy} Z" fill="var(--dirt)"/>`;
   s += `<path d="M ${fence.join(" L ")}" fill="none" stroke="var(--axis)" stroke-width="1.5"/>`;
@@ -1027,6 +1091,11 @@ function fieldSVG(inner, opt){
   [-15,15].forEach(a=>{ const rad=a*Math.PI/180; const p=polar(g, rad, fenceR(g,rad));
     s += `<line x1="${F.hx}" y1="${F.hy}" x2="${p[0].toFixed(1)}" y2="${p[1].toFixed(1)}" stroke="var(--fieldline)" stroke-width="1" opacity=".55"/>`; });
   s += `<path d="${arcPath(g, g.inU)}" fill="none" stroke="var(--fieldline)" stroke-width="1" opacity=".7"/>`;
+  if(opt.ruler) s += distRuler(g, vb.w/FIELD.W);
+  if(opt.label){
+    const kk = vb.w/FIELD.W;
+    s += `<text x="${F.hx}" y="${(F.hy-g.cfU-6*kk).toFixed(1)}" text-anchor="middle" fill="var(--text-2)" style="font-size:${(10*kk).toFixed(1)}px;font-weight:650">${esc(g.L.ko)}</text>`;
+  }
   s += inner||"";
   s += `</svg>`;
   return s;
@@ -1061,7 +1130,7 @@ function clampFair(x, y, lv){
   let ang = clamp(Math.atan2(dx, dy), -44*Math.PI/180, 44*Math.PI/180);
   const dist = clamp(Math.hypot(dx,dy), g.baseU*0.18, fenceR(g, ang)-3);
   const p = polar(g, ang, dist);
-  return {x:p[0], y:p[1]};
+  return {x:+p[0].toFixed(1), y:+p[1].toFixed(1), z2:1};
 }
 function paClass(code){
   if(code==="HR"||code==="2B"||code==="3B") return "xbh";
@@ -1072,7 +1141,8 @@ function paClass(code){
 const SPRAY_COLOR = {hit:"var(--s1)", xbh:"var(--s2)", out:"var(--neutral)", ob:"var(--s3)"};
 const SPRAY_LABEL = {hit:"단타", xbh:"장타(2·3루타·홈런)", out:"인플레이 아웃", ob:"출루(실책·야선)"};
 
-function sprayChart(pas, lv){
+function sprayChart(pas, lv, opt){
+  opt = opt || {};
   const pts = pas.filter(p=>p.zone && RMAP[p.result] && RMAP[p.result].bip);
   if(!pts.length) return `<div class="empty">타구 위치가 기록된 타석이 없습니다<br><span class="hint">타석을 기록할 때 야구장을 눌러 타구 위치를 남겨보세요</span></div>`;
   let inner="";
@@ -1085,7 +1155,8 @@ function sprayChart(pas, lv){
   });
   const legend = `<div class="legend">`+["xbh","hit","ob","out"].map(c=>
     `<span><i class="dot" style="background:${SPRAY_COLOR[c]}"></i>${SPRAY_LABEL[c]}</span>`).join("")+`</div>`;
-  return legend + fieldSVG(inner, {aria:"타구 방향 산점도", level:lv});
+  return legend + fieldSVG(inner, {aria:"타구 방향 산점도", level:lv, ruler:!!opt.ruler,
+    fit:true, include:pts.map(p=>p.zone)});
 }
 
 /* --------------------- 스트라이크 존 좌표계 --------------------- */
@@ -1365,7 +1436,7 @@ function viewGame(id){
         <button class="btn sm pri nb" data-act="newPA" data-gid="${g.id}">+ 타석</button></div>
       <div class="list">${paList}</div>
     </div>
-    ${pas.some(p=>p.zone && hasBIP(p.result))? chartCard("이 경기 타구 방향", `${esc(LEVELS[gameLevel(g)].ko)} 규격 (${esc(LEVELS[gameLevel(g)].note)}) · 정규 ${regInnings(gameLevel(g))}이닝 · 점을 누르면 상세가 표시됩니다`,
+    ${pas.some(p=>p.zone && hasBIP(p.result))? chartCard("이 경기 타구 방향", `${esc(LEVELS[gameLevel(g)].ko)} 규격 (${esc(LEVELS[gameLevel(g)].note)}) · 실제 크기 비율 · 점을 누르면 상세가 표시됩니다`,
         sprayChart(pas, gameLevel(g)),
         tableHTML(["타석","결과","위치","추정 거리"], pas.map((p,i)=>({p,i})).filter(o=>o.p.zone && hasBIP(o.p.result)).map(o=>{const z=zoneOf(o.p.zone, gameLevel(g));
           return [o.i+1, esc(RMAP[o.p.result].ko), esc(z.label), Math.round(z.m)+"m"];}))) : ""}
@@ -1483,8 +1554,8 @@ function viewStats(){
       <div class="tiles">${tile("시도", b.SB+b.CS)+tile("성공", b.SB)+tile("실패", b.CS)+tile("성공률", pct1(b.SBP))
         +tile("경기당 시도", fx2(gs.length? (b.SB+b.CS)/gs.length : null))+tile("추가 진루", b.SB-b.CS)}</div>
       <div class="hint" style="margin-top:8px">일반적으로 성공률이 <b>70%</b>를 넘어야 팀 득점에 도움이 됩니다 — 그 아래면 시도 자체가 손해일 수 있습니다.</div></div>` : "")
-  + chartCard("타구 방향 (스프레이 차트)", `타구 위치가 기록된 인플레이 타구 ${bip.length}개 · 그림은 ${esc(LEVELS[curLevel()].ko)} 규격 (${esc(LEVELS[curLevel()].note)})`,
-      sprayChart(pas, curLevel()),
+  + chartCard("타구 방향 (스프레이 차트)", `타구 위치가 기록된 인플레이 타구 ${bip.length}개 · 그림은 ${esc(LEVELS[curLevel()].ko)} 규격 (${esc(LEVELS[curLevel()].note)}) · 모든 규격이 같은 배율이라 거리가 그대로 비교됩니다`,
+      sprayChart(pas, curLevel(), {ruler:true}),
       bip.length? tableHTML(["날짜","이닝","결과","위치","추정 거리"], bip.map(p=>{const z=zoneOf(p.zone, gameLevel(p._g));
         return [fmtDate(p._g.date), (p.inning||"-")+"회", esc(RMAP[p.result].ko), esc(z.label), Math.round(z.m)+"m"];})) : "")
   + `<div class="grid g2">`
@@ -1708,7 +1779,16 @@ function viewSettings(){
       </div>
       <div class="hint" style="margin-top:8px">리그·대회마다 다릅니다(리틀 6이닝, 중등·고교 주말리그 7이닝, 전국대회·대학 9이닝 등).
         소속 리그 기준으로 바꿔 두면 타석 입력과 이닝별 차트 범위가 그에 맞춰집니다.</div>
-      <div style="margin-top:10px">${fieldSVG("", {aria:"선택한 규격의 경기장", maxw:300, level:curLevel()})}</div>
+      <div style="margin-top:14px">${fieldSVG("", {aria:"선택한 규격의 경기장", maxw:330, level:curLevel(), ruler:true, ref:true})}</div>
+      <div class="hint" style="margin-top:4px">점선 호는 홈에서의 거리(20m 간격), 바깥쪽 점선은 더 큰 규격의 담장 위치입니다.</div>
+      <div class="fieldcmp">
+        ${LEVEL_KEYS.map(k=>`<figure class="${curLevel()===k?"on":""}">
+          <figcaption>${LEVELS[k].ko}${curLevel()===k?" · 현재":""}</figcaption>
+          <div class="sub">외야 ${LEVELS[k].lf}~${LEVELS[k].cf}m<br>루간 ${LEVELS[k].base}m · 마운드 ${LEVELS[k].mound}m</div>
+          ${fieldSVG("", {aria:LEVELS[k].ko+" 규격", maxw:180, level:k})}
+        </figure>`).join("")}
+      </div>
+      <div class="hint" style="margin-top:8px">네 그림은 <b>모두 같은 배율</b>입니다 — 초등(리틀) 구장이 대학·성인 구장보다 실제로 얼마나 작은지 그대로 보입니다.</div>
     </div>
 
     <div class="card"><div class="hd"><div style="flex:1"><h3>화면 테마</h3>
@@ -1868,7 +1948,7 @@ function paSheet(gid, pid){
     <div style="margin-bottom:6px"><span style="display:block;font-size:12.5px;color:var(--text-2);margin-bottom:6px;font-weight:550">결과</span>${groups}</div>
     <div class="f" id="pa_zone_wrap" style="margin-bottom:8px" ${hasBIP(draft.result)?"":"hidden"}>
       <span style="display:block;font-size:12.5px;color:var(--text-2);margin-bottom:6px;font-weight:550">타구 위치 <span style="color:var(--text-3);font-weight:400">— 경기장 안쪽을 눌러 표시</span></span>
-      <div id="pa_field">${fieldSVG(`<g id="zmark"></g>`, {id:"pafield", aria:"타구 위치 선택", maxw:320, level:LV})}</div>
+      <div id="pa_field">${fieldSVG(`<g id="zmark"></g>`, {id:"pafield", aria:"타구 위치 선택", maxw:340, level:LV, fit:true, ruler:true})}</div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
         <div id="pa_zlabel" class="hint" style="flex:1">${draft.zone? esc(zoneOf(draft.zone, LV).label)+" 방향" : "선택 안 됨"} <span style="opacity:.7">— ${esc(LEVELS[LV].ko)} 규격</span></div>
         <button type="button" class="btn sm" data-act="clearZone">위치 지우기</button>
@@ -1897,8 +1977,9 @@ function paSheet(gid, pid){
     };
     const pick = ev=>{
       const r = svg.getBoundingClientRect();
-      const x = (ev.clientX - r.left) * (FIELD.W / r.width);
-      const y = (ev.clientY - r.top)  * (FIELD.H / r.height);
+      const vb = (svg.getAttribute("data-vb")||("0 0 "+FIELD.W+" "+FIELD.H)).split(" ").map(Number);
+      const x = vb[0] + (ev.clientX - r.left) * (vb[2] / r.width);
+      const y = vb[1] + (ev.clientY - r.top)  * (vb[3] / r.height);
       if(!insideFair(x,y,LV)){ toast("경기장 안쪽(페어 지역)을 눌러 주세요"); return; }
       draft.zone = clampFair(x,y,LV); paint();
     };
@@ -2905,7 +2986,7 @@ function setTheme(v){
   });
   document.addEventListener("keydown", e=>{ if(e.key==="Escape" && $("#modal").innerHTML) closeSheet(); });
   // 개발용 훅 (자동 검증에 사용)
-  window.__bb = {get S(){return S;}, set S(v){S=v;}, render, save:saveNow, battingOf, fieldingOf, pitchingOf, zoneOf, zoneCell, sampleData, inn2outs, RMAP};
+  window.__bb = {get S(){return S;}, set S(v){S=v;}, render, save:saveNow, battingOf, fieldingOf, pitchingOf, zoneOf, zoneCell, normalizeGames, geom, sampleData, inn2outs, RMAP};
 })();
 </script>
 </body>
