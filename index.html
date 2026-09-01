@@ -1208,11 +1208,13 @@ function pitchTip(p){
 }
 function pitchMarks(pitches, opt){
   opt=opt||{};
-  const r = opt.r||7;
+  const r = opt.r||4.9;                 // 기본 크기 (이전 7에서 30% 축소)
+  const sw = (r*0.22).toFixed(2), fs = (r*1.05).toFixed(1);
   return (pitches||[]).map((p,i)=>{
     const col = PRCOLOR[prGroup(p.r)];
-    let out = `<circle cx="${num(p.x,0).toFixed(1)}" cy="${num(p.y,0).toFixed(1)}" r="${r}" fill="${col}" fill-opacity="${opt.op!=null?opt.op:0.88}" stroke="var(--surface-1)" stroke-width="1.6" data-tip="${esc(pitchTip(p))}"/>`;
-    if(opt.num) out += `<text x="${num(p.x,0).toFixed(1)}" y="${(num(p.y,0)+3).toFixed(1)}" text-anchor="middle" fill="#fff" style="font-size:8.5px;font-weight:700;pointer-events:none">${i+1}</text>`;
+    let out = `<circle cx="${num(p.x,0).toFixed(1)}" cy="${num(p.y,0).toFixed(1)}" r="${r}" fill="${col}" fill-opacity="${opt.op!=null?opt.op:0.88}" stroke="var(--surface-1)" stroke-width="${sw}" data-tip="${esc(pitchTip(p))}"/>`;
+    out += `<circle cx="${num(p.x,0).toFixed(1)}" cy="${num(p.y,0).toFixed(1)}" r="${(r*2.4).toFixed(1)}" fill="transparent" data-tip="${esc(pitchTip(p))}"/>`;
+    if(opt.num) out += `<text x="${num(p.x,0).toFixed(1)}" y="${(num(p.y,0)+r*0.37).toFixed(1)}" text-anchor="middle" fill="#fff" style="font-size:${fs}px;font-weight:700;pointer-events:none">${i+1}</text>`;
     return out;
   }).join("");
 }
@@ -1225,7 +1227,7 @@ function zoneScatter(pitches, opt){
   if(!pitches || !pitches.length) return `<div class="empty">기록된 투구 코스가 없습니다<br><span class="hint">수비 기록에서 포지션을 <b>투수</b>로 고르면 존에 코스를 찍을 수 있습니다</span></div>`;
   let inner="";
   ["ball","strike","inplay","hbp"].forEach(k=>{
-    inner += pitchMarks(pitches.filter(p=>prGroup(p.r)===k), {r:opt.r||6, op:.82, num:opt.num});
+    inner += pitchMarks(pitches.filter(p=>prGroup(p.r)===k), {r:opt.r||4.2, op:.82, num:opt.num});
   });
   return zoneLegend() + zoneSVG(inner, {aria:"투구 코스 산점도", maxw:opt.maxw||320});
 }
@@ -1863,14 +1865,19 @@ function openSheet(inner, mount){
   const first = m.querySelector("input,select,textarea,button");
   if(first && window.innerWidth>700) try{ first.focus(); }catch(e){}
 }
-function closeSheet(){ $("#modal").innerHTML=""; document.body.style.overflow=""; }
+function closeSheet(){
+  $("#modal").innerHTML=""; document.body.style.overflow="";
+  if(askResolve){ const f=askResolve; askResolve=null; f(); }
+}
+let askResolve = null;
 function ask(title, msg, opts){
   return new Promise(res=>{
     openSheet(`<div class="sh"><h3>${esc(title)}</h3></div>
       <div class="hint" style="padding:6px 0 14px;line-height:1.6">${msg}</div>
       <div class="sf">${opts.map((o,i)=>`<button class="btn ${o.style||""}" data-ask="${i}">${esc(o.label)}</button>`).join("")}</div>`);
     $$("#modal [data-ask]").forEach(b=> b.addEventListener("click", ()=>{ closeSheet(); res(+b.dataset.ask); }));
-    $("#modal .backdrop").addEventListener("click", e=>{ if(e.target.classList.contains("backdrop")){ closeSheet(); res(-1); } });
+    // 바깥 클릭으로는 닫지 않습니다 (버튼으로만 선택)
+    askResolve = ()=>{ res(-1); };
   });
 }
 function stepper(id, val, min, max){
@@ -2130,7 +2137,7 @@ function paintPitchDraft(sheet){
   if(!sheet || !pdraft) return;
   const gEl = sheet.querySelector("#pzmark"); if(!gEl) return;
   const list = pdraft.pitches;
-  gEl.innerHTML = pitchMarks(list, {num:true, r:8, op:.9});
+  gEl.innerHTML = pitchMarks(list, {num:true, r:5.6, op:.9});
   const np = list.length, st = list.filter(x=>isStrikeRes(x.r)).length;
   const lb = sheet.querySelector("#p_zlabel");
   if(lb) lb.innerHTML = np? `${np}구 · 스트라이크 ${st} (${pct1(st/np)}) · 헛스윙 ${list.filter(x=>x.r==="SS").length}`
@@ -2607,8 +2614,9 @@ document.addEventListener("click", ev=>{
     const open = box.hasAttribute("hidden");
     if(open) box.removeAttribute("hidden"); else box.setAttribute("hidden","");
     tg.setAttribute("aria-expanded", String(open)); tg.textContent = open? "차트" : "표"; return; }
-  const bd = ev.target.classList && ev.target.classList.contains("backdrop");
-  if(bd){ closeSheet(); return; }
+  // 시트 바깥(어두운 배경)을 눌러도 닫지 않습니다 — 입력 중 실수로 닫히는 것을 막기 위해
+  // 닫기는 ✕ / 취소 버튼(또는 뒤로가기·Esc)으로만 합니다.
+  if(ev.target.classList && ev.target.classList.contains("backdrop")) return;
 
   const el = ev.target.closest("[data-act]"); if(!el) return;
   const a = el.dataset.act, id = el.dataset.id, gid = el.dataset.gid, v = el.dataset.v;
