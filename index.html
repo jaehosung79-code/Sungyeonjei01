@@ -1141,22 +1141,27 @@ function paClass(code){
 const SPRAY_COLOR = {hit:"var(--s1)", xbh:"var(--s2)", out:"var(--neutral)", ob:"var(--s3)"};
 const SPRAY_LABEL = {hit:"단타", xbh:"장타(2·3루타·홈런)", out:"인플레이 아웃", ob:"출루(실책·야선)"};
 
+/* 타구 마커 크기 (viewBox 320 기준 반지름) */
+const SPRAY_R = 2.5;
 function sprayChart(pas, lv, opt){
   opt = opt || {};
   const pts = pas.filter(p=>p.zone && RMAP[p.result] && RMAP[p.result].bip);
   if(!pts.length) return `<div class="empty">타구 위치가 기록된 타석이 없습니다<br><span class="hint">타석을 기록할 때 야구장을 눌러 타구 위치를 남겨보세요</span></div>`;
+  const fopt = {aria:"타구 방향 산점도", level:lv, ruler:!!opt.ruler, fit:true, include:pts.map(p=>p.zone)};
+  const R = (opt.r||SPRAY_R).toFixed(2), SW = "1";
   let inner="";
   ["out","ob","hit","xbh"].forEach(cls=>{
     pts.filter(p=>paClass(p.result)===cls).forEach(p=>{
       const z = zoneOf(p.zone, p._g? gameLevel(p._g) : lv);
       const tip = `<b>${esc(RMAP[p.result].ko)}</b><br>${esc(fmtDate(p._g? p._g.date : ""))} ${p.inning?p.inning+"회":""}<br>${esc(z.label)} · 약 ${Math.round(z.m)}m`;
-      inner += `<circle cx="${p.zone.x.toFixed(1)}" cy="${p.zone.y.toFixed(1)}" r="5" fill="${SPRAY_COLOR[cls]}" stroke="var(--surface-1)" stroke-width="2" data-tip="${esc(tip)}"/>`;
+      inner += `<circle cx="${p.zone.x.toFixed(1)}" cy="${p.zone.y.toFixed(1)}" r="${R}" fill="${SPRAY_COLOR[cls]}" stroke="var(--surface-1)" stroke-width="${SW}" data-tip="${esc(tip)}"/>`;
+      // 누르기 쉽도록 보이지 않는 여유 영역
+      inner += `<circle cx="${p.zone.x.toFixed(1)}" cy="${p.zone.y.toFixed(1)}" r="${(R*3).toFixed(2)}" fill="transparent" data-tip="${esc(tip)}"/>`;
     });
   });
   const legend = `<div class="legend">`+["xbh","hit","ob","out"].map(c=>
     `<span><i class="dot" style="background:${SPRAY_COLOR[c]}"></i>${SPRAY_LABEL[c]}</span>`).join("")+`</div>`;
-  return legend + fieldSVG(inner, {aria:"타구 방향 산점도", level:lv, ruler:!!opt.ruler,
-    fit:true, include:pts.map(p=>p.zone)});
+  return legend + fieldSVG(inner, fopt);
 }
 
 /* --------------------- 스트라이크 존 좌표계 --------------------- */
@@ -1971,7 +1976,7 @@ function paSheet(gid, pid){
     const paint = ()=>{
       const gEl = sheet.querySelector("#zmark");
       if(!draft.zone){ gEl.innerHTML=""; sheet.querySelector("#pa_zlabel").textContent="선택 안 됨"; return; }
-      gEl.innerHTML = `<circle cx="${draft.zone.x.toFixed(1)}" cy="${draft.zone.y.toFixed(1)}" r="7.5" fill="var(--s2)" stroke="var(--surface-1)" stroke-width="2.5"/>`;
+      gEl.innerHTML = `<circle cx="${draft.zone.x.toFixed(1)}" cy="${draft.zone.y.toFixed(1)}" r="3.75" fill="var(--s2)" stroke="var(--surface-1)" stroke-width="1.25"/>`;
       const z = zoneOf(draft.zone, LV);
       sheet.querySelector("#pa_zlabel").textContent = z.label+" 방향 · 홈에서 약 "+Math.round(z.m)+"m";
     };
