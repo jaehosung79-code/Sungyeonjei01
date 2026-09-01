@@ -7,12 +7,12 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#f9f9f7">
 <meta name="description" content="야구 경기 기록·분석 노트 — 타석별 상세 기록, 수비 기록, 차트 분석, 경기 영상 보관">
-<title>야구 기록 노트</title>
+<title>N0.7 Sung YJ Baseball note</title>
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="야구노트">
+<meta name="apple-mobile-web-app-title" content="YJ Baseball note">
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
@@ -1875,7 +1875,8 @@ function ask(title, msg, opts){
     openSheet(`<div class="sh"><h3>${esc(title)}</h3></div>
       <div class="hint" style="padding:6px 0 14px;line-height:1.6">${msg}</div>
       <div class="sf">${opts.map((o,i)=>`<button class="btn ${o.style||""}" data-ask="${i}">${esc(o.label)}</button>`).join("")}</div>`);
-    $$("#modal [data-ask]").forEach(b=> b.addEventListener("click", ()=>{ closeSheet(); res(+b.dataset.ask); }));
+    // 버튼으로 고른 경우에는 취소 처리(askResolve)를 먼저 해제해야 선택값이 그대로 전달됩니다
+    $$("#modal [data-ask]").forEach(b=> b.addEventListener("click", ()=>{ askResolve=null; closeSheet(); res(+b.dataset.ask); }));
     // 바깥 클릭으로는 닫지 않습니다 (버튼으로만 선택)
     askResolve = ()=>{ res(-1); };
   });
