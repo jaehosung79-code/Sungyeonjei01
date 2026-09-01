@@ -6,13 +6,13 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#f9f9f7">
-<meta name="description" content="연제의 야구 경기 기록·분석 노트 — 타석별 상세 기록, 수비 기록, 차트 분석, 경기 영상 보관">
-<title>YJ BaseBall Note </title>
+<meta name="description" content="야구 경기 기록·분석 노트 — 타석별 상세 기록, 수비 기록, 차트 분석, 경기 영상 보관">
+<title>야구 기록 노트</title>
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="YJ BaseBall Note ">
+<meta name="apple-mobile-web-app-title" content="야구노트">
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
@@ -230,6 +230,20 @@ select{outline:none;-webkit-appearance:none;appearance:none;background-image:lin
 .chip.g-detc[aria-pressed="true"]{background:var(--neutral);border-color:var(--neutral);color:var(--surface-1)}
 .chipgroup{margin-bottom:10px}
 .chipgroup > .gl{font-size:11.5px;color:var(--text-3);margin-bottom:5px;font-weight:600;letter-spacing:.02em}
+/* ---------- 투수 기록 ---------- */
+.chip.pt[aria-pressed="true"]{background:var(--text-2);border-color:var(--text-2);color:var(--surface-1)}
+.chip.g-pstrike[aria-pressed="true"]{background:var(--s2);border-color:var(--s2);color:#fff}
+.chip.g-pball[aria-pressed="true"]{background:var(--s1);border-color:var(--s1);color:#fff}
+.chip.g-pinplay[aria-pressed="true"]{background:var(--s3);border-color:var(--s3);color:#fff}
+.chip.g-phbp[aria-pressed="true"]{background:var(--crit);border-color:var(--crit);color:#fff}
+.pblock{border:1px solid var(--border);border-radius:12px;background:var(--surface-1);padding:12px;margin-bottom:12px}
+.pblock .gl2{font-size:12.5px;font-weight:650;color:var(--text-2);margin:2px 0 8px}
+.pblock .gl2 span{font-weight:400;color:var(--text-3);font-size:11.5px}
+.plist{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.pitem{display:inline-flex;align-items:center;gap:5px;font-size:12px;background:var(--surface-2);border-radius:999px;padding:4px 4px 4px 9px;color:var(--text-2)}
+.pitem .no{font-weight:700;color:var(--text-3);font-variant-numeric:tabular-nums}
+.pitem i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.pitem button{border:0;background:none;cursor:pointer;color:var(--crit);font-size:13px;line-height:1;padding:2px 5px;min-height:24px}
 
 /* ---------- sheet / modal ---------- */
 .backdrop{
@@ -362,7 +376,7 @@ video{width:100%;border-radius:var(--r-sm);background:#000;display:block}
   <div class="brand">
     <div class="ball" aria-hidden="true"></div>
     <div>
-      <h1>N0.7 YJ BaseBall Note </h1>
+      <h1>야구 기록 노트</h1>
       <div class="sub" id="subttl">기록 · 분석 · 영상</div>
     </div>
   </div>
@@ -451,6 +465,29 @@ const DGLABEL = {out:"아웃 처리 · 호수비", err:"실책 · 실수", etc:"
 const DGBADGE = {out:"ob", err:"l", etc:"out"};
 const DGCHIP  = {out:"g-dout", err:"g-derr", etc:"g-detc"};
 
+/* ------------------- 투수 기록 (구종 · 코스 · 결과) ------------------- */
+const PITCH_TYPES = [
+  {c:"FB", ko:"직구"}, {c:"TS", ko:"투심"}, {c:"CB", ko:"커브"}, {c:"SL", ko:"슬라이더"},
+  {c:"CH", ko:"체인지업"}, {c:"FK", ko:"포크·스플리터"}, {c:"ET", ko:"기타"}
+];
+const PTMAP = Object.fromEntries(PITCH_TYPES.map(p=>[p.c,p.ko]));
+// g: strike(스트라이크로 계산) / ball / inplay / hbp
+const PITCH_RES = [
+  {c:"CS", ko:"스트라이크",    g:"strike"},
+  {c:"SS", ko:"헛스윙",        g:"strike"},
+  {c:"F",  ko:"파울",          g:"strike"},
+  {c:"B",  ko:"볼",            g:"ball"},
+  {c:"HB", ko:"몸에 맞는 공",  g:"hbp"},
+  {c:"X",  ko:"인플레이 타구", g:"inplay"}
+];
+const PRMAP = Object.fromEntries(PITCH_RES.map(p=>[p.c,p]));
+const PRCOLOR = {strike:"var(--s2)", ball:"var(--s1)", inplay:"var(--s3)", hbp:"var(--crit)"};
+const PRLABEL = {strike:"스트라이크 (루킹·헛스윙·파울)", ball:"볼", inplay:"인플레이 타구", hbp:"몸에 맞는 공"};
+const PDEC = {"":"기록 없음", W:"승리", L:"패전", SV:"세이브", HLD:"홀드", ND:"승패 없음"};
+function prGroup(c){ return PRMAP[c]? PRMAP[c].g : "ball"; }
+function isStrikeRes(c){ const g=prGroup(c); return g==="strike" || g==="inplay"; }
+function prKo(c){ return PRMAP[c]? PRMAP[c].ko : ""; }
+
 // 경기장 규격 (루간 거리 / 좌우 폴 / 중앙 펜스, 단위: m)
 const LEVELS = {
   elem: {ko:"초등 (리틀)",  base:18.29, lf:65, cf:70,  mound:14.02, inn:6, note:"루간 18.3m · 외야 65~70m"},
@@ -476,6 +513,7 @@ function fmtDateLong(s){ if(!s) return "-"; const p=s.split("-"); if(p.length!==
   return `${p[0]}년 ${+p[1]}월 ${+p[2]}일 (${wd})`; }
 function avg3(v){ if(v==null||!isFinite(v)) return "-"; const s=v.toFixed(3); return v<1? s.slice(1) : s; }
 function pct1(v){ return (v==null||!isFinite(v))? "-" : (v*100).toFixed(1)+"%"; }
+function fx2(v){ return (v==null||!isFinite(v))? "-" : v.toFixed(2); }
 function bytes(n){ if(n==null) return "-"; if(n<1024) return n+" B";
   const u=["KB","MB","GB"]; let i=-1, v=n; do{ v/=1024; i++; }while(v>=1024 && i<2); return v.toFixed(v<10?1:0)+" "+u[i]; }
 // 이닝 표기(5.2 = 5이닝 2아웃) <-> 아웃 수
@@ -507,7 +545,8 @@ function normalizeGames(list){
   (list||[]).forEach(g=>{
     g.pas=g.pas||[]; g.def=g.def||[]; g.videos=g.videos||[];
     if(!GAME_TYPES[g.type]) g.type = "official";
-    g.def.forEach(d=>{ if(d.note==null) d.note=""; if(d.result==null) d.result=""; if(d.inning==null) d.inning=0; });
+    g.def.forEach(d=>{ if(d.note==null) d.note=""; if(d.result==null) d.result=""; if(d.inning==null) d.inning=0;
+      if(d.pit){ d.pit.pitches = Array.isArray(d.pit.pitches)? d.pit.pitches : []; if(d.pit.dec==null) d.pit.dec=""; } });
     g.videos.forEach(v=>{ if(v.defId==null) v.defId=null; if(v.paId==null) v.paId=null; });
   });
   return list;
@@ -604,6 +643,11 @@ function battingOf(pas){
   t.KP  = t.PA? t.SO/t.PA : null;
   t.BBP = t.PA? t.BB/t.PA : null;
   t.SBP = (t.SB+t.CS)? t.SB/(t.SB+t.CS) : null;
+  t.BBK = t.SO? t.BB/t.SO : null;                                  // 볼넷/삼진
+  t.SecA = t.AB? (t.TB - t.H + t.BB + t.SB - t.CS)/t.AB : null;     // 2차 타율
+  t.RC = (t.AB+t.BB+t.HBP)? ((t.H+t.BB+t.HBP)*t.TB)/(t.AB+t.BB+t.HBP) : null;  // 득점 생산(기본형)
+  t.ABHR = t.HR? t.AB/t.HR : null;
+  t.PSO = t.PA? (t.PA - t.SO)/t.PA : null;                          // 인플레이 전환율
   return t;
 }
 function fieldingOf(defs){
@@ -614,6 +658,67 @@ function fieldingOf(defs){
   t.INN = t.outs/3;
   return t;
 }
+/* ------------------------------ 투수 집계 ------------------------------ */
+/* FIP 상수 — 리그 평균에 맞춰 보정하는 값. 아마추어 기준 근사값을 씁니다. */
+const FIP_C = 3.10;
+function pitOuts(d){ return inn2outs((d.pit && d.pit.ip) || d.innings); }
+function hasPitData(d){
+  const p = d && d.pit; if(!p) return false;
+  return !!(pitOuts(d) || num(p.tbf,0) || num(p.np,0) || (p.pitches||[]).length || num(p.h,0) || num(p.so,0) || num(p.bb,0));
+}
+/* 등판 단위 목록 */
+function pitAppearances(defs){
+  return (defs||[]).filter(hasPitData).map(d=>({d, g:d._g||null, o:pitOuts(d), p:d.pit}));
+}
+function pitchingOf(defs){
+  const apps = pitAppearances(defs);
+  const t = {APP:apps.length, G:0, outs:0, TBF:0, H:0, HR:0, BB:0, HBP:0, SO:0, R:0, ER:0,
+             NP:0, ST:0, SW:0, W:0, L:0, SV:0, HLD:0, pitches:[], apps};
+  const gset = new Set();
+  apps.forEach(a=>{
+    const p=a.p;
+    if(a.g) gset.add(a.g.id);
+    t.outs += a.o;
+    t.TBF += num(p.tbf,0); t.H += num(p.h,0); t.HR += num(p.hr,0);
+    t.BB += num(p.bb,0); t.HBP += num(p.hbp,0); t.SO += num(p.so,0);
+    t.R += num(p.r,0); t.ER += num(p.er,0);
+    const list = (p.pitches||[]).map(x=>Object.assign({}, x, {_g:a.g, _d:a.d}));
+    t.pitches = t.pitches.concat(list);
+    t.NP += num(p.np,0) || list.length;
+    t.ST += num(p.st,0) || list.filter(x=>isStrikeRes(x.r)).length;
+    t.SW += list.filter(x=>x.r==="SS").length;
+    if(p.dec && t[p.dec]!=null) t[p.dec] += 1;
+  });
+  t.G = gset.size || apps.length;
+  t.IP = t.outs/3;
+  const o = t.outs;
+  t.ERA  = o? t.ER*27/o : null;
+  t.RA9  = o? t.R*27/o : null;
+  t.WHIP = o? (t.H+t.BB)*3/o : null;
+  t.K9   = o? t.SO*27/o : null;
+  t.BB9  = o? t.BB*27/o : null;
+  t.H9   = o? t.H*27/o : null;
+  t.HR9  = o? t.HR*27/o : null;
+  t.KBB  = t.BB? t.SO/t.BB : null;
+  t.FIP  = o? (13*t.HR + 3*(t.BB+t.HBP) - 2*t.SO)*3/o + FIP_C : null;
+  t.KP   = t.TBF? t.SO/t.TBF : null;
+  t.BBP  = t.TBF? t.BB/t.TBF : null;
+  t.KBBP = (t.KP!=null&&t.BBP!=null)? t.KP-t.BBP : null;
+  t.AB   = Math.max(0, t.TBF - t.BB - t.HBP);
+  t.OAVG = t.AB? t.H/t.AB : null;
+  const bd = t.AB - t.SO - t.HR;
+  t.OBABIP = bd>0? (t.H-t.HR)/bd : null;
+  t.STP  = t.NP? t.ST/t.NP : null;
+  t.SWP  = t.NP? t.SW/t.NP : null;
+  t.PIP  = o? t.NP*3/o : null;
+  t.PPA  = t.TBF? t.NP/t.TBF : null;
+  t.EMF  = (t.ERA!=null&&t.FIP!=null)? t.ERA-t.FIP : null;
+  return t;
+}
+/* 등판 한 건의 지표 */
+function appERA(a){ return a.o? num(a.p.er,0)*27/a.o : null; }
+function decKo(c){ return PDEC[c||""]||""; }
+
 function years(){
   const set = new Set(S.games.map(g=>(g.date||"").slice(0,4)).filter(Boolean));
   return Array.from(set).sort().reverse();
@@ -923,6 +1028,89 @@ function sprayChart(pas, lv){
   return legend + fieldSVG(inner, {aria:"타구 방향 산점도", level:lv});
 }
 
+/* --------------------- 스트라이크 존 좌표계 --------------------- */
+/* 포수 시점. 캔버스 200x236 고정 — 저장된 좌표가 어느 화면에서나 같은 자리에 찍힙니다. */
+const ZONE = {W:200, H:236, x0:52, x1:148, y0:44, y1:172};
+function zoneCW(){ return (ZONE.x1-ZONE.x0)/3; }
+function zoneCH(){ return (ZONE.y1-ZONE.y0)/3; }
+function zoneCell(p){
+  if(!p) return -1;
+  if(p.x<ZONE.x0 || p.x>ZONE.x1 || p.y<ZONE.y0 || p.y>ZONE.y1) return -1;
+  const c = clamp(Math.floor((p.x-ZONE.x0)/zoneCW()),0,2);
+  const r = clamp(Math.floor((p.y-ZONE.y0)/zoneCH()),0,2);
+  return r*3+c;
+}
+const ZCELL_KO = ["높은 좌","높은 가운데","높은 우","가운데 좌","한가운데","가운데 우","낮은 좌","낮은 가운데","낮은 우"];
+function zoneCellKo(i){ return i<0? "존 밖" : ZCELL_KO[i]; }
+/* 존 안쪽 클릭 판정 — 존 주변(볼) 영역까지 허용 */
+function insideZone(x,y){ return x>=6 && x<=ZONE.W-6 && y>=6 && y<=ZONE.y1+20; }
+function clampZone(x,y){ return {x:+clamp(x,8,ZONE.W-8).toFixed(1), y:+clamp(y,8,ZONE.y1+18).toFixed(1)}; }
+
+function zoneSVG(inner, opt){
+  opt=opt||{};
+  const Z=ZONE, cw=zoneCW(), ch=zoneCH();
+  let s = `<svg class="chart" viewBox="0 0 ${Z.W} ${Z.H}" role="img" aria-label="${esc(opt.aria||"스트라이크 존")}" `
+        + `style="max-width:${opt.maxw||300}px"${opt.id?` id="${opt.id}"`:""}>`;
+  s += `<rect x="0" y="0" width="${Z.W}" height="${Z.H}" rx="10" fill="var(--surface-2)"/>`;
+  s += `<rect x="${Z.x0-13}" y="${Z.y0-13}" width="${Z.x1-Z.x0+26}" height="${Z.y1-Z.y0+26}" rx="4" fill="none" stroke="var(--axis)" stroke-width="1" stroke-dasharray="4 4" opacity=".75"/>`;
+  s += `<rect x="${Z.x0}" y="${Z.y0}" width="${Z.x1-Z.x0}" height="${Z.y1-Z.y0}" fill="var(--surface-1)" stroke="var(--text-2)" stroke-width="1.6"/>`;
+  for(let i=1;i<3;i++){
+    s += `<line x1="${(Z.x0+cw*i).toFixed(1)}" x2="${(Z.x0+cw*i).toFixed(1)}" y1="${Z.y0}" y2="${Z.y1}" stroke="var(--grid)" stroke-width="1"/>`;
+    s += `<line x1="${Z.x0}" x2="${Z.x1}" y1="${(Z.y0+ch*i).toFixed(1)}" y2="${(Z.y0+ch*i).toFixed(1)}" stroke="var(--grid)" stroke-width="1"/>`;
+  }
+  const py = Z.y1+30, mx=(Z.x0+Z.x1)/2;
+  s += `<path d="M ${Z.x0+8} ${py} L ${Z.x1-8} ${py} L ${Z.x1-8} ${py+8} L ${mx} ${py+19} L ${Z.x0+8} ${py+8} Z" fill="var(--surface-1)" stroke="var(--axis)" stroke-width="1.2"/>`;
+  s += `<text x="${mx}" y="${py+33}" text-anchor="middle" fill="var(--text-3)" style="font-size:9px">포수 시점 · 왼쪽 = 3루 방향</text>`;
+  s += inner||"";
+  s += `</svg>`;
+  return s;
+}
+function pitchTip(p){
+  return `<b>${esc(PTMAP[p.t]||"구종 미입력")}</b> · ${esc(prKo(p.r))}<br>${esc(zoneCellKo(zoneCell(p)))}`
+    + (num(p.v,0)? ` · ${Math.round(num(p.v,0))}km/h` : "")
+    + (p._g? `<br>${esc(fmtDate(p._g.date))}${p._d&&num(p._d.inning,0)?" "+num(p._d.inning,0)+"회":""}` : "");
+}
+function pitchMarks(pitches, opt){
+  opt=opt||{};
+  const r = opt.r||7;
+  return (pitches||[]).map((p,i)=>{
+    const col = PRCOLOR[prGroup(p.r)];
+    let out = `<circle cx="${num(p.x,0).toFixed(1)}" cy="${num(p.y,0).toFixed(1)}" r="${r}" fill="${col}" fill-opacity="${opt.op!=null?opt.op:0.88}" stroke="var(--surface-1)" stroke-width="1.6" data-tip="${esc(pitchTip(p))}"/>`;
+    if(opt.num) out += `<text x="${num(p.x,0).toFixed(1)}" y="${(num(p.y,0)+3).toFixed(1)}" text-anchor="middle" fill="#fff" style="font-size:8.5px;font-weight:700;pointer-events:none">${i+1}</text>`;
+    return out;
+  }).join("");
+}
+function zoneLegend(){
+  return `<div class="legend">` + ["strike","ball","inplay","hbp"].map(k=>
+    `<span><i class="dot" style="background:${PRCOLOR[k]}"></i>${PRLABEL[k]}</span>`).join("") + `</div>`;
+}
+function zoneScatter(pitches, opt){
+  opt=opt||{};
+  if(!pitches || !pitches.length) return `<div class="empty">기록된 투구 코스가 없습니다<br><span class="hint">수비 기록에서 포지션을 <b>투수</b>로 고르면 존에 코스를 찍을 수 있습니다</span></div>`;
+  let inner="";
+  ["ball","strike","inplay","hbp"].forEach(k=>{
+    inner += pitchMarks(pitches.filter(p=>prGroup(p.r)===k), {r:opt.r||6, op:.82, num:opt.num});
+  });
+  return zoneLegend() + zoneSVG(inner, {aria:"투구 코스 산점도", maxw:opt.maxw||320});
+}
+/* 코스 9분할 히트맵 */
+function zoneHeat(pitches){
+  const cells = Array.from({length:9},()=>0);
+  let outside = 0;
+  (pitches||[]).forEach(p=>{ const i=zoneCell(p); if(i<0) outside++; else cells[i]++; });
+  const tot = (pitches||[]).length || 1;
+  const mx = Math.max.apply(null, cells.concat([1]));
+  const cw=zoneCW(), ch=zoneCH();
+  let inner="";
+  cells.forEach((v,i)=>{
+    const r=Math.floor(i/3), c=i%3;
+    const x=ZONE.x0+cw*c, y=ZONE.y0+ch*r;
+    inner += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${cw.toFixed(1)}" height="${ch.toFixed(1)}" fill="var(--chart)" fill-opacity="${(v/mx*0.8).toFixed(2)}" data-tip="${esc(`<b>${ZCELL_KO[i]}</b><br>${v}구 · 전체의 ${pct1(v/tot)}`)}"/>`;
+    inner += `<text x="${(x+cw/2).toFixed(1)}" y="${(y+ch/2+4).toFixed(1)}" text-anchor="middle" fill="var(--text-1)" style="font-size:12px;font-weight:650;pointer-events:none">${v}</text>`;
+  });
+  return {svg: zoneSVG(inner, {aria:"코스별 투구 분포", maxw:320}), cells, outside, tot:(pitches||[]).length};
+}
+
 /* 표 보기 토글이 붙은 차트 카드 */
 let cardSeq=0;
 function chartCard(title, cap, chartHTML, tableHTML){
@@ -989,6 +1177,7 @@ function viewHome(){
   const pas = allPAs(gs);
   const b = battingOf(pas);
   const f = fieldingOf(allDef(gs));
+  const hp = pitchingOf(allDef(gs));
   const m = S.ui.metric, mk = METRICS[m].k;
 
   if(!S.games.length){
@@ -1036,6 +1225,10 @@ function viewHome(){
   + (f.INN>0? `<div class="card"><div class="hd"><div style="flex:1"><h3>수비</h3>
       <div class="cap">기록된 수비 이닝 ${fmtInn(f.outs)} · 수비율 ${avg3(f.FPCT)}</div></div></div>
       <div class="tiles">${tile("이닝", fmtInn(f.outs))+tile("자살", f.PO)+tile("보살", f.A)+tile("실책", f.E)+tile("병살", f.DP)+tile("수비율", avg3(f.FPCT))}</div></div>`:"")
+  + (hp.APP? `<div class="card"><div class="hd"><div style="flex:1"><h3>투수</h3>
+      <div class="cap">${hp.G}경기 ${hp.APP}등판 · ${fmtInn(hp.outs)}이닝${hp.W||hp.L||hp.SV?` · ${hp.W}승 ${hp.L}패${hp.SV?" "+hp.SV+"세":""}`:""}</div></div>
+      <button class="btn sm" data-act="nav" data-v="stats">분석</button></div>
+      <div class="tiles">${tile("ERA", fx2(hp.ERA))+tile("WHIP", fx2(hp.WHIP))+tile("삼진", hp.SO)+tile("볼넷", hp.BB)+tile("피안타", hp.H)+tile("K/9", fx2(hp.K9))}</div></div>`:"")
   ;
 }
 
@@ -1067,6 +1260,7 @@ function viewGame(id){
   const g = S.games.find(x=>x.id===id);
   if(!g){ S.ui.gameId=null; return viewGames(); }
   const t = battingOf(g.pas), f = fieldingOf(g.def);
+  const gp = pitchingOf(g.def.map(d=>Object.assign({_g:g},d)));
   const res = gameResult(g);
   const pas = g.pas.map(p=>Object.assign({_g:g},p));
 
@@ -1118,6 +1312,14 @@ function viewGame(id){
         <button class="btn sm pri nb" data-act="newDef" data-gid="${g.id}">+ 수비</button></div>
       <div class="list">${defList}</div>
     </div>
+    ${gp.APP? `<div class="card">
+      <div class="hd"><div style="flex:1"><h3>투수 기록</h3>
+        <div class="cap">${fmtInn(gp.outs)}이닝 · ERA ${fx2(gp.ERA)} · WHIP ${fx2(gp.WHIP)}${gp.apps.some(a=>a.p.dec)? " · "+gp.apps.filter(a=>a.p.dec).map(a=>decKo(a.p.dec)).join(", ") : ""}</div></div></div>
+      <div class="tiles">${tile("이닝", fmtInn(gp.outs))+tile("피안타", gp.H)+tile("삼진", gp.SO)+tile("볼넷", gp.BB)+tile("실점", gp.R)+tile("자책", gp.ER)}</div>
+      <div class="tiles" style="margin-top:8px">${tile("ERA", fx2(gp.ERA))+tile("WHIP", fx2(gp.WHIP))+tile("FIP", fx2(gp.FIP))+tile("K/9", fx2(gp.K9))+tile("투구수", gp.NP||"-")+tile("스트라이크%", pct1(gp.STP))}</div>
+      ${gp.pitches.length? `<div style="margin-top:12px">${zoneScatter(gp.pitches, {maxw:300})}</div>
+        <div class="hint" style="margin-top:6px">점을 누르면 구종·코스가 표시됩니다 · 존 안 ${gp.pitches.filter(x=>zoneCell(x)>=0).length}구 / 존 밖 ${gp.pitches.filter(x=>zoneCell(x)<0).length}구</div>` : ""}
+    </div>` : ""}
     <div class="card">
       <div class="hd"><div style="flex:1"><h3>경기 영상</h3><div class="cap">${g.videos.length}개</div></div>
         <button class="btn sm pri nb" data-act="newVideo" data-gid="${g.id}">+ 영상</button></div>
@@ -1184,17 +1386,29 @@ function viewStats(){
   defs.forEach(d=>{ (byPos[d.pos]=byPos[d.pos]||[]).push(d); });
   const posRows = Object.keys(byPos).map(k=>({pos:k, f:fieldingOf(byPos[k])})).sort((a,c)=>c.f.outs-a.f.outs);
 
-  const summary = tableHTML(
-    ["항목","값","항목 ","값 "],
-    [["경기",gs.length,"타율",avg3(b.AVG)],["타석",b.PA,"출루율",avg3(b.OBP)],["타수",b.AB,"장타율",avg3(b.SLG)],
-     ["안타",b.H,"OPS",avg3(b.OPS)],["2루타",b.s2,"순장타율(ISO)",avg3(b.ISO)],["3루타",b.s3,"wOBA",avg3(b.wOBA)],
-     ["홈런",b.HR,"BABIP",avg3(b.BABIP)],["타점",b.RBI,"삼진율",pct1(b.KP)],["득점",b.R,"볼넷율",pct1(b.BBP)],
-     ["볼넷",b.BB,"총루타",b.TB],["몸에 맞는 공",b.HBP,"희생타",b.SF+b.SH],
-     ["삼진",b.SO,"도루",b.SB+"/"+(b.SB+b.CS)+(b.SBP!=null?" ("+pct1(b.SBP)+")":"")]]);
+  // 타격 — 클래식 지표 (기록지에 그대로 적히는 수치)
+  const bClassic = tableHTML(["항목","값","항목 ","값 "],
+    [["경기",gs.length,"타율 AVG",avg3(b.AVG)],["타석 PA",b.PA,"출루율 OBP",avg3(b.OBP)],
+     ["타수 AB",b.AB,"장타율 SLG",avg3(b.SLG)],["안타 H",b.H,"총루타 TB",b.TB],
+     ["2루타",b.s2,"타점 RBI",b.RBI],["3루타",b.s3,"득점 R",b.R],
+     ["홈런 HR",b.HR,"볼넷 BB",b.BB],["삼진 SO",b.SO,"몸에 맞는 공",b.HBP],
+     ["희생타",b.SF+b.SH,"도루",b.SB+"/"+(b.SB+b.CS)]]);
+  // 타격 — 세이버메트릭스 지표
+  const bSaber = tableHTML(["항목","값","항목 ","값 "],
+    [["OPS",avg3(b.OPS),"삼진율 K%",pct1(b.KP)],
+     ["순장타율 ISO",avg3(b.ISO),"볼넷율 BB%",pct1(b.BBP)],
+     ["wOBA",avg3(b.wOBA),"볼넷/삼진 BB/K",fx2(b.BBK)],
+     ["BABIP",avg3(b.BABIP),"2차 타율 SecA",avg3(b.SecA)],
+     ["득점생산 RC",fx2(b.RC),"인플레이 전환율",pct1(b.PSO)],
+     ["타수/홈런 AB/HR",fx2(b.ABHR),"도루 성공률",pct1(b.SBP)]]);
 
   return filterRow()
-  + `<div class="card"><div class="hd"><div style="flex:1"><h3>시즌 요약</h3>
-      <div class="cap">${S.ui.year==="all"?"전체 기간":S.ui.year+"시즌"} · ${gtypeLabel()} · ${gs.length}경기 ${b.PA}타석</div></div></div>${summary}</div>`
+  + `<div class="grid g2">
+      <div class="card"><div class="hd"><div style="flex:1"><h3>타격 — 클래식 지표</h3>
+        <div class="cap">${S.ui.year==="all"?"전체 기간":S.ui.year+"시즌"} · ${gtypeLabel()} · ${gs.length}경기 ${b.PA}타석</div></div></div>${bClassic}</div>
+      <div class="card"><div class="hd"><div style="flex:1"><h3>타격 — 세이버메트릭스</h3>
+        <div class="cap">같은 기록을 출루·장타 가치와 결과의 질로 다시 본 지표입니다</div></div></div>${bSaber}</div>
+    </div>`
   + chartCard("타구 방향 (스프레이 차트)", `타구 위치가 기록된 인플레이 타구 ${bip.length}개 · 그림은 ${esc(LEVELS[curLevel()].ko)} 규격 (${esc(LEVELS[curLevel()].note)})`,
       sprayChart(pas, curLevel()),
       bip.length? tableHTML(["날짜","이닝","결과","위치","추정 거리"], bip.map(p=>{const z=zoneOf(p.zone, gameLevel(p._g));
@@ -1220,6 +1434,7 @@ function viewStats(){
       <div class="cap">투수 이름을 입력한 타석만 집계됩니다</div></div></div>
       ${tableHTML(["투수","타석","타수","안타","홈런","삼진","타율","OPS"],
         pitchers.map(p=>[esc(p.name), p.t.PA, p.t.AB, p.t.H, p.t.HR, p.t.SO, avg3(p.t.AVG), avg3(p.t.OPS)]))}</div>` : "")
+  + pitchingSection(gs, defs)
   + (defDist.length? chartCard("수비 결과 분포", `결과를 입력한 수비 기록 ${defPlays.length}건`,
       hbarChart(defDist, {aria:"수비 결과 분포", left:82, fmt:v=>String(Math.round(v))}),
       tableHTML(["결과","횟수","비중"], defDist.map(d=>[d.label, d.value, pct1(d.value/Math.max(defPlays.length,1))]))) : "")
@@ -1228,8 +1443,117 @@ function viewStats(){
       ${tableHTML(["포지션","이닝","자살","보살","실책","병살","수비율"],
         posRows.map(r=>[esc(PMAP[r.pos]||r.pos), fmtInn(r.f.outs), r.f.PO, r.f.A, r.f.E, r.f.DP, avg3(r.f.FPCT)]),
         ["합계", fmtInn(fieldingOf(defs).outs), fieldingOf(defs).PO, fieldingOf(defs).A, fieldingOf(defs).E, fieldingOf(defs).DP, avg3(fieldingOf(defs).FPCT)])}</div>` : "")
-  + `<div class="note">지표 설명 — <b>OPS</b> 출루율+장타율 · <b>ISO</b> 장타율−타율(순수 장타력) ·
-      <b>wOBA</b> 출루 유형별 가중치를 적용한 종합 타격 지표 · <b>BABIP</b> 인플레이 타구의 안타 비율</div>`;
+  + `<div class="note">타격 지표 — <b>OPS</b> 출루율+장타율 · <b>ISO</b> 장타율−타율(순수 장타력) ·
+      <b>wOBA</b> 출루 유형별 가중치를 적용한 종합 타격 지표 · <b>BABIP</b> 인플레이 타구의 안타 비율 ·
+      <b>SecA</b> 안타에 의존하지 않은 생산(장타+볼넷+도루) · <b>RC</b> 만들어 낸 득점의 추정값</div>`;
+}
+
+/* ---------------------------- 투수 분석 ---------------------------- */
+function pitchingSection(gs, defs){
+  const pt = pitchingOf(defs);
+  if(!pt.APP) return "";
+  const apps = pt.apps;
+
+  // 클래식 지표
+  const classic = tableHTML(["항목","값","항목 ","값 "],
+    [["등판",pt.APP,"이닝 IP",fmtInn(pt.outs)],
+     ["승 W",pt.W,"패 L",pt.L],
+     ["세이브 SV",pt.SV,"홀드 HLD",pt.HLD],
+     ["평균자책 ERA",fx2(pt.ERA),"실점 R",pt.R],
+     ["자책점 ER",pt.ER,"피안타 H",pt.H],
+     ["피홈런 HR",pt.HR,"볼넷 BB",pt.BB],
+     ["사구 HBP",pt.HBP,"탈삼진 SO",pt.SO],
+     ["상대 타자 TBF",pt.TBF,"투구수 NP",pt.NP||"-"]]);
+
+  // 세이버메트릭스 지표
+  const saber = tableHTML(["항목","값","항목 ","값 "],
+    [["WHIP",fx2(pt.WHIP),"FIP",fx2(pt.FIP)],
+     ["K/9",fx2(pt.K9),"BB/9",fx2(pt.BB9)],
+     ["H/9",fx2(pt.H9),"HR/9",fx2(pt.HR9)],
+     ["K/BB",fx2(pt.KBB),"K−BB%",pct1(pt.KBBP)],
+     ["삼진율 K%",pct1(pt.KP),"볼넷율 BB%",pct1(pt.BBP)],
+     ["피안타율 OAVG",avg3(pt.OAVG),"피BABIP",avg3(pt.OBABIP)],
+     ["스트라이크%",pct1(pt.STP),"헛스윙%",pct1(pt.SWP)],
+     ["이닝당 투구수 P/IP",fx2(pt.PIP),"ERA−FIP",fx2(pt.EMF)]]);
+
+  // 누적 ERA · WHIP 추이 (경기 순서)
+  const byGame = {};
+  apps.forEach(a=>{ const k=a.g? a.g.id : "-"; (byGame[k]=byGame[k]||[]).push(a); });
+  const pgs = gs.filter(g=>byGame[g.id]);
+  let aO=0,aER=0,aH=0,aBB=0,aSO=0;
+  const eraPts=[], whipPts=[], gameRows=[];
+  pgs.forEach(g=>{
+    let gO=0,gER=0,gH=0,gBB=0,gSO=0,gR=0,gTBF=0,gNP=0;
+    byGame[g.id].forEach(a=>{ const p=a.p;
+      gO+=a.o; gER+=num(p.er,0); gH+=num(p.h,0); gBB+=num(p.bb,0); gSO+=num(p.so,0);
+      gR+=num(p.r,0); gTBF+=num(p.tbf,0); gNP+=num(p.np,0)||(p.pitches||[]).length; });
+    aO+=gO; aER+=gER; aH+=gH; aBB+=gBB; aSO+=gSO;
+    const cera = aO? aER*27/aO : null, cwhip = aO? (aH+aBB)*3/aO : null;
+    const lb = fmtDate(g.date).slice(3);
+    eraPts.push({x:lb, y:cera, tip:`<b>${esc(fmtDate(g.date))} vs ${esc(g.opponent||"-")}</b><br>이 경기 ${fmtInn(gO)}이닝 ${gER}자책<br>누적 ERA ${fx2(cera)} · WHIP ${fx2(cwhip)}`});
+    whipPts.push({x:lb, y:cwhip, tip:`누적 WHIP ${fx2(cwhip)}`});
+    gameRows.push([fmtDate(g.date), esc(g.opponent||"-"), fmtInn(gO), gTBF||"-", gH, gBB, gSO, gR, gER, gNP||"-", fx2(gO? gER*27/gO : null)]);
+  });
+
+  // 구종별
+  const ptypes = PITCH_TYPES.map(x=>{
+    const list = pt.pitches.filter(q=>q.t===x.c);
+    const st = list.filter(q=>isStrikeRes(q.r)).length;
+    const sw = list.filter(q=>q.r==="SS").length;
+    return {label:x.ko, value:list.length, _st:st, _sw:sw,
+      tip:`<b>${esc(x.ko)}</b><br>${list.length}구 · 전체의 ${pct1(list.length/Math.max(pt.pitches.length,1))}<br>스트라이크 ${pct1(list.length?st/list.length:null)} · 헛스윙 ${pct1(list.length?sw/list.length:null)}`};
+  }).filter(x=>x.value>0).sort((a,c)=>c.value-a.value);
+
+  // 투구 결과별
+  const pres = PITCH_RES.map(x=>{
+    const n = pt.pitches.filter(q=>q.r===x.c).length;
+    return {label:x.ko, value:n, color:PRCOLOR[x.g],
+      tip:`<b>${esc(x.ko)}</b><br>${n}구 · ${pct1(n/Math.max(pt.pitches.length,1))}`};
+  }).filter(x=>x.value>0).sort((a,c)=>c.value-a.value);
+
+  const heat = zoneHeat(pt.pitches);
+
+  return `<div class="card" style="background:var(--surface-2);border-color:transparent">
+      <div class="hd" style="margin:0"><div style="flex:1"><h3>투수 분석</h3>
+      <div class="cap">${pt.G}경기 ${pt.APP}등판 · ${fmtInn(pt.outs)}이닝 · ERA ${fx2(pt.ERA)} · WHIP ${fx2(pt.WHIP)}${pt.NP? " · "+pt.NP+"구":""}</div></div></div></div>`
+  + `<div class="grid g2">
+      <div class="card"><div class="hd"><div style="flex:1"><h3>투수 — 클래식 지표</h3>
+        <div class="cap">기록지 그대로의 수치 · 이닝은 5.2 = 5이닝 2아웃</div></div></div>${classic}</div>
+      <div class="card"><div class="hd"><div style="flex:1"><h3>투수 — 세이버메트릭스</h3>
+        <div class="cap">운·수비의 영향을 덜 받는 지표로 다시 본 결과 (FIP 상수 ${FIP_C.toFixed(2)})</div></div></div>${saber}</div>
+    </div>`
+  + (eraPts.length? chartCard("누적 평균자책 · WHIP 추이", "등판을 거치며 지표가 어떻게 수렴하는지 보여줍니다. 마지막 값이 현재 기록입니다.",
+      `<div class="legend"><span><i style="background:var(--chart)"></i>누적 ERA</span><span><i style="background:var(--s1)"></i>누적 WHIP</span></div>`
+      + lineChart([{pts:eraPts, color:"var(--chart)"},{pts:whipPts, color:"var(--s1)"}], {aria:"누적 ERA·WHIP 추이", fmt:fx2}),
+      tableHTML(["경기","상대","이닝","타자","피안타","볼넷","삼진","실점","자책","투구수","ERA"], gameRows)) : "")
+  + (pt.pitches.length? chartCard("투구 코스 (스트라이크 존)", `기록된 ${pt.pitches.length}구 · 존 안 ${pt.pitches.length-heat.outside}구 / 존 밖 ${heat.outside}구 · 점을 누르면 상세가 표시됩니다`,
+      zoneScatter(pt.pitches),
+      tableHTML(["날짜","구종","결과","코스","구속"], pt.pitches.map(q=>[
+        q._g? fmtDate(q._g.date) : "-", esc(PTMAP[q.t]||"-"), esc(prKo(q.r)), esc(zoneCellKo(zoneCell(q))),
+        num(q.v,0)? Math.round(num(q.v,0))+"km/h" : "-"]))) : "")
+  + (pt.pitches.length? chartCard("코스별 투구 분포 (9분할)", `존 안쪽만 9칸으로 나눈 분포 · 존 밖 ${heat.outside}구 (${pct1(heat.outside/Math.max(heat.tot,1))})`,
+      heat.svg,
+      tableHTML(["코스","투구","비중"], ZCELL_KO.map((k,i)=>[k, heat.cells[i], pct1(heat.cells[i]/Math.max(heat.tot,1))]).concat([["존 밖", heat.outside, pct1(heat.outside/Math.max(heat.tot,1))]]))) : "")
+  + `<div class="grid g2">`
+  + (ptypes.length? chartCard("구종별 투구", `구종을 입력한 투구 ${ptypes.reduce((a,x)=>a+x.value,0)}구`,
+      hbarChart(ptypes, {aria:"구종별 투구 수", left:76, fmt:v=>String(Math.round(v))}),
+      tableHTML(["구종","투구","비중","스트라이크%","헛스윙%"], ptypes.map(x=>[x.label, x.value,
+        pct1(x.value/Math.max(pt.pitches.length,1)), pct1(x.value? x._st/x.value:null), pct1(x.value? x._sw/x.value:null)]))) : "")
+  + (pres.length? chartCard("투구 결과 분포", `스트라이크 ${pt.ST}구 (${pct1(pt.STP)}) · 볼 ${pt.NP-pt.ST}구`,
+      hbarChart(pres, {aria:"투구 결과 분포", left:76, fmt:v=>String(Math.round(v))}),
+      tableHTML(["결과","투구","비중"], pres.map(x=>[x.label, x.value, pct1(x.value/Math.max(pt.pitches.length,1))]))) : "")
+  + `</div>`
+  + `<div class="card"><div class="hd"><div style="flex:1"><h3>등판별 투수 기록</h3>
+      <div class="cap">수비 기록에서 포지션을 <b>투수</b>로 고른 기록만 집계됩니다</div></div></div>
+      ${tableHTML(["날짜","상대","이닝","타자","피안타","볼넷","삼진","실점","자책","투구수","승패","ERA"],
+        apps.map(a=>[a.g? fmtDate(a.g.date):"-", esc(a.g? (a.g.opponent||"-"):"-"), fmtInn(a.o),
+          num(a.p.tbf,0)||"-", num(a.p.h,0), num(a.p.bb,0), num(a.p.so,0), num(a.p.r,0), num(a.p.er,0),
+          num(a.p.np,0)||(a.p.pitches||[]).length||"-", esc(a.p.dec? decKo(a.p.dec):"-"), fx2(appERA(a))]),
+        ["합계", "", fmtInn(pt.outs), pt.TBF||"-", pt.H, pt.BB, pt.SO, pt.R, pt.ER, pt.NP||"-", `${pt.W}승 ${pt.L}패`, fx2(pt.ERA)])}</div>`
+  + `<div class="note">투수 지표 — <b>ERA</b> 9이닝당 자책점 · <b>WHIP</b> 이닝당 출루 허용(피안타+볼넷) ·
+      <b>FIP</b> 홈런·볼넷·삼진만으로 계산해 수비·운의 영향을 뺀 방어율 (13·HR + 3·(BB+HBP) − 2·K) ÷ 이닝 + ${FIP_C.toFixed(2)} ·
+      <b>ERA−FIP</b> 값이 크면 수비 도움이나 운이 좋았다는 뜻 · <b>K−BB%</b> 삼진율에서 볼넷율을 뺀 제어력 지표 ·
+      <b>스트라이크%</b> 전체 투구 중 스트라이크(파울·인플레이 포함) 비율 · <b>헛스윙%</b> 전체 투구 중 헛스윙 비율</div>`;
 }
 
 /* ------------------------------- 영상 ------------------------------- */
@@ -1341,6 +1665,8 @@ function viewSettings(){
         <button class="btn" data-act="importJSON">JSON 불러오기</button>
         <button class="btn" data-act="exportCSV">타석 CSV</button>
         <button class="btn" data-act="exportDefCSV">수비 CSV</button>
+        <button class="btn" data-act="exportPitCSV">투수 CSV</button>
+        <button class="btn" data-act="exportPitchCSV">투구 CSV</button>
       </div>
       <div class="btnrow" style="margin-top:8px">
         <button class="btn sm" data-act="showJSON">JSON 화면에 표시 · 복사</button>
@@ -1502,6 +1828,8 @@ function paSheet(gid, pid){
 
 /* ------------------------------ 수비 시트 ------------------------------ */
 let ddraft = null;   // 수비 시트에서 고른 결과
+let pdraft = null;   // 투수 시트의 투구 마커 (구종/결과 선택 + 투구 목록)
+let pPaint = null;   // 투구 마커 다시 그리기
 function defSheet(gid, did){
   const g = S.games.find(x=>x.id===gid); if(!g) return;
   const d = did? g.def.find(x=>x.id===did) : null;
@@ -1510,6 +1838,8 @@ function defSheet(gid, did){
                   result:"", innings:"", po:0, a:0, e:0, dp:0, note:""};
   const LV = gameLevel(g);
   ddraft = {result: v.result||""};
+  const pv = (d && d.pit) || {};
+  pdraft = {pitches: ((pv.pitches)||[]).map(x=>Object.assign({},x)), t:"FB", r:"CS"};
   const openDetail = !!(d && !v.result);   // 예전 방식으로 적어 둔 기록은 세부칸을 펼쳐서 보여줌
   const groups = ["out","err","etc"].map(gk=>`
     <div class="chipgroup"><div class="gl">${DGLABEL[gk]}</div><div class="chips">
@@ -1527,12 +1857,52 @@ function defSheet(gid, did){
         ${stepper("d_inning", clamp(num(v.inning,1)||1,1,regInnings(LV)+3), 1, regInnings(LV)+3)}</label>
     </div>
     <div style="margin-bottom:6px"><span style="display:block;font-size:12.5px;color:var(--text-2);margin-bottom:6px;font-weight:550">수비 결과</span>${groups}</div>
+    <div id="p_wrap" ${v.pos==="P"?"":"hidden"}>
+      <div class="pblock">
+        <div class="gl2">투수 기록 <span>— 이 경기 등판 기록. 이닝·자책점으로 방어율(ERA)과 WHIP이 계산됩니다</span></div>
+        <div class="f2">
+          <label class="f"><span>투구 이닝 <span style="color:var(--text-3);font-weight:400">— 5.2 = 5이닝 2아웃</span></span>
+            <input id="p_ip" inputmode="decimal" value="${esc(pv.ip||v.innings||"")}" placeholder="예: ${Math.max(1,regInnings(LV)-2)}.2"></label>
+          <label class="f"><span>승패 기록</span><select id="p_dec">
+            ${Object.keys(PDEC).map(k=>`<option value="${k}" ${(pv.dec||"")===k?"selected":""}>${PDEC[k]}</option>`).join("")}</select></label>
+        </div>
+        <div class="f3">
+          <label class="f"><span>상대 타자</span>${stepper("p_tbf", num(pv.tbf,0), 0)}</label>
+          <label class="f"><span>피안타</span>${stepper("p_h", num(pv.h,0), 0)}</label>
+          <label class="f"><span>피홈런</span>${stepper("p_hr", num(pv.hr,0), 0)}</label>
+          <label class="f"><span>볼넷</span>${stepper("p_bb", num(pv.bb,0), 0)}</label>
+          <label class="f"><span>사구</span>${stepper("p_hbp", num(pv.hbp,0), 0)}</label>
+          <label class="f"><span>삼진</span>${stepper("p_so", num(pv.so,0), 0)}</label>
+          <label class="f"><span>실점</span>${stepper("p_r", num(pv.r,0), 0)}</label>
+          <label class="f"><span>자책점</span>${stepper("p_er", num(pv.er,0), 0)}</label>
+          <label class="f"><span>투구수</span>${stepper("p_np", num(pv.np,0), 0)}</label>
+        </div>
+        <div class="gl2" style="margin-top:6px">투구 코스 마커 <span>— 구종·결과를 고른 뒤 존을 누르면 한 구씩 쌓입니다</span></div>
+        <div class="chipgroup"><div class="gl">구종</div><div class="chips">
+          ${PITCH_TYPES.map(x=>`<button type="button" class="chip pt" data-act="pickPType" data-v="${x.c}" aria-pressed="${pdraft.t===x.c}">${x.ko}</button>`).join("")}
+        </div></div>
+        <div class="chipgroup"><div class="gl">투구 결과</div><div class="chips">
+          ${PITCH_RES.map(x=>`<button type="button" class="chip pr g-p${x.g}" data-act="pickPRes" data-v="${x.c}" aria-pressed="${pdraft.r===x.c}">${x.ko}</button>`).join("")}
+        </div></div>
+        <div class="f2">
+          <label class="f"><span>구속 <span style="color:var(--text-3);font-weight:400">km/h (선택)</span></span><input id="p_vel" inputmode="numeric" placeholder="예: 118"></label>
+          <label class="f"><span>스트라이크 수 <span style="color:var(--text-3);font-weight:400">— 마커에서 자동</span></span>${stepper("p_st", num(pv.st,0), 0)}</label>
+        </div>
+        <div id="p_zone">${zoneSVG(`<g id="pzmark"></g>`, {id:"pzfield", aria:"투구 코스 선택", maxw:290})}</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap">
+          <div id="p_zlabel" class="hint" style="flex:1;min-width:120px">존을 눌러 투구를 기록하세요</div>
+          <button type="button" class="btn sm" data-act="undoPitch">마지막 취소</button>
+          <button type="button" class="btn sm" data-act="clearPitch">전체 지우기</button>
+        </div>
+        <div id="p_list" class="plist"></div>
+      </div>
+    </div>
     <label class="f"><span>메모</span><textarea id="d_note" placeholder="타구 방향, 상황, 아쉬웠던 점 등">${esc(v.note||"")}</textarea></label>
     <details class="dtl" ${openDetail?"open":""}>
       <summary>세부 기록 · 수비 이닝 직접 입력</summary>
       <div class="dtlbody">
         <div class="hint" style="margin:0 0 10px">결과를 고르면 자동으로 채워집니다. 필요하면 직접 고쳐 주세요.</div>
-        <label class="f"><span>수비 이닝 <span style="color:var(--text-3);font-weight:400">— 이 경기에서 지킨 총 이닝 (한 번만 입력)</span></span>
+        <label class="f" id="d_inn_row"><span>수비 이닝 <span style="color:var(--text-3);font-weight:400">— 이 경기에서 지킨 총 이닝 (한 번만 입력)</span></span>
           <input id="d_inn" inputmode="decimal" value="${esc(v.innings||"")}" placeholder="예: ${Math.max(1,regInnings(LV)-1)}.2"></label>
         <div class="hint" style="margin:-6px 0 12px">이닝은 야구 표기를 씁니다 — <b>5.2</b> = 5이닝 2아웃</div>
         <div class="f2">
@@ -1544,11 +1914,69 @@ function defSheet(gid, did){
       </div>
     </details>
     <div class="sf">${d? delBtn("delDef", `data-gid="${gid}" data-id="${d.id}"`, "이 수비 기록 삭제") : `<button class="btn" data-act="close">취소</button>`}
-      <button class="btn pri" data-act="saveDef" data-gid="${gid}" data-id="${d?d.id:""}">저장</button></div>`);
+      <button class="btn pri" data-act="saveDef" data-gid="${gid}" data-id="${d?d.id:""}">저장</button></div>`,
+  sheet=>{
+    const sel  = sheet.querySelector("#d_pos");
+    const wrap = sheet.querySelector("#p_wrap");
+    const irow = sheet.querySelector("#d_inn_row");
+    const sync = ()=>{ const isP = sel.value==="P"; wrap.hidden = !isP; if(irow) irow.hidden = isP; };
+    sel.addEventListener("change", sync); sync();
+
+    const svg = sheet.querySelector("#pzfield");
+    pPaint = ()=> paintPitchDraft(sheet);
+    const pick = ev=>{
+      const r = svg.getBoundingClientRect();
+      const x = (ev.clientX - r.left) * (ZONE.W / r.width);
+      const y = (ev.clientY - r.top)  * (ZONE.H / r.height);
+      if(!insideZone(x,y)){ toast("존과 그 주변(위쪽 사각형 영역)을 눌러 주세요"); return; }
+      const pt = clampZone(x,y);
+      const vel = num((sheet.querySelector("#p_vel").value||"").trim(), 0);
+      pdraft.pitches.push({x:pt.x, y:pt.y, t:pdraft.t, r:pdraft.r, v:vel});
+      pPaint();
+    };
+    svg.style.cursor = "crosshair";
+    svg.addEventListener("pointerdown", ev=>{ ev.preventDefault(); pick(ev); });
+    pPaint();
+  });
+}
+/* 투구 마커 다시 그리기 — 마커 · 요약 · 목록 · 투구수/스트라이크 자동 채움 */
+function paintPitchDraft(sheet){
+  if(!sheet || !pdraft) return;
+  const gEl = sheet.querySelector("#pzmark"); if(!gEl) return;
+  const list = pdraft.pitches;
+  gEl.innerHTML = pitchMarks(list, {num:true, r:8, op:.9});
+  const np = list.length, st = list.filter(x=>isStrikeRes(x.r)).length;
+  const lb = sheet.querySelector("#p_zlabel");
+  if(lb) lb.innerHTML = np? `${np}구 · 스트라이크 ${st} (${pct1(st/np)}) · 헛스윙 ${list.filter(x=>x.r==="SS").length}`
+                          : "존을 눌러 투구를 기록하세요";
+  if(np){
+    const a=sheet.querySelector("#p_np"), b=sheet.querySelector("#p_st");
+    if(a) a.value = String(np);
+    if(b) b.value = String(st);
+  }
+  const box = sheet.querySelector("#p_list");
+  if(box) box.innerHTML = list.map((x,i)=>`<span class="pitem"><span class="no">${i+1}</span>`
+    + `<i style="background:${PRCOLOR[prGroup(x.r)]}"></i>`
+    + `${esc(PTMAP[x.t]||"구종")} · ${esc(prKo(x.r))}${num(x.v,0)?" · "+Math.round(num(x.v,0)):""}`
+    + ` <span style="color:var(--text-3)">${esc(zoneCellKo(zoneCell(x)))}</span>`
+    + `<button type="button" data-act="delPitch" data-i="${i}" aria-label="${i+1}번째 투구 삭제">✕</button></span>`).join("");
 }
 // 수비 기록 한 줄 설명
 function defLine(d){
   const bits=[];
+  if(hasPitData(d)){
+    const p=d.pit, o=pitOuts(d);
+    if(o) bits.push(fmtInn(o)+"이닝");
+    if(num(p.h,0))  bits.push("피안타 "+num(p.h,0));
+    if(num(p.so,0)) bits.push(num(p.so,0)+"삼진");
+    if(num(p.bb,0)) bits.push("볼넷 "+num(p.bb,0));
+    if(num(p.r,0)||num(p.er,0)) bits.push(num(p.r,0)+"실점("+num(p.er,0)+"자책)");
+    if((p.pitches||[]).length) bits.push((p.pitches||[]).length+"구");
+    else if(num(p.np,0)) bits.push(num(p.np,0)+"구");
+    if(p.dec) bits.push(decKo(p.dec));
+    if(d.note) bits.push(String(d.note).replace(/\s+/g," ").slice(0,30));
+    return bits.join(" · ");
+  }
   const o = inn2outs(d.innings);
   if(o) bits.push(fmtInn(o)+"이닝");
   if(num(d.po,0)) bits.push("자살 "+num(d.po,0));
@@ -1788,6 +2216,33 @@ function exportDefCSV(){
   if(rows.length===1){ toast("내보낼 수비 기록이 없습니다"); return; }
   download(`baseball-fielding_${stamp()}.csv`, csv(rows));
 }
+function exportPitCSV(){
+  const rows = [["날짜","상대","경기종류","등판이닝","승패","상대타자","피안타","피홈런","볼넷","사구","삼진","실점","자책","투구수","스트라이크","ERA","WHIP","메모"]];
+  scopedGames().forEach(g=> g.def.forEach(d=>{
+    if(!hasPitData(d)) return;
+    const o = pitOuts(d), q = d.pit;
+    rows.push([g.date, g.opponent, GAME_TYPES[gameType(g)].ko, fmtInn(o), decKo(q.dec),
+      num(q.tbf,0), num(q.h,0), num(q.hr,0), num(q.bb,0), num(q.hbp,0), num(q.so,0), num(q.r,0), num(q.er,0),
+      num(q.np,0)||(q.pitches||[]).length, num(q.st,0)||(q.pitches||[]).filter(x=>isStrikeRes(x.r)).length,
+      o? (num(q.er,0)*27/o).toFixed(2):"", o? ((num(q.h,0)+num(q.bb,0))*3/o).toFixed(2):"", d.note||""]);
+  }));
+  if(rows.length===1){ toast("내보낼 투수 기록이 없습니다"); return; }
+  download(`baseball-pitching_${stamp()}.csv`, csv(rows));
+}
+function exportPitchCSV(){
+  const rows = [["날짜","상대","이닝","순번","구종","결과","스트라이크여부","코스","존안팎","구속(km/h)","x","y"]];
+  scopedGames().forEach(g=> g.def.forEach(d=>{
+    if(!d.pit || !(d.pit.pitches||[]).length) return;
+    d.pit.pitches.forEach((q,i)=>{
+      const c = zoneCell(q);
+      rows.push([g.date, g.opponent, num(d.inning,0)||"", i+1, PTMAP[q.t]||"", prKo(q.r),
+        isStrikeRes(q.r)?"스트라이크":"볼", zoneCellKo(c), c<0?"존 밖":"존 안",
+        num(q.v,0)||"", num(q.x,0), num(q.y,0)]);
+    });
+  }));
+  if(rows.length===1){ toast("내보낼 투구 마커가 없습니다"); return; }
+  download(`baseball-pitches_${stamp()}.csv`, csv(rows));
+}
 function importJSON(){
   const inp = document.createElement("input");
   inp.type="file"; inp.accept="application/json,.json";
@@ -1894,17 +2349,42 @@ function sampleData(){
         rbi: c==="HR"? 1+Math.floor(Math.random()*3) : (r.h||c==="SF")? Math.floor(Math.random()*2):0,
         runs: c==="HR"?1:(r.h?Math.floor(Math.random()*2):0), sb:(c==="1B"||c==="BB")?Math.floor(Math.random()*2):0, cs:0, note:""});
     }
-    // 수비 — 출장 이닝 1건 + 이닝별 수비 장면 몇 건
-    const dpos = rnd(["SS","2B","CF","LF","1B"]);
-    g.def.push({id:uid(), pos:dpos, inning:1, result:"INN",
-      innings:String(5+Math.floor(Math.random()*3))+"."+Math.floor(Math.random()*3),
-      po:0, a:0, e:0, dp:0, note:"선발 출장"});
-    const dcodes = ["PO","A","A","DP","NP","EF","ET"];
-    const dn = 2+Math.floor(Math.random()*3);
-    for(let k=0;k<dn;k++){
-      const dc = rnd(dcodes), dr = DMAP[dc];
-      g.def.push({id:uid(), pos:dpos, inning:2+k*2-Math.floor(Math.random()*2), result:dc, innings:"",
-        po:dr.po||0, a:dr.a||0, e:dr.e||0, dp:dr.dp||0, note:""});
+    if(i%3===1){
+      // 투수 등판 — 투구 마커 포함
+      const outs = 9+Math.floor(Math.random()*10);
+      const ip = Math.floor(outs/3)+(outs%3? "."+(outs%3):"");
+      const types = ["FB","FB","FB","FB","SL","SL","CB","CH","TS"];
+      const reses = ["CS","CS","SS","F","B","B","B","X"];
+      const pitches = [];
+      const npn = 40+Math.floor(Math.random()*35);
+      const zx=(ZONE.x0+ZONE.x1)/2, zy=(ZONE.y0+ZONE.y1)/2, zw=ZONE.x1-ZONE.x0, zh=ZONE.y1-ZONE.y0;
+      for(let q=0;q<npn;q++){
+        const rr = rnd(reses), tt = rnd(types);
+        const spread = rr==="B"? 1.5 : 0.86;
+        const pt2 = clampZone(zx+(Math.random()-.5)*zw*spread + (Math.random()-.5)*10,
+                              zy+(Math.random()-.5)*zh*spread + (rr==="B"? 14:0));
+        pitches.push({x:pt2.x, y:pt2.y, t:tt, r:rr, v:104+Math.floor(Math.random()*22)});
+      }
+      const so = 3+Math.floor(Math.random()*6), bb = Math.floor(Math.random()*4);
+      const h  = 2+Math.floor(Math.random()*6), er = Math.floor(Math.random()*4);
+      g.def.push({id:uid(), pos:"P", inning:1, result:"INN", innings:ip,
+        po:Math.floor(Math.random()*2), a:1+Math.floor(Math.random()*3), e:0, dp:0, note:"선발 등판",
+        pit:{ip, dec:rnd(["W","ND","L","W"]), tbf:Math.round(outs+h+bb+1), h, hr:Math.random()<0.3?1:0,
+          bb, hbp:Math.random()<0.2?1:0, so, r:er+(Math.random()<0.3?1:0), er,
+          np:pitches.length, st:pitches.filter(x=>isStrikeRes(x.r)).length, pitches}});
+    } else {
+      // 수비 — 출장 이닝 1건 + 이닝별 수비 장면 몇 건
+      const dpos = rnd(["SS","2B","CF","LF","1B"]);
+      g.def.push({id:uid(), pos:dpos, inning:1, result:"INN",
+        innings:String(5+Math.floor(Math.random()*3))+"."+Math.floor(Math.random()*3),
+        po:0, a:0, e:0, dp:0, note:"선발 출장"});
+      const dcodes = ["PO","A","A","DP","NP","EF","ET"];
+      const dn = 2+Math.floor(Math.random()*3);
+      for(let k=0;k<dn;k++){
+        const dc = rnd(dcodes), dr = DMAP[dc];
+        g.def.push({id:uid(), pos:dpos, inning:2+k*2-Math.floor(Math.random()*2), result:dc, innings:"",
+          po:dr.po||0, a:dr.a||0, e:dr.e||0, dp:dr.dp||0, note:""});
+      }
     }
     g.def.sort((x,y)=> num(x.inning,0)-num(y.inning,0));
     S.games.push(g);
@@ -1921,7 +2401,7 @@ function readGameSheet(){
 }
 document.addEventListener("click", ev=>{
   const nav = ev.target.closest("nav.tabs button");
-  if(nav){ navGo(nav.dataset.nav, null); save(); render(); return; }
+  if(nav){ S.ui.tab = nav.dataset.nav; S.ui.gameId = null; save(); render(); return; }
 
   const tg = ev.target.closest("[data-toggle]");
   if(tg){ const box=document.getElementById(tg.dataset.toggle);
@@ -1936,7 +2416,7 @@ document.addEventListener("click", ev=>{
 
   switch(a){
     case "close": closeSheet(); break;
-    case "nav": navGo(v, null); save(); render(); break;
+    case "nav": S.ui.tab=v; S.ui.gameId=null; save(); render(); break;
     case "year": S.ui.year=v; save(); render(); break;
     case "gtype": S.ui.gtype=v; save(); render(); break;
     case "pickGType": {
@@ -1954,7 +2434,7 @@ document.addEventListener("click", ev=>{
     case "saveGame": {
       const d = readGameSheet();
       if(id){ const g=S.games.find(x=>x.id===id); Object.assign(g,d); }
-      else { const g=Object.assign({id:uid(), pas:[], def:[], videos:[]}, d); S.games.push(g); navGo("games", g.id); }
+      else { const g=Object.assign({id:uid(), pas:[], def:[], videos:[]}, d); S.games.push(g); S.ui.tab="games"; S.ui.gameId=g.id; }
       saveNow(); closeSheet(); render(); toast("저장했습니다"); break; }
     case "delGame":
       ask("경기 삭제","이 경기의 타석·수비·영상 기록이 모두 삭제됩니다. 되돌릴 수 없습니다.",
@@ -1962,10 +2442,10 @@ document.addEventListener("click", ev=>{
         if(k!==0) return;
         const g=S.games.find(x=>x.id===id);
         (g.videos||[]).filter(x=>x.kind==="file").forEach(x=> idbDel(x.id).catch(()=>{}));
-        S.games = S.games.filter(x=>x.id!==id); S.ui.gameId=null; S.ui.tab="games"; navReset();
+        S.games = S.games.filter(x=>x.id!==id); S.ui.gameId=null; S.ui.tab="games";
         saveNow(); render(); toast("삭제했습니다");
       }); break;
-    case "openGame": navGo("games", id); save(); render(); break;
+    case "openGame": S.ui.tab="games"; S.ui.gameId=id; save(); render(); break;
 
     case "newPA": paSheet(gid, null); break;
     case "editPA": paSheet(gid, id); break;
@@ -2010,14 +2490,52 @@ document.addEventListener("click", ev=>{
       break; }
     case "saveDef": {
       const g=S.games.find(x=>x.id===gid);
-      const rec = {id:id||uid(), pos:$("#d_pos").value, inning:num($("#d_inning").value,0),
-        result: ddraft? ddraft.result : "", innings:$("#d_inn").value.trim(), note:$("#d_note").value.trim(),
+      const pos = $("#d_pos").value;
+      const isP = pos==="P";
+      const pip = isP? $("#p_ip").value.trim() : "";
+      const pit = isP? {
+        ip: pip, dec: $("#p_dec").value,
+        tbf:num($("#p_tbf").value,0), h:num($("#p_h").value,0), hr:num($("#p_hr").value,0),
+        bb:num($("#p_bb").value,0), hbp:num($("#p_hbp").value,0), so:num($("#p_so").value,0),
+        r:num($("#p_r").value,0), er:num($("#p_er").value,0),
+        np:num($("#p_np").value,0), st:num($("#p_st").value,0),
+        pitches: (pdraft? pdraft.pitches : []).map(x=>Object.assign({},x))
+      } : null;
+      const rec = {id:id||uid(), pos, inning:num($("#d_inning").value,0),
+        result: ddraft? ddraft.result : "", innings: isP? (pip || $("#d_inn").value.trim()) : $("#d_inn").value.trim(),
+        note:$("#d_note").value.trim(),
         po:num($("#d_po").value,0), a:num($("#d_a").value,0), e:num($("#d_e").value,0), dp:num($("#d_dp").value,0)};
+      if(pit) rec.pit = pit;
       if(!rec.pos){ toast("포지션을 선택해 주세요"); return; }
-      if(!rec.result && !(rec.po||rec.a||rec.e||rec.dp||inn2outs(rec.innings))){ toast("수비 결과를 선택해 주세요"); return; }
+      const hasP = !!(pit && (inn2outs(pit.ip) || pit.tbf || pit.np || pit.h || pit.so || pit.bb || pit.pitches.length));
+      if(!rec.result && !hasP && !(rec.po||rec.a||rec.e||rec.dp||inn2outs(rec.innings))){
+        toast(isP? "투구 이닝이나 수비 결과를 입력해 주세요" : "수비 결과를 선택해 주세요"); return; }
       if(id){ const i=g.def.findIndex(x=>x.id===id); g.def[i]=rec; } else g.def.push(rec);
       g.def.sort((x,y)=> num(x.inning,0)-num(y.inning,0));
-      saveNow(); closeSheet(); render(); toast(rec.result? dko(rec.result)+" 기록" : "수비 기록을 저장했습니다"); break; }
+      saveNow(); closeSheet(); render();
+      toast(hasP? "투수 기록을 저장했습니다" : (rec.result? dko(rec.result)+" 기록" : "수비 기록을 저장했습니다")); break; }
+    case "pickPType":
+      if(pdraft){ pdraft.t = v; $$("#modal .chip.pt").forEach(c=> c.setAttribute("aria-pressed", String(c.dataset.v===v))); }
+      break;
+    case "pickPRes":
+      if(pdraft){ pdraft.r = v; $$("#modal .chip.pr").forEach(c=> c.setAttribute("aria-pressed", String(c.dataset.v===v))); }
+      break;
+    case "undoPitch":
+      if(pdraft && pdraft.pitches.length){ pdraft.pitches.pop(); if(pPaint) pPaint(); }
+      else toast("취소할 투구가 없습니다");
+      break;
+    case "delPitch":
+      if(pdraft){ pdraft.pitches.splice(num(el.dataset.i,0),1); if(pPaint) pPaint(); }
+      break;
+    case "clearPitch":
+      if(pdraft && pdraft.pitches.length){
+        pdraft.pitches = [];
+        const a=$("#modal #p_np"), b=$("#modal #p_st");
+        if(a) a.value="0"; if(b) b.value="0";
+        if(pPaint) pPaint();
+        toast("투구 마커를 모두 지웠습니다");
+      }
+      break;
     case "delDef": {
       const g=S.games.find(x=>x.id===gid); g.def=g.def.filter(x=>x.id!==id);
       saveNow(); closeSheet(); render(); toast("삭제했습니다"); break; }
@@ -2066,6 +2584,8 @@ document.addEventListener("click", ev=>{
     case "applyPaste": applyPaste(); break;
     case "exportCSV": exportCSV(); break;
     case "exportDefCSV": exportDefCSV(); break;
+    case "exportPitCSV": exportPitCSV(); break;
+    case "exportPitchCSV": exportPitchCSV(); break;
     case "wipe":
       ask("전체 기록 삭제","모든 경기·타석·수비·영상 기록이 이 기기에서 완전히 삭제됩니다.<br>먼저 JSON으로 백업하는 것을 권합니다.",
         [{label:"모두 삭제",style:"dan"},{label:"취소"}]).then(k=>{
@@ -2128,115 +2648,37 @@ function saveVideo(gid, btn){
 }
 
 /* --------------------- 뒤로(되돌아가기) 버튼 처리 ---------------------
-   한 번 누르면 바로 앞 화면으로, 홈 화면에서 한 번 더 누르면 앱을 나갑니다.
-   (시트·팝업이 열려 있으면 그것부터 닫습니다)
-
-   ★ 중요 — 웹앱(홈 화면에 설치)에서 한 번에 종료되던 원인
-   크롬은 "사용자가 손대지 않은 사이에 페이지가 몰래 쌓아 둔 방문 기록"을
-   뒤로가기에서 그냥 건너뜁니다(history manipulation intervention).
-   그래서 앱이 열릴 때 미리 쌓아 두면 설치형 웹앱에서는 무시되고 바로 종료됩니다.
-   → 화면을 터치·클릭하는 그 순간에 예비 기록을 쌓아 두는 방식으로 바꿨습니다.
+   한 번 누르면 홈으로, 홈에서 두 번 연속 누르면 앱을 나갑니다.
+   (시트가 열려 있으면 먼저 시트를 닫습니다)
    -------------------------------------------------------------------- */
-const BB_HASH  = "#p";
-const BB_GUARD = 5;        // 미리 쌓아 둘 예비 기록 수
-let backMode   = "state";  // "state"(pushState) | "hash"(file:// 등 대체 수단)
-let guard      = 0;        // 지금 쌓여 있는 예비 기록 수 (0 = 뒤로 누르면 종료)
-let backArmed  = 0;        // 홈에서 "한 번 더" 안내를 띄운 시각
-let bbSelf     = 0;        // 우리가 직접 바꾼 해시 수
-let bbLastEvt  = 0;        // popstate/hashchange 중복 처리 방지
-let bbSkip     = false;    // 우리가 부른 history.go() 무시용
-
-/* 화면 이동 기록 — 뒤로를 누르면 "전 단계" 화면으로 돌아갑니다 */
-const navStack = [];
-function navGo(tab, gameId){
-  const g = gameId || null;
-  if(S.ui.tab===tab && (S.ui.gameId||null)===g) return;
-  navStack.push({tab:S.ui.tab, gameId:S.ui.gameId||null});
-  if(navStack.length > 40) navStack.shift();
-  S.ui.tab = tab; S.ui.gameId = g;
-}
-function navReset(){ navStack.length = 0; }
-
-/* 예비 기록 한 칸 쌓기 — 반드시 사용자의 터치/클릭 도중에만 부릅니다 */
-function bbPush(){
-  const n = guard + 1;
-  if(backMode==="state"){
-    try{ history.pushState({bb:n}, ""); guard = n; return true; }
-    catch(e){ backMode = "hash"; }
-  }
-  try{ bbSelf++; location.hash = BB_HASH + n; guard = n; return true; }
-  catch(e){ bbSelf = Math.max(0, bbSelf-1); return false; }
-}
-function topUpGuard(){
-  if(!window.history) return;
-  let n = 0;
-  while(guard < BB_GUARD && n++ < BB_GUARD){ if(!bbPush()) break; }
-}
-/* 현재 방문 기록 위치(0 = 앱의 첫 화면 기록) */
-function bbIndex(e){
-  if(backMode==="state"){
-    const s = e && e.state;
-    return (s && typeof s.bb==="number") ? s.bb : 0;
-  }
-  const m = /^#p(\d+)$/.exec(location.hash||"");
-  return m ? +m[1] : 0;
-}
-/* 남은 예비 기록을 모두 비웁니다 → 다음 뒤로가기는 시스템이 앱을 종료 */
-function bbDrain(){
-  if(guard <= 0){ guard = 0; return; }
-  const n = guard; guard = 0; bbSkip = true;
-  try{ history.go(-n); }catch(e){ bbSkip = false; }
-  setTimeout(()=>{ bbSkip = false; }, 800);
-}
-
-function onBackPressed(){
-  // 1) 열려 있는 시트/모달 먼저 닫기
-  const m = $("#modal");
-  if(m && m.innerHTML){ closeSheet(); backArmed = 0; return; }
-  // 2) 바로 앞(전 단계) 화면으로
-  if(navStack.length){
-    const p = navStack.pop();
-    S.ui.tab = p.tab; S.ui.gameId = p.gameId; save(); render();
-    backArmed = 0; return;
-  }
-  // 3) 이동 기록이 없는데 홈이 아니면 홈으로
-  if(S.ui.gameId || S.ui.tab!=="home"){
-    S.ui.gameId = null; S.ui.tab = "home"; save(); render();
-    backArmed = 0; return;
-  }
-  // 4) 홈 — 안내를 띄우고 예비 기록을 비웁니다.
-  //    한 번 더 누르면 시스템이 그대로 앱을 종료합니다.
-  //    (화면을 다시 만지면 예비 기록이 다시 쌓여 안전해집니다)
-  saveNow();
-  if(Date.now() - backArmed > 1200){
-    backArmed = Date.now();
-    toast("한 번 더 누르면 앱을 나갑니다");
-  }
-  bbDrain();
-}
-function handleBack(e){
-  const ni = bbIndex(e);
-  const goingBack = ni < guard;
-  guard = ni;
-  if(bbSkip){ bbSkip = false; return; }   // 우리가 부른 history.go()
-  if(!goingBack) return;                  // 앞으로 가기는 그대로 둡니다
-  const now = Date.now();
-  if(now - bbLastEvt < 120) return;       // popstate + hashchange 중복 방지
-  bbLastEvt = now;
-  onBackPressed();
-}
+let backArmed = 0;
+function pushBackState(){ try{ history.pushState({bb:"app"}, ""); }catch(e){} }
 function initBackButton(){
-  if(!window.history) return;
-  if(!history.pushState) backMode = "hash";
-  // 앱이 열릴 때는 아무것도 쌓지 않습니다(크롬이 건너뛰기 때문).
-  // 사용자가 화면을 처음 만지는 순간 예비 기록을 쌓습니다.
-  ["pointerdown","touchstart","mousedown","keydown"].forEach(t=>{
-    window.addEventListener(t, topUpGuard, {capture:true, passive:true});
-  });
-  window.addEventListener("popstate", handleBack);
-  window.addEventListener("hashchange", e=>{
-    if(bbSelf > 0){ bbSelf--; return; }
-    handleBack(e);
+  if(!window.history || !history.pushState) return;
+  try{ history.replaceState({bb:"root"}, ""); }catch(e){}
+  pushBackState();
+  window.addEventListener("popstate", ()=>{
+    // 1) 열려 있는 시트/모달 먼저 닫기
+    const m = $("#modal");
+    if(m && m.innerHTML){ closeSheet(); pushBackState(); return; }
+    // 2) 홈이 아니면 홈으로
+    if(S.ui.gameId || S.ui.tab!=="home"){
+      S.ui.gameId = null; S.ui.tab = "home"; save(); render();
+      backArmed = 0; pushBackState(); return;
+    }
+    // 3) 홈에서 두 번 연속(2초 이내) 누르면 나가기
+    const now = Date.now();
+    if(now - backArmed < 2000){
+      saveNow();
+      try{ window.close(); }catch(e){}
+      try{ history.back(); }catch(e){}
+      // 나가지 못한 경우(이전 페이지가 없을 때)에는 앱을 계속 쓸 수 있도록 되돌립니다
+      setTimeout(()=>{ backArmed = 0; pushBackState(); }, 600);
+      return;
+    }
+    backArmed = now;
+    toast("한 번 더 누르면 앱을 나갑니다");
+    pushBackState();
   });
 }
 
@@ -2340,11 +2782,11 @@ function setTheme(v){
     if(document.visibilityState==="hidden"){ saveNow(); return; }
     // 앱으로 돌아왔을 때 홈 화면으로. 단 입력 중(시트가 열려 있음)이면 그대로 둡니다.
     if($("#modal").innerHTML) return;
-    if(S.ui.tab!=="home" || S.ui.gameId){ S.ui.tab="home"; S.ui.gameId=null; navReset(); saveNow(); render(); }
+    if(S.ui.tab!=="home" || S.ui.gameId){ S.ui.tab="home"; S.ui.gameId=null; saveNow(); render(); }
   });
   document.addEventListener("keydown", e=>{ if(e.key==="Escape" && $("#modal").innerHTML) closeSheet(); });
   // 개발용 훅 (자동 검증에 사용)
-  window.__bb = {get S(){return S;}, set S(v){S=v;}, get backMode(){return backMode;}, get guard(){return guard;}, navStack, render, save:saveNow, battingOf, fieldingOf, zoneOf, sampleData, inn2outs, RMAP};
+  window.__bb = {get S(){return S;}, set S(v){S=v;}, render, save:saveNow, battingOf, fieldingOf, pitchingOf, zoneOf, zoneCell, sampleData, inn2outs, RMAP};
 })();
 </script>
 </body>
