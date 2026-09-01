@@ -7,12 +7,12 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#f9f9f7">
 <meta name="description" content="야구 경기 기록·분석 노트 — 타석별 상세 기록, 수비 기록, 차트 분석, 경기 영상 보관">
-<title>N0.7 Sung YJ Baseball note</title>
+<title>no.07 Sung YJ Baseball Note</title>
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="YJ Baseball note">
+<meta name="apple-mobile-web-app-title" content="YJ Baseball Note">
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
@@ -570,7 +570,12 @@ function normalizeGames(list){
     g.pas.forEach(p=> migrateZone(p, lv));
     if(!GAME_TYPES[g.type]) g.type = "official";
     g.def.forEach(d=>{ if(d.note==null) d.note=""; if(d.result==null) d.result=""; if(d.inning==null) d.inning=0;
-      if(d.pit){ d.pit.pitches = Array.isArray(d.pit.pitches)? d.pit.pitches : []; if(d.pit.dec==null) d.pit.dec=""; } });
+      if(d.pit){
+        d.pit.pitches = Array.isArray(d.pit.pitches)? d.pit.pitches : [];
+        if(d.pit.dec==null) d.pit.dec="";
+        // 예전 기록은 포수 시점이었습니다. 같은 코스가 유지되도록 좌우를 뒤집습니다.
+        d.pit.pitches.forEach(q=>{ if(q.pv!==2){ q.x = +(ZONE.W - num(q.x,0)).toFixed(1); q.pv = 2; } });
+      } });
     if(g.pdec==null){ const pd=g.def.find(d=>d.pit && d.pit.dec); g.pdec = pd? pd.pit.dec : ""; }
     g.videos.forEach(v=>{ if(v.defId==null) v.defId=null; if(v.paId==null) v.paId=null; });
   });
@@ -1165,7 +1170,9 @@ function sprayChart(pas, lv, opt){
 }
 
 /* --------------------- 스트라이크 존 좌표계 --------------------- */
-/* 포수 시점. 캔버스 200x236 고정 — 저장된 좌표가 어느 화면에서나 같은 자리에 찍힙니다. */
+/* 투수 시점(마운드에서 홈플레이트를 바라본 방향). 캔버스 200x236 고정 —
+   저장된 좌표가 어느 화면에서나 같은 자리에 찍힙니다.
+   투수 시점에서는 화면 왼쪽이 1루 방향, 오른쪽이 3루 방향입니다. */
 const ZONE = {W:200, H:236, x0:52, x1:148, y0:44, y1:172};
 function zoneCW(){ return (ZONE.x1-ZONE.x0)/3; }
 function zoneCH(){ return (ZONE.y1-ZONE.y0)/3; }
@@ -1195,8 +1202,8 @@ function zoneSVG(inner, opt){
     s += `<line x1="${Z.x0}" x2="${Z.x1}" y1="${(Z.y0+ch*i).toFixed(1)}" y2="${(Z.y0+ch*i).toFixed(1)}" stroke="var(--grid)" stroke-width="1"/>`;
   }
   const py = Z.y1+30, mx=(Z.x0+Z.x1)/2;
-  s += `<path d="M ${Z.x0+8} ${py} L ${Z.x1-8} ${py} L ${Z.x1-8} ${py+8} L ${mx} ${py+19} L ${Z.x0+8} ${py+8} Z" fill="var(--surface-1)" stroke="var(--axis)" stroke-width="1.2"/>`;
-  s += `<text x="${mx}" y="${py+33}" text-anchor="middle" fill="var(--text-3)" style="font-size:9px">포수 시점 · 왼쪽 = 3루 방향</text>`;
+  s += `<path d="M ${mx} ${py} L ${Z.x1-8} ${py+11} L ${Z.x1-8} ${py+19} L ${Z.x0+8} ${py+19} L ${Z.x0+8} ${py+11} Z" fill="var(--surface-1)" stroke="var(--axis)" stroke-width="1.2"/>`;
+  s += `<text x="${mx}" y="${py+33}" text-anchor="middle" fill="var(--text-3)" style="font-size:9px">투수 시점 · 왼쪽 = 1루 방향</text>`;
   s += inner||"";
   s += `</svg>`;
   return s;
@@ -2125,7 +2132,7 @@ function defSheet(gid, did){
       if(!insideZone(x,y)){ toast("존과 그 주변(위쪽 사각형 영역)을 눌러 주세요"); return; }
       const pt = clampZone(x,y);
       const vel = num((sheet.querySelector("#p_vel").value||"").trim(), 0);
-      pdraft.pitches.push({x:pt.x, y:pt.y, t:pdraft.t, r:pdraft.r, v:vel});
+      pdraft.pitches.push({x:pt.x, y:pt.y, t:pdraft.t, r:pdraft.r, v:vel, pv:2});
       pPaint();
     };
     svg.style.cursor = "crosshair";
@@ -2569,7 +2576,7 @@ function sampleData(){
           const spread = rr==="B"? 1.5 : 0.86;
           const pt2 = clampZone(zx+(Math.random()-.5)*zw*spread + (Math.random()-.5)*10,
                                 zy+(Math.random()-.5)*zh*spread + (rr==="B"? 14:0));
-          pitches.push({x:pt2.x, y:pt2.y, t:tt, r:rr, v:104+Math.floor(Math.random()*22)});
+          pitches.push({x:pt2.x, y:pt2.y, t:tt, r:rr, v:104+Math.floor(Math.random()*22), pv:2});
         }
         g.def.push({id:uid(), pos:"P", inning:inn, result:"", innings:String(outs2inn(outs)),
           po:0, a:Math.random()<0.4?1:0, e:0, dp:0, note:inn===1?"선발 등판":"",
