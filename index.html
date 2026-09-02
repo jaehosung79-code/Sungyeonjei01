@@ -488,7 +488,7 @@ const POS = [
 const PMAP = Object.fromEntries(POS.map(p=>[p.c,p.ko]));
 
 // 경기 종류 (정식 / 연습)
-const GAME_TYPES = {official:{ko:"정식경기", short:"정식"}, practice:{ko:"연습경기", short:"연습"}};
+const GAME_TYPES = {official:{ko:"정식", short:"정식"}, practice:{ko:"연습", short:"연습"}};
 const GTYPE_KEYS = ["official","practice"];
 function gameType(g){ return (g && GAME_TYPES[g.type])? g.type : "official"; }
 
@@ -2266,7 +2266,7 @@ function filterRow(){
     + `</div>` : "";
   const cur = S.ui.gtype||"all";
   const tseg = `<div class="seg plain right" role="group" aria-label="경기 종류 선택">`
-    + [["all","전체"],["official","정식경기"],["practice","연습경기"]]
+    + [["all","전체"],["official","정식"],["practice","연습"]]
         .map(([v,l])=>`<button data-act="gtype" data-v="${v}" aria-pressed="${cur===v}">${l}</button>`).join("")
     + `</div>`;
   return `<div class="filters">${yseg}${tseg}</div>`;
