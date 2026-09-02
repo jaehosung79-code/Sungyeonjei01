@@ -230,7 +230,8 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
 label.f{display:block;margin-bottom:12px}
 label.f > span{display:block;font-size:12.5px;color:var(--text-2);margin-bottom:5px;font-weight:550}
 input,select,textarea{
-  width:100%;font:inherit;font-size:16px;padding:11px 12px;border-radius:12px;
+  /* 입력 글씨는 바로 위 항목 제목(label.f > span)과 같은 크기·굵기로 맞춥니다 */
+  width:100%;font:inherit;font-size:12.5px;font-weight:550;padding:11px 12px;border-radius:12px;
   border:1px solid var(--border);background:var(--surface-1);color:var(--text-1);
   min-height:46px;
 }
@@ -242,7 +243,7 @@ select{outline:none;-webkit-appearance:none;appearance:none;background-image:lin
 
 .stepper{display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface-1)}
 .stepper button{width:46px;min-height:46px;border:0;background:var(--surface-2);font-size:19px;cursor:pointer;flex:0 0 auto}
-.stepper input{border:0;border-radius:0;text-align:center;background:none;font-weight:650;padding:11px 0}
+.stepper input{border:0;border-radius:0;text-align:center;background:none;font-size:12.5px;font-weight:550;padding:11px 0}
 
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{
