@@ -577,7 +577,7 @@ const blank = ()=>({
   profile:{ name:"", team:"", number:"", position:"", bats:"우타", throws:"우투" },
   games:[],
   settings:{ level:"elem", inningsBy:{elem:6, mid:7, high:7, univ:9}, autoplay:"sound",
-             exportToFolder:true, pickEach:false, stampNames:false, fullscreen:true },
+             exportToFolder:true, pickEach:false, stampNames:false, fullscreen:true, fsAutoAsk:true },
   backup:{ at:0, sig:"" },
   ui:{ tab:"home", year:"all", gtype:"all", metric:"avg" }
 });
@@ -716,6 +716,7 @@ let fsNeedGrant = false;    // 권한 재승인이 필요한 상태(사용자 �
 let fsMode = "";            // "rw" 읽기·쓰기 / "ro" 읽기만 (삼성 인터넷 등) / "" 연결 없음
 let roToldOnce = false;
 let fsAutoArmed = false;    // 첫 터치에 권한을 다시 받도록 대기 중
+let fsPersisted = null;     // 앱을 열 때 권한 창 없이 연결됐는지 (null=아직 확인 전)
 let fsAskedOnce = false;    // 이번 실행에서 폴더 권한 창을 띄운 적이 있는지
 let fsDenied = false;       // 이번 실행에서 사용자가 권한을 거절했는지
 let lastFolderSave = 0;
@@ -988,6 +989,9 @@ async function forgetFolder(){
    권한 창에서 [방문할 때마다 허용]을 고르면 그 다음부터는 아예 묻지 않습니다. */
 function armAutoGrant(){
   if(!dirHandle || !fsNeedGrant || fsAutoArmed || fsDenied) return;
+  if(S.settings.fsAutoAsk === false) return;   // 설정에서 끈 경우 — [폴더 다시 연결]로만
+  if(fsAskedOnce) return;                      // 한 실행에서 권한 창은 한 번만
+
   if(!dirHandle.requestPermission){ fsNeedGrant = false; return; }
   /* 안드로이드 크롬은 손가락을 뗄 때(touchend·pointerup·click)에만 "사용자 승인"이
      생깁니다. 예전에는 touchstart/pointerdown 에서 요청해 SecurityError 가 났습니다. */
@@ -1031,7 +1035,10 @@ async function trySilentGrant(h){
   try{
     if(h.queryPermission && (await h.queryPermission({mode:"readwrite"})) === "granted") return true;
   }catch(e){ return true; }   // queryPermission 미지원 브라우저는 그대로 진행
-  if(!h.requestPermission || !userActive()) return false;
+  if(!h.requestPermission) return false;
+  /* 크롬이 권한을 "잠자기(dormant)" 상태로 갖고 있으면 이 호출만으로 창 없이 되살아납니다.
+     기억하고 있지 않으면 터치가 없으므로 SecurityError 가 나는데, 이건 정상적인 흐름이라
+     진단의 "마지막 오류"에는 남기지 않습니다. */
   try{ return (await h.requestPermission({mode:"readwrite"})) === "granted"; }
   catch(e){ return false; }
 }
@@ -1384,9 +1391,14 @@ async function initFS(){
   try{ fsMode = (await hGet("dirMode")) || "rw"; }catch(e){ fsMode = "rw"; }
   let p = "granted";
   try{ if(h.queryPermission) p = await h.queryPermission({mode:"readwrite"}); }catch(e){ p = "granted"; }
+  const wasGranted = (p === "granted");
   if(p !== "granted" && await trySilentGrant(h)) p = "granted";
-  if(p === "granted"){ fsNeedGrant=false; await afterFolderReady(); }
-  else { fsNeedGrant = true; armAutoGrant(); }
+  if(p === "granted"){
+    fsPersisted = true;                 // 창 없이 연결됨 = 권한이 유지되고 있음
+    fsNeedGrant=false; await afterFolderReady();
+  }
+  else { fsPersisted = false; fsNeedGrant = true; armAutoGrant(); }
+  void wasGranted;
   render();
 }
 async function afterFolderReady(){
@@ -2886,6 +2898,12 @@ function folderCard(){
               : `<br>마지막 폴더 저장: ${lastFolderSave? new Date(lastFolderSave).toLocaleTimeString("ko-KR") : "아직 없음"}`)
             + (fsErr? `<br><span style="color:var(--crit)">최근 오류: ${esc(fsErr)}</span>` : "")
           : "아직 지정하지 않았습니다."}</div>
+        ${on? `<div class="hint" style="margin:-4px 0 10px">권한 유지: ${
+            fsPersisted===true? `<b style="color:var(--good)">예 — 앱을 열 때 권한 창 없이 연결됩니다</b>`
+          : fsPersisted===false? `<b style="color:var(--warn)">아니요 — 앱을 열 때마다 권한 창이 뜹니다</b>
+              <br>권한 창에서 <b>“방문할 때마다 허용”</b>(Allow on every visit)을 고르면 그 뒤로는 묻지 않습니다.
+              크롬 설정 → <b>사이트 설정 → 파일 편집</b>에서 이 사이트를 <b>허용</b>으로 바꿔도 됩니다.`
+          : "확인 중"}</div>` : ""}
         <div class="btnrow">
           ${fsNeedGrant? `<button class="btn pri" data-act="grantFolder">폴더 다시 연결</button>`:""}
           <button class="btn ${on?"":"pri"}" data-act="pickFolder">${on?"폴더 바꾸기":"폴더 지정"}</button>
@@ -3025,6 +3043,7 @@ function viewSettings(){
       <div class="cap">파일을 어디에, 어떤 이름으로 저장할지 정합니다.</div></div></div>
       <div class="btnrow">
         ${FS_DIR_OK?  togBtn("optFolder", S.settings.exportToFolder!==false, "저장 폴더에 바로 저장") : ""}
+        ${FS_DIR_OK?  togBtn("optAutoAsk", S.settings.fsAutoAsk!==false, "앱 열 때 폴더 자동 연결") : ""}
         ${FS_SAVE_OK? togBtn("optPick",   !!S.settings.pickEach,             "저장할 때마다 위치 묻기") : ""}
         ${togBtn("optStamp",  !!S.settings.stampNames,           "파일 이름에 날짜 넣기")}
       </div>
@@ -4096,6 +4115,9 @@ document.addEventListener("click", ev=>{
       if(v0){ missCache=[{g:g0, v:v0}]; relinkVideos(); } break; }
     case "resetTargets": resetTargets(); break;
     case "optFolder": S.settings.exportToFolder = !(S.settings.exportToFolder!==false); saveNow(); render(); break;
+    case "optAutoAsk": S.settings.fsAutoAsk = !(S.settings.fsAutoAsk!==false); saveNow(); render();
+      toast(S.settings.fsAutoAsk!==false? "앱을 열면 폴더 연결을 자동으로 시도합니다"
+                                        : "자동 연결을 끕니다 — 권한 창이 뜨지 않습니다"); break;
     case "optPick":   S.settings.pickEach   = !S.settings.pickEach;   saveNow(); render(); break;
     case "optStamp":  S.settings.stampNames = !S.settings.stampNames; saveNow(); render(); break;
     case "showJSON": showJSON(); break;
