@@ -577,7 +577,7 @@ const blank = ()=>({
   profile:{ name:"", team:"", number:"", position:"", bats:"우타", throws:"우투" },
   games:[],
   settings:{ level:"elem", inningsBy:{elem:6, mid:7, high:7, univ:9}, autoplay:"sound",
-             exportToFolder:true, pickEach:false, stampNames:false, fullscreen:true, fsAutoAsk:true },
+             exportToFolder:true, pickEach:false, stampNames:false, fullscreen:true, fsAutoAsk:false },
   backup:{ at:0, sig:"" },
   ui:{ tab:"home", year:"all", gtype:"all", metric:"avg" }
 });
@@ -989,7 +989,7 @@ async function forgetFolder(){
    권한 창에서 [방문할 때마다 허용]을 고르면 그 다음부터는 아예 묻지 않습니다. */
 function armAutoGrant(){
   if(!dirHandle || !fsNeedGrant || fsAutoArmed || fsDenied) return;
-  if(S.settings.fsAutoAsk === false) return;   // 설정에서 끈 경우 — [폴더 다시 연결]로만
+  if(S.settings.fsAutoAsk !== true) return;   // 기본값: 창을 띄우지 않고 배너의 [폴더 연결]로만
   if(fsAskedOnce) return;                      // 한 실행에서 권한 창은 한 번만
 
   if(!dirHandle.requestPermission){ fsNeedGrant = false; return; }
@@ -2894,7 +2894,7 @@ function folderCard(){
             + (fsNeedGrant
               ? (fsDenied
                   ? ` — <span style="color:var(--crit);font-weight:650">연결하지 못했습니다</span>`
-                  : ` — <span style="color:var(--warn);font-weight:650">화면을 한 번 터치하면 연결됩니다</span>`)
+                  : ` — <span style="color:var(--warn);font-weight:650">연결 대기 중 · [폴더 연결]을 누르면 이어집니다</span>`)
               : `<br>마지막 폴더 저장: ${lastFolderSave? new Date(lastFolderSave).toLocaleTimeString("ko-KR") : "아직 없음"}`)
             + (fsErr? `<br><span style="color:var(--crit)">최근 오류: ${esc(fsErr)}</span>` : "")
           : "아직 지정하지 않았습니다."}</div>
@@ -3043,7 +3043,7 @@ function viewSettings(){
       <div class="cap">파일을 어디에, 어떤 이름으로 저장할지 정합니다.</div></div></div>
       <div class="btnrow">
         ${FS_DIR_OK?  togBtn("optFolder", S.settings.exportToFolder!==false, "저장 폴더에 바로 저장") : ""}
-        ${FS_DIR_OK?  togBtn("optAutoAsk", S.settings.fsAutoAsk!==false, "앱 열 때 폴더 자동 연결") : ""}
+        ${FS_DIR_OK?  togBtn("optAutoAsk", S.settings.fsAutoAsk===true, "앱 열 때 권한 창 띄우기") : ""}
         ${FS_SAVE_OK? togBtn("optPick",   !!S.settings.pickEach,             "저장할 때마다 위치 묻기") : ""}
         ${togBtn("optStamp",  !!S.settings.stampNames,           "파일 이름에 날짜 넣기")}
       </div>
@@ -4115,9 +4115,10 @@ document.addEventListener("click", ev=>{
       if(v0){ missCache=[{g:g0, v:v0}]; relinkVideos(); } break; }
     case "resetTargets": resetTargets(); break;
     case "optFolder": S.settings.exportToFolder = !(S.settings.exportToFolder!==false); saveNow(); render(); break;
-    case "optAutoAsk": S.settings.fsAutoAsk = !(S.settings.fsAutoAsk!==false); saveNow(); render();
-      toast(S.settings.fsAutoAsk!==false? "앱을 열면 폴더 연결을 자동으로 시도합니다"
-                                        : "자동 연결을 끕니다 — 권한 창이 뜨지 않습니다"); break;
+    case "optAutoAsk": S.settings.fsAutoAsk = !(S.settings.fsAutoAsk===true); saveNow(); render();
+      toast(S.settings.fsAutoAsk===true? "앱을 열 때 폴더 권한 창을 띄웁니다"
+                                       : "권한 창을 띄우지 않습니다 — 배너의 [폴더 연결]로 연결하세요");
+      if(S.settings.fsAutoAsk===true) armAutoGrant(); break;
     case "optPick":   S.settings.pickEach   = !S.settings.pickEach;   saveNow(); render(); break;
     case "optStamp":  S.settings.stampNames = !S.settings.stampNames; saveNow(); render(); break;
     case "showJSON": showJSON(); break;
@@ -4254,12 +4255,14 @@ function banners(){
   }
   // 권한 요청을 사용자가 거절했을 때만 안내합니다.
   // (거절하지 않았다면 화면의 첫 터치에서 자동으로 다시 연결됩니다)
-  if(dirHandle && fsNeedGrant && fsDenied){
+  if(dirHandle && fsNeedGrant){
     h += `<div class="note" style="margin-bottom:12px;border:1px solid var(--border)">
-      저장 폴더 <b>${esc(dirName)}</b>에 연결하지 못했습니다.
-      <div class="btnrow" style="margin-top:8px"><button class="btn pri sm nb" data-act="grantFolder">폴더 다시 연결</button></div>
-      <div class="hint" style="margin-top:8px">권한 창에서 <b>방문할 때마다 허용</b>을 고르면 다음부터는 묻지 않습니다.${
-        isInstalledApp()? "" : `<br><b>홈 화면에 추가</b>(크롬 메뉴 → 앱 설치)해 두면 권한이 그대로 유지됩니다.`}</div></div>`;
+      ${fsDenied
+        ? `저장 폴더 <b>${esc(dirName)}</b>에 연결하지 못했습니다.`
+        : `저장 폴더 <b>${esc(dirName)}</b> 연결 대기 중 — <b>기록은 이 기기에 이미 저장</b>되어 있습니다.
+           폴더에도 남기려면 아래를 한 번 누르세요.`}
+      <div class="btnrow" style="margin-top:8px"><button class="btn pri sm nb" data-act="grantFolder">폴더 연결</button></div>
+      <div class="hint" style="margin-top:8px">권한 창에서 <b>방문할 때마다 허용</b>을 고르면 다음부터는 창 없이 자동으로 연결됩니다.</div></div>`;
   }
   if(!dirHandle && S.games.length){
     const b = S.backup||{};
