@@ -488,7 +488,7 @@ const POS = [
 const PMAP = Object.fromEntries(POS.map(p=>[p.c,p.ko]));
 
 // 경기 종류 (정식 / 연습)
-const GAME_TYPES = {official:{ko:"정식", short:"정식"}, practice:{ko:"연습", short:"연습"}};
+const GAME_TYPES = {official:{ko:"정식경기", short:"정식"}, practice:{ko:"연습경기", short:"연습"}};
 const GTYPE_KEYS = ["official","practice"];
 function gameType(g){ return (g && GAME_TYPES[g.type])? g.type : "official"; }
 
@@ -780,6 +780,36 @@ function fontStatus(){
          + (google? " · 구글 폰트도 준비됨" : " · 구글 폰트 미로드");
   }catch(e){ return "확인 불가"; }
 }
+/* 설치 진단 — manifest.json 과 서비스 워커가 실제로 올라와 있는지 확인합니다 */
+const INS = {manifest:"확인 중", sw:"확인 중"};
+(function checkInstallBits(){
+  try{
+    const l = document.querySelector('link[rel="manifest"]');
+    if(!l){ INS.manifest = "링크 없음"; }
+    else fetch(l.href, {cache:"no-store"}).then(r=>{
+      if(!r.ok){ INS.manifest = "불러오기 실패 (" + r.status + ")"; return null; }
+      return r.json();
+    }).then(m=>{
+      if(!m) return;
+      const icons = m.icons || [];
+      INS.manifest = "정상 · " + (m.short_name || m.name || "이름 없음")
+        + " · display " + (m.display || "-") + " · 아이콘 " + icons.length + "개";
+      return Promise.all(icons.map(ic=>
+        fetch(new URL(ic.src, l.href).href, {cache:"no-store"}).then(r=>r.ok).catch(()=>false)
+      )).then(oks=>{
+        const bad = oks.filter(x=>!x).length;
+        if(bad) INS.manifest += " · 아이콘 파일 " + bad + "개 없음";
+      });
+    }).catch(()=>{ INS.manifest = "불러오기 실패"; });
+  }catch(e){ INS.manifest = "확인 불가"; }
+  try{
+    if(navigator.serviceWorker){
+      navigator.serviceWorker.getRegistration().then(r=>{
+        INS.sw = r? ("등록됨 · " + (r.active? "동작 중" : "준비 중")) : "등록 안 됨 (sw.js 없음)";
+      }).catch(()=>{ INS.sw = "확인 불가"; });
+    } else INS.sw = "미지원";
+  }catch(e){ INS.sw = "확인 불가"; }
+})();
 function envInfo(){
   const inFrame = (()=>{ try{ return window.top !== window.self; }catch(e){ return true; } })();
   return {
@@ -789,7 +819,10 @@ function envInfo(){
     full: (document.fullscreenElement? "전체 화면(API)" : displayMode()==="fullscreen"? "전체 화면(설치됨)" : "아님")
         + " · 설정 " + (S.settings.fullscreen===false? "꺼짐":"켜짐"),
     install: isInstalledApp()? "설치된 앱으로 실행 중"
-           : (window.__installReady? "설치 가능 (아직 설치 안 함)" : "설치 신호 없음 — manifest.json 확인 필요"),
+           : (window.__installReady? "설치 가능 (아직 설치 안 함)"
+           : "설치 신호 없음 — 이미 설치한 앱이면 정상입니다 (설치된 앱에는 신호가 오지 않습니다). 새로 설치하려면 크롬 메뉴(⋮) → 앱 설치"),
+    manifest: INS.manifest,
+    sw: INS.sw,
     secure: window.isSecureContext? "예" : "아니오",
     display: (function(){
       try{
@@ -816,6 +849,8 @@ function showEnv(){
       "연결 상태: " + i.mode + "\n" +
       "글꼴: " + i.font + "\n" +
       "앱 설치: " + i.install + "\n" +
+      "매니페스트: " + i.manifest + "\n" +
+      "서비스 워커: " + i.sw + "\n" +
       "표시 모드: " + i.display + "\n" +
       "전체 화면: " + i.full + "\n" +
       "보안 연결(secure context): " + i.secure + " (" + i.proto + ")\n" +
@@ -1065,9 +1100,19 @@ function armFullscreen(){
   document.addEventListener("keydown", once, true);
 }
 function isInstalledApp(){
+  /* 설치한 앱은 manifest 의 display 값(fullscreen·standalone·minimal-ui)으로 열립니다.
+     예전에는 standalone 만 확인해서, "display":"fullscreen" 으로 설치하면
+     설치했는데도 "설치 안 됨"으로 잘못 나왔습니다.
+     단, 브라우저 탭에서 전체 화면 버튼을 누른 경우(document.fullscreenElement)는 제외합니다. */
   try{
-    return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches)
-      || window.navigator.standalone === true;
+    if(window.navigator.standalone === true) return true;
+    if(document.referrer && document.referrer.indexOf("android-app://")===0) return true;
+    if(!window.matchMedia) return false;
+    if(window.matchMedia("(display-mode: standalone)").matches) return true;
+    if(window.matchMedia("(display-mode: minimal-ui)").matches) return true;
+    if(window.matchMedia("(display-mode: fullscreen)").matches && !document.fullscreenElement
+       && !document.webkitFullscreenElement) return true;
+    return false;
   }catch(e){ return false; }
 }
 /* 새로고침 뒤 권한이 잠겼을 때 — 배너의 [연결하기] 터치로 호출 */
@@ -2266,7 +2311,7 @@ function filterRow(){
     + `</div>` : "";
   const cur = S.ui.gtype||"all";
   const tseg = `<div class="seg plain right" role="group" aria-label="경기 종류 선택">`
-    + [["all","전체"],["official","정식"],["practice","연습"]]
+    + [["all","전체"],["official","정식경기"],["practice","연습경기"]]
         .map(([v,l])=>`<button data-act="gtype" data-v="${v}" aria-pressed="${cur===v}">${l}</button>`).join("")
     + `</div>`;
   return `<div class="filters">${yseg}${tseg}</div>`;
@@ -2339,7 +2384,7 @@ function viewHome(){
       + tile("경기", gs.length, "G") + tile("타점", b.RBI) + tile("득점", b.R)
       + tile("볼넷", b.BB) + tile("삼진", b.SO) + tile("도루", b.SB, (b.SB+b.CS)? "/"+(b.SB+b.CS) : "")
     + `</div>`
-  + chartCard("누적 "+METRICS[m].ko+" 추이", "타율에 대한 지표를 보여줍니다.",
+  + chartCard("누적 "+METRICS[m].ko+" 추이", "경기를 치를수록 지표가 어떻게 수렴하는지 보여줍니다. 마지막 값이 현재 시즌 기록입니다.",
       lineChart([{pts, color:"var(--chart)"}], {aria:"누적 "+METRICS[m].ko+" 추이", fmt:avg3}), trendTbl)
   + chartCard("최근 경기 안타", recent.length+"경기 · 경기당 안타 수",
       colChart(hitCols, {aria:"경기별 안타 수", labelTop:true, fmt:v=>String(Math.round(v))}),
@@ -2563,7 +2608,7 @@ function viewStats(){
       <div class="cap">타석 기록에 남긴 도루 시도 ${b.SB+b.CS}회 · 성공률 = 성공 / (성공+실패)</div></div></div>
       <div class="tiles">${tile("시도", b.SB+b.CS)+tile("성공", b.SB)+tile("실패", b.CS)+tile("성공률", pct1(b.SBP))
         +tile("경기당 시도", fx2(gs.length? (b.SB+b.CS)/gs.length : null))+tile("추가 진루", b.SB-b.CS)}</div>
-      <div class="hint" style="margin-top:8px">일반적으로 성공률이 <b>70%</b>를 넘어야 팀 득점 도움</div></div>` : "")
+      <div class="hint" style="margin-top:8px">일반적으로 성공률이 <b>70%</b>를 넘어야 팀 득점에 도움이 됩니다 — 그 아래면 시도 자체가 손해일 수 있습니다.</div></div>` : "")
   + chartCard("타구 방향 (스프레이 차트)", `타구 위치가 기록된 인플레이 타구 ${bip.length}개 · 그림은 ${esc(LEVELS[curLevel()].ko)} 규격 (${esc(LEVELS[curLevel()].note)}) · 모든 규격이 같은 배율이라 거리가 그대로 비교됩니다`,
       sprayChart(pas, curLevel(), {ruler:true}),
       bip.length? tableHTML(["날짜","이닝","결과","위치","추정 거리"], bip.map(p=>{const z=zoneOf(p.zone, gameLevel(p._g));
@@ -2586,7 +2631,7 @@ function viewStats(){
       colChart(months, {aria:"월별 타율", fmt:avg3}),
       tableHTML(["월","타수","안타","타점","타율","OPS"], months.map(d=>[d.label, d._t.AB, d._t.H, d._t.RBI, avg3(d._t.AVG), avg3(d._t.OPS)]))) : "")
   + (pTeams.length? `<div class="card"><div class="hd"><div style="flex:1"><h3>상대 투수별 성적</h3>
-      <div class="cap">시즌 · 상대팀(학교)별로 묶었습니다 — 같은 해 같은 학교의 같은 이름은 한 명으로 합산 · ${pYears}개 시즌 ${pTeams.length}개 팀 · 투수 ${pitcherN}명 · 투수 이름을 입력한 타석만 집계</div></div></div>
+      <div class="cap">시즌 · 상대팀(학교)별로 묶었습니다 — 같은 해 같은 학교의 같은 이름은 한 명으로 합산 · ${pYears}개 시즌 ${pTeams.length}개 팀 · 투수 ${pitcherN}명 · 투수 이름을 입력한 타석만 집계됩니다</div></div></div>
       ${vsPitcherTable(pTeams)}</div>` : "")
   + pitchingSection(gs, defs)
   + (defDist.length? chartCard("수비 결과 분포", `결과를 입력한 수비 기록 ${defPlays.length}건`,
