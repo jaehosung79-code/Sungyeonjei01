@@ -2715,6 +2715,26 @@ function viewVideos(){
 function togBtn(act, on, label){
   return `<button class="btn sm" data-act="${act}" aria-pressed="${on}">${on?"✓ ":""}${label}</button>`;
 }
+function screenCard(){
+  return `<div class="card"><div class="hd"><div style="flex:1"><h3>전체 화면</h3>
+      <div class="cap">주소창과 상태바를 숨기고 화면을 넓게 씁니다.</div></div></div>
+      ${(displayMode()==="fullscreen" && !document.fullscreenElement)
+        ? `<div class="hint" style="color:var(--good);font-weight:650">전체 화면으로 실행 중입니다.</div>
+           <div class="hint" style="margin-top:8px">홈 화면 아이콘으로 열면 항상 이 상태로 시작합니다.</div>`
+        : FULL_OK
+        ? `<div class="btnrow">
+             <button class="btn ${document.fullscreenElement?"":"pri"}" data-act="fullscreen">${
+               document.fullscreenElement? "전체 화면 끄기" : "전체 화면으로 보기"}</button>
+           </div>
+           <div class="hint" style="margin-top:10px">
+             현재 <b>${document.fullscreenElement? "전체 화면" : (displayMode()==="standalone"? "앱 모드" : "브라우저")}</b> ·
+             다음 실행에도 유지 <b>${S.settings.fullscreen===false? "아니오" : "예"}</b><br>
+             켜 두면 앱을 열고 화면을 한 번 터치할 때 자동으로 전체 화면이 됩니다.
+             빠져나올 때는 화면 위에서 아래로 쓸어내리거나 이 버튼을 다시 누르세요.</div>`
+        : `<div class="hint">이 브라우저는 전체 화면 전환을 지원하지 않습니다.
+             <b>홈 화면에 추가</b>해서 실행하면 주소창 없이 열립니다.</div>`}
+    </div>`;
+}
 function installCard(){
   const st = installState();
   return `<div class="card"><div class="hd"><div style="flex:1"><h3>앱으로 설치</h3>
@@ -2803,7 +2823,10 @@ function viewSettings(){
   const p = S.profile;
   const raw = (()=>{ try{ return new Blob([JSON.stringify(S)]).size; }catch(e){ return null; } })();
   const vids = S.games.reduce((a,g)=>a+g.videos.filter(v=>v.kind==="file").reduce((x,v)=>x+(v.size||0),0),0);
-  return `<div class="card"><div class="hd"><div style="flex:1"><h3>선수 정보</h3>
+  return `${installCard()}
+    ${screenCard()}
+
+    <div class="card"><div class="hd"><div style="flex:1"><h3>선수 정보</h3>
       <div class="cap">기록지 상단과 내보내기 파일에 함께 저장됩니다</div></div></div>
     <div class="f2">
       <label class="f"><span>이름</span><input id="pf_name" value="${esc(p.name)}" placeholder="홍길동"></label>
@@ -2840,8 +2863,6 @@ function viewSettings(){
       <div class="hint" style="margin-top:8px">네 그림은 <b>모두 같은 배율</b>입니다 — 초등(리틀) 구장이 대학·성인 구장보다 실제로 얼마나 작은지 그대로 보입니다.</div>
     </div>
 
-    ${installCard()}
-
     <div class="card"><div class="hd"><div style="flex:1"><h3>화면 테마</h3>
       <div class="cap">기본값은 휴대폰·PC의 설정을 그대로 따릅니다.</div></div></div>
       <div class="filters" style="margin-bottom:0"><div class="seg" role="group" aria-label="화면 테마">
@@ -2850,24 +2871,6 @@ function viewSettings(){
       </div></div>
     </div>
 
-    <div class="card"><div class="hd"><div style="flex:1"><h3>전체 화면</h3>
-      <div class="cap">주소창과 상태바를 숨기고 화면을 넓게 씁니다.</div></div></div>
-      ${(displayMode()==="fullscreen" && !document.fullscreenElement)
-        ? `<div class="hint" style="color:var(--good);font-weight:650">전체 화면으로 실행 중입니다.</div>
-           <div class="hint" style="margin-top:8px">홈 화면 아이콘으로 열면 항상 이 상태로 시작합니다.</div>`
-        : FULL_OK
-        ? `<div class="btnrow">
-             <button class="btn ${document.fullscreenElement?"":"pri"}" data-act="fullscreen">${
-               document.fullscreenElement? "전체 화면 끄기" : "전체 화면으로 보기"}</button>
-           </div>
-           <div class="hint" style="margin-top:10px">
-             현재 <b>${document.fullscreenElement? "전체 화면" : (displayMode()==="standalone"? "앱 모드" : "브라우저")}</b> ·
-             다음 실행에도 유지 <b>${S.settings.fullscreen===false? "아니오" : "예"}</b><br>
-             켜 두면 앱을 열고 화면을 한 번 터치할 때 자동으로 전체 화면이 됩니다.
-             빠져나올 때는 화면 위에서 아래로 쓸어내리거나 이 버튼을 다시 누르세요.</div>`
-        : `<div class="hint">이 브라우저는 전체 화면 전환을 지원하지 않습니다.
-             <b>홈 화면에 추가</b>해서 실행하면 주소창 없이 열립니다.</div>`}
-    </div>
 
     <div class="card"><div class="hd"><div style="flex:1"><h3>영상 재생</h3>
       <div class="cap">누르는 즉시 재생을 시작할지 정합니다.</div></div></div>
