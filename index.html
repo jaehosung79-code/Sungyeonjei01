@@ -2339,7 +2339,7 @@ function viewHome(){
       + tile("경기", gs.length, "G") + tile("타점", b.RBI) + tile("득점", b.R)
       + tile("볼넷", b.BB) + tile("삼진", b.SO) + tile("도루", b.SB, (b.SB+b.CS)? "/"+(b.SB+b.CS) : "")
     + `</div>`
-  + chartCard("누적 "+METRICS[m].ko+" 추이", "경기를 치를수록 지표가 어떻게 수렴하는지 보여줍니다. 마지막 값이 현재 시즌 기록입니다.",
+  + chartCard("누적 "+METRICS[m].ko+" 추이", "타율에 대한 지표를 보여줍니다.",
       lineChart([{pts, color:"var(--chart)"}], {aria:"누적 "+METRICS[m].ko+" 추이", fmt:avg3}), trendTbl)
   + chartCard("최근 경기 안타", recent.length+"경기 · 경기당 안타 수",
       colChart(hitCols, {aria:"경기별 안타 수", labelTop:true, fmt:v=>String(Math.round(v))}),
@@ -2563,7 +2563,7 @@ function viewStats(){
       <div class="cap">타석 기록에 남긴 도루 시도 ${b.SB+b.CS}회 · 성공률 = 성공 / (성공+실패)</div></div></div>
       <div class="tiles">${tile("시도", b.SB+b.CS)+tile("성공", b.SB)+tile("실패", b.CS)+tile("성공률", pct1(b.SBP))
         +tile("경기당 시도", fx2(gs.length? (b.SB+b.CS)/gs.length : null))+tile("추가 진루", b.SB-b.CS)}</div>
-      <div class="hint" style="margin-top:8px">일반적으로 성공률이 <b>70%</b>를 넘어야 팀 득점에 도움이 됩니다 — 그 아래면 시도 자체가 손해일 수 있습니다.</div></div>` : "")
+      <div class="hint" style="margin-top:8px">일반적으로 성공률이 <b>70%</b>를 넘어야 팀 득점 도움</div></div>` : "")
   + chartCard("타구 방향 (스프레이 차트)", `타구 위치가 기록된 인플레이 타구 ${bip.length}개 · 그림은 ${esc(LEVELS[curLevel()].ko)} 규격 (${esc(LEVELS[curLevel()].note)}) · 모든 규격이 같은 배율이라 거리가 그대로 비교됩니다`,
       sprayChart(pas, curLevel(), {ruler:true}),
       bip.length? tableHTML(["날짜","이닝","결과","위치","추정 거리"], bip.map(p=>{const z=zoneOf(p.zone, gameLevel(p._g));
@@ -2586,7 +2586,7 @@ function viewStats(){
       colChart(months, {aria:"월별 타율", fmt:avg3}),
       tableHTML(["월","타수","안타","타점","타율","OPS"], months.map(d=>[d.label, d._t.AB, d._t.H, d._t.RBI, avg3(d._t.AVG), avg3(d._t.OPS)]))) : "")
   + (pTeams.length? `<div class="card"><div class="hd"><div style="flex:1"><h3>상대 투수별 성적</h3>
-      <div class="cap">시즌 · 상대팀(학교)별로 묶었습니다 — 같은 해 같은 학교의 같은 이름은 한 명으로 합산 · ${pYears}개 시즌 ${pTeams.length}개 팀 · 투수 ${pitcherN}명 · 투수 이름을 입력한 타석만 집계됩니다</div></div></div>
+      <div class="cap">시즌 · 상대팀(학교)별로 묶었습니다 — 같은 해 같은 학교의 같은 이름은 한 명으로 합산 · ${pYears}개 시즌 ${pTeams.length}개 팀 · 투수 ${pitcherN}명 · 투수 이름을 입력한 타석만 집계</div></div></div>
       ${vsPitcherTable(pTeams)}</div>` : "")
   + pitchingSection(gs, defs)
   + (defDist.length? chartCard("수비 결과 분포", `결과를 입력한 수비 기록 ${defPlays.length}건`,
