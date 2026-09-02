@@ -353,6 +353,9 @@ th{color:var(--text-3);font-weight:600;font-size:11.5px;text-align:right}
 th:first-child,td:first-child{text-align:left}
 tbody tr:last-child td{border-bottom:0}
 tfoot td{font-weight:650;border-top:1px solid var(--axis);border-bottom:0}
+tr.grp td{background:var(--surface-2);text-align:left;font-weight:700;font-size:12px;color:var(--text-1)}
+tr.grp td span{font-weight:400;color:var(--text-3);font-size:11.5px}
+td.ind{padding-left:20px}
 
 /* ---------- charts ---------- */
 .chart{width:100%;max-width:620px;height:auto;display:block;margin:0 auto;overflow:visible;touch-action:pan-y}
@@ -2229,6 +2232,22 @@ function tableHTML(head, rows, foot){
     + (foot?`<tfoot><tr>${foot.map(c=>`<td>${c}</td>`).join("")}</tr></tfoot>`:"")+`</table></div>`;
 }
 
+/* 상대 투수별 성적 — 상대팀(학교)으로 묶은 표 */
+function vsPitcherTable(teams){
+  const head = ["투수","타석","타수","안타","홈런","삼진","타율","OPS"];
+  let body = "";
+  teams.forEach(T=>{
+    body += `<tr class="grp"><td colspan="${head.length}">${esc(T.name)} `
+      + `<span>· 투수 ${T.pitchers.length}명 · ${T.t.PA}타석 ${T.t.AB}타수 ${T.t.H}안타 · 타율 ${avg3(T.t.AVG)} · OPS ${avg3(T.t.OPS)}</span></td></tr>`;
+    T.pitchers.forEach(p=>{
+      body += `<tr><td class="ind">${esc(p.name)}</td><td>${p.t.PA}</td><td>${p.t.AB}</td><td>${p.t.H}</td>`
+        + `<td>${p.t.HR}</td><td>${p.t.SO}</td><td>${avg3(p.t.AVG)}</td><td>${avg3(p.t.OPS)}</td></tr>`;
+    });
+  });
+  return `<div class="tblwrap"><table><thead><tr>${head.map(h=>`<th>${h}</th>`).join("")}</tr></thead>`
+    + `<tbody>${body}</tbody></table></div>`;
+}
+
 /* ============================== 화면 ============================== */
 const METRICS = {avg:{ko:"타율",k:"AVG"}, obp:{ko:"출루율",k:"OBP"}, slg:{ko:"장타율",k:"SLG"}, ops:{ko:"OPS",k:"OPS"}};
 const ICON_EDIT = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
@@ -2480,10 +2499,20 @@ function viewStats(){
       tip:`<b>${m.slice(0,4)}년 ${+m.slice(5,7)}월</b><br>${t.AB}타수 ${t.H}안타 ${t.RBI}타점<br>타율 ${avg3(t.AVG)} · OPS ${avg3(t.OPS)}`};
   });
 
-  // 상대 투수별
-  const byP = {};
-  pas.forEach(p=>{ const k=(p.pitcher||"").trim(); if(!k) return; (byP[k]=byP[k]||[]).push(p); });
-  const pitchers = Object.keys(byP).map(k=>({name:k, t:battingOf(byP[k])})).sort((a,c)=>c.t.PA-a.t.PA);
+  // 상대 투수별 — 상대팀(학교) 단위로 묶습니다
+  const byTeam = {};
+  pas.forEach(p=>{
+    const pit = (p.pitcher||"").trim(); if(!pit) return;
+    const team = ((p._g && p._g.opponent)||"").trim() || "상대 미입력";
+    const T = byTeam[team] = byTeam[team] || {name:team, all:[], byP:{}};
+    T.all.push(p); (T.byP[pit] = T.byP[pit] || []).push(p);
+  });
+  const pTeams = Object.keys(byTeam).map(k=>{
+    const T = byTeam[k];
+    return {name:T.name, t:battingOf(T.all),
+      pitchers:Object.keys(T.byP).map(n=>({name:n, t:battingOf(T.byP[n])})).sort((a,c)=>c.t.PA-a.t.PA)};
+  }).sort((a,c)=>c.t.PA-a.t.PA);
+  const pitcherN = pTeams.reduce((n,x)=>n+x.pitchers.length, 0);
 
   // 수비 결과 분포
   const defPlays = defs.filter(d=>d.result);
@@ -2547,10 +2576,9 @@ function viewStats(){
   + (months.length>1? chartCard("월별 타율", "시즌 흐름을 월 단위로 봅니다",
       colChart(months, {aria:"월별 타율", fmt:avg3}),
       tableHTML(["월","타수","안타","타점","타율","OPS"], months.map(d=>[d.label, d._t.AB, d._t.H, d._t.RBI, avg3(d._t.AVG), avg3(d._t.OPS)]))) : "")
-  + (pitchers.length? `<div class="card"><div class="hd"><div style="flex:1"><h3>상대 투수별 성적</h3>
-      <div class="cap">투수 이름을 입력한 타석만 집계됩니다</div></div></div>
-      ${tableHTML(["투수","타석","타수","안타","홈런","삼진","타율","OPS"],
-        pitchers.map(p=>[esc(p.name), p.t.PA, p.t.AB, p.t.H, p.t.HR, p.t.SO, avg3(p.t.AVG), avg3(p.t.OPS)]))}</div>` : "")
+  + (pTeams.length? `<div class="card"><div class="hd"><div style="flex:1"><h3>상대 투수별 성적</h3>
+      <div class="cap">상대팀(학교)별로 묶었습니다 · ${pTeams.length}개 팀 · 투수 ${pitcherN}명 · 투수 이름을 입력한 타석만 집계됩니다</div></div></div>
+      ${vsPitcherTable(pTeams)}</div>` : "")
   + pitchingSection(gs, defs)
   + (defDist.length? chartCard("수비 결과 분포", `결과를 입력한 수비 기록 ${defPlays.length}건`,
       hbarChart(defDist, {aria:"수비 결과 분포", left:82, fmt:v=>String(Math.round(v))}),
