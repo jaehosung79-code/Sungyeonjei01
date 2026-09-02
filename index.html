@@ -160,7 +160,9 @@ nav.tabs button{
   display:flex;flex-direction:column;align-items:center;gap:3px;
   color:var(--text-3);font-size:12px;min-height:var(--nav-h);justify-content:center;
 }
-nav.tabs button .ic{font-size:19px;line-height:1}
+nav.tabs button .ic{display:flex;align-items:center;justify-content:center;height:22px}
+nav.tabs button .ic svg{width:22px;height:22px;display:block}
+nav.tabs button[aria-current="page"] .ic svg{stroke-width:1.9}
 nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
 
 /* ---------- cards ---------- */
@@ -430,10 +432,10 @@ video{width:100%;border-radius:var(--r-sm);background:#000;display:block}
 <main class="wrap" id="view" tabindex="-1"></main>
 
 <nav class="tabs" role="tablist" aria-label="주요 화면">
-  <button data-nav="home"><span class="ic" aria-hidden="true">◆</span>홈</button>
-  <button data-nav="games"><span class="ic" aria-hidden="true">▤</span>경기</button>
-  <button data-nav="stats"><span class="ic" aria-hidden="true">▮</span>분석</button>
-  <button data-nav="videos"><span class="ic" aria-hidden="true">▶</span>영상</button>
+  <button data-nav="home"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.4 12 4l8 6.4V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z"/></svg></span>홈</button>
+  <button data-nav="games"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 9.3h17M9.4 9.3v10.2"/></svg></span>경기</button>
+  <button data-nav="stats"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.8 15.6 9.3 9.9l3.5 3.4L20 6.2"/><path d="M15.2 6.2H20v4.7"/></svg></span>분석</button>
+  <button data-nav="videos"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="3.2"/><path d="M10.4 9.6 15.6 12l-5.2 2.4z"/></svg></span>영상</button>
 </nav>
 
 <div id="tip" role="status" aria-live="polite"></div>
