@@ -675,6 +675,10 @@ const VID_DIR    = "videos";
 let dirHandle = null;       // 지정한 폴더
 let dirName   = "";
 let fsNeedGrant = false;    // 권한 재승인이 필요한 상태(사용자 터치 필요)
+let fsMode = "";            // "rw" 읽기·쓰기 / "ro" 읽기만 (삼성 인터넷 등) / "" 연결 없음
+let roToldOnce = false;
+let fsAutoArmed = false;    // 첫 터치에 권한을 다시 받도록 대기 중
+let fsDenied = false;       // 이번 실행에서 사용자가 권한을 거절했는지
 let lastFolderSave = 0;
 let fsSaveTimer = null;
 let fsWriting = false;
@@ -730,7 +734,8 @@ function pickErrMsg(e){
 function envInfo(){
   const inFrame = (()=>{ try{ return window.top !== window.self; }catch(e){ return true; } })();
   return {
-    api: FS_DIR_OK? "있음" : "없음",
+    api: (FS_DIR_OK? "폴더 있음" : "폴더 없음") + " / " + (FS_SAVE_OK? "파일저장 있음" : "파일저장 없음"),
+    mode: fsMode==="rw"? "읽기·쓰기" : fsMode==="ro"? "읽기 전용" : "연결 없음",
     secure: window.isSecureContext? "예" : "아니오",
     proto: location.protocol,
     frame: inFrame? "예" : "아니오",
@@ -747,6 +752,7 @@ function showEnv(){
     <div class="hint" style="padding:4px 0 10px">폴더 지정이 안 될 때, 아래 내용을 복사해서 알려 주시면 원인을 찾을 수 있습니다.</div>
     <textarea id="env_out" readonly style="min-height:200px;font-size:12px;line-height:1.6">${esc(
       "폴더 API: " + i.api + "\n" +
+      "연결 상태: " + i.mode + "\n" +
       "보안 연결(secure context): " + i.secure + " (" + i.proto + ")\n" +
       "다른 페이지 안에 끼워짐: " + i.frame + "\n" +
       "권한 확인 지원: " + i.perm + "\n" +
@@ -778,6 +784,28 @@ function safeName(s){
 }
 function nfc(s){ try{ return String(s||"").normalize("NFC"); }catch(e){ return String(s||""); } }
 
+/* 이 폴더에 실제로 쓸 수 있는지 확인합니다.
+   삼성 인터넷처럼 폴더 선택은 되지만 쓰기를 거부하는 브라우저가 있어서,
+   "읽기 전용"으로라도 연결해 두면 기록·영상을 불러오는 데는 쓸 수 있습니다. */
+async function probeFolder(){
+  if(!dirHandle) return "";
+  if(await folderWriteJSON(true, true)) return "rw";
+  try{
+    if(dirHandle.entries){ for await (const x of dirHandle.entries()){ break; } }
+    else if(dirHandle.values){ for await (const x of dirHandle.values()){ break; } }
+    return "ro";
+  }catch(e){ fsErr = errText(e); return ""; }
+}
+/* 쓰기가 막힌 걸 뒤늦게 알게 된 경우 — 한 번만 알려 주고 읽기 전용으로 내려갑니다 */
+function downgradeRO(){
+  if(fsMode === "ro") return;
+  fsMode = "ro";
+  try{ hSet("dirMode","ro"); }catch(e){}
+  if(!roToldOnce){
+    roToldOnce = true;
+    toast("이 브라우저는 폴더에 저장할 수 없습니다 — 불러오기 전용으로 씁니다");
+  }
+}
 /* 폴더 지정 — 반드시 사용자의 터치(클릭) 안에서 호출해야 합니다 */
 async function pickFolder(){
   if(!FS_DIR_OK){
@@ -798,52 +826,97 @@ async function pickFolder(){
     toast(pickErrMsg(e));
     return;
   }
-  dirHandle = h; dirName = h.name; fsNeedGrant = false; fsErr = ""; _vnames = null;
+  dirHandle = h; dirName = h.name; fsNeedGrant = false; fsDenied = false; fsErr = ""; _vnames = null; fsMode = "";
   // 여기서 권한을 다시 물으면(requestPermission) 방금 쓴 터치 승인이 이미 소진돼
   // 브라우저가 거부하는 경우가 있습니다. 실제로 한 번 써 보고 판단합니다.
-  const wrote = await folderWriteJSON(true);
-  if(!wrote){
-    // 마지막 시도 — 이 클릭의 승인이 아직 살아 있다면 권한 창이 뜹니다
-    const ok = await ensurePerm(h, "readwrite", true);
-    const wrote2 = ok? await folderWriteJSON(true) : false;
-    if(!wrote2){
-      dirHandle = null; dirName = ""; render();
-      toast("이 폴더에는 저장할 수 없습니다 — 다른 폴더(내장 저장공간의 Documents 등)를 골라 보세요");
-      return;
+  fsMode = await probeFolder();
+  if(fsMode !== "rw"){
+    // 이 클릭의 승인이 아직 살아 있다면 권한 창이 뜹니다
+    if(await ensurePerm(h, "readwrite", true)){
+      if(await folderWriteJSON(true, true)) fsMode = "rw";
     }
   }
-  try{ await hSet("dir", h); }catch(e){}
+  if(!fsMode){
+    dirHandle = null; dirName = ""; render();
+    toast("이 폴더는 읽을 수도 쓸 수도 없습니다 — 다른 폴더를 골라 보세요");
+    return;
+  }
+  try{ await hSet("dir", h); await hSet("dirMode", fsMode); }catch(e){}
+  if(fsMode === "ro"){
+    await ask("읽기 전용으로 연결했습니다",
+      `이 브라우저(삼성 인터넷 등)는 웹에서 폴더에 <b>저장</b>하는 것을 허용하지 않습니다.<br><br>
+       그래도 이 폴더에서 <b>기록을 불러오고, 영상 파일을 그대로 재생</b>할 수 있습니다.
+       저장은 <b>전체 백업(zip)</b>으로 하시고, 그 파일을 이 폴더에 두면 됩니다.<br><br>
+       자동 저장까지 쓰고 싶으면 같은 주소를 <b>크롬</b>으로 열어 주세요.`,
+      [{label:"알겠습니다", style:"pri"}]);
+  }
   const f = await folderReadJSON();
   if(f && f.games.length && !S.games.length){
     await applyFolderData(f, true);
     toast("폴더에서 " + f.games.length + "경기를 불러왔습니다");
-  } else if(f && f.games.length && S.games.length && f.games.length !== S.games.length){
+  } else if(f && f.games.length && S.games.length && f.games.length !== S.games.length && fsMode === "rw"){
     const k = await ask("폴더에 기록이 있습니다",
       `폴더의 <b>${f.games.length}경기</b>와 이 기기의 <b>${S.games.length}경기</b> 중 무엇을 쓸까요?`,
       [{label:"폴더 기록 불러오기", style:"pri"},{label:"이 기기 기록으로 덮어쓰기", style:"dan"},{label:"나중에"}]);
     if(k===0) await applyFolderData(f, true);
     else if(k===1) await folderWriteJSON(true);
-  } else {
+  } else if(fsMode === "rw"){
     await folderWriteJSON(true);
   }
   await relinkAll();
   render();
-  toast("저장 폴더: " + dirName);
+  toast("저장 폴더: " + dirName + (fsMode==="ro"? " (불러오기 전용)" : ""));
 }
 async function forgetFolder(){
-  dirHandle=null; dirName=""; fsNeedGrant=false; _vnames=null;
-  try{ await hDel("dir"); }catch(e){}
+  dirHandle=null; dirName=""; fsNeedGrant=false; _vnames=null; fsMode="";
+  try{ await hDel("dir"); await hDel("dirMode"); }catch(e){}
   render(); toast("폴더 연결을 해제했습니다 (폴더의 파일은 그대로 있습니다)");
+}
+/* 브라우저를 새로 열면 폴더 권한이 잠깁니다(크롬 정책). 권한 요청은 반드시
+   사용자의 터치 안에서만 가능하므로, 따로 버튼을 누르게 하지 않고
+   화면의 "첫 터치"에 슬쩍 얹어 자동으로 다시 연결합니다.
+   권한 창에서 [방문할 때마다 허용]을 고르면 그 다음부터는 아예 묻지 않습니다. */
+function armAutoGrant(){
+  if(!dirHandle || !fsNeedGrant || fsAutoArmed || fsDenied) return;
+  if(!dirHandle.requestPermission){ fsNeedGrant = false; return; }
+  fsAutoArmed = true;
+  const go = async ()=>{
+    fsAutoArmed = false;
+    if(!dirHandle || !fsNeedGrant) return;
+    let ok = false;
+    try{ ok = (await dirHandle.requestPermission({mode:"readwrite"})) === "granted"; }
+    catch(e){ fsErr = errText(e); ok = false; }
+    if(ok){
+      fsNeedGrant = false; fsDenied = false;
+      await afterFolderReady(); render();
+      toast("저장 폴더를 연결했습니다 · " + dirName);
+    } else {
+      fsDenied = true; render();
+    }
+  };
+  const once = ()=>{
+    document.removeEventListener("pointerdown", once, true);
+    document.removeEventListener("keydown", once, true);
+    setTimeout(go, 0);
+  };
+  document.addEventListener("pointerdown", once, true);
+  document.addEventListener("keydown", once, true);
+}
+function isInstalledApp(){
+  try{
+    return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches)
+      || window.navigator.standalone === true;
+  }catch(e){ return false; }
 }
 /* 새로고침 뒤 권한이 잠겼을 때 — 배너의 [연결하기] 터치로 호출 */
 async function grantFolder(){
   if(!dirHandle) return;
   const ok = await ensurePerm(dirHandle, "readwrite", true);
-  const wrote = ok? await folderWriteJSON(true) : false;
-  if(wrote){
-    fsNeedGrant = false; await afterFolderReady(); render(); toast("저장 폴더를 다시 연결했습니다");
+  if(ok){
+    fsNeedGrant = false; fsDenied = false;
+    await afterFolderReady(); render(); toast("저장 폴더를 다시 연결했습니다");
   } else {
-    render();
+    fsDenied = true; render();
     toast("권한이 허용되지 않았습니다 — [폴더 바꾸기]로 폴더를 다시 골라 주세요");
   }
 }
@@ -853,8 +926,9 @@ async function videosDir(create){
   try{ return await dirHandle.getDirectoryHandle(VID_DIR, {create:!!create}); }
   catch(e){ return null; }
 }
-async function folderWriteJSON(force){
+async function folderWriteJSON(force, probing){
   if(!dirHandle) return false;
+  if(fsMode === "ro" && !probing) return false;
   if(fsWriting && !force) return false;
   fsWriting = true;
   try{
@@ -870,20 +944,25 @@ async function folderWriteJSON(force){
     lastFolderSave = Date.now(); fsErr = ""; fsNeedGrant = false;
     return true;
   }catch(e){
-    if(e && (e.name === "NotAllowedError" || e.name === "SecurityError")) fsNeedGrant = true;
     fsErr = errText(e);
+    // 쓰기 자체를 허용하지 않는 브라우저 — 권한 문제가 아니라 기능 미지원입니다
+    if(e && e.name === "NotAllowedError" && !(dirHandle && dirHandle.queryPermission)){
+      if(!probing) downgradeRO();
+    } else if(e && (e.name === "NotAllowedError" || e.name === "SecurityError")){
+      fsNeedGrant = true; armAutoGrant();
+    }
     console.warn("폴더 저장 실패", e);
     return false;
   }finally{ fsWriting = false; }
 }
 function folderSave(){
-  if(!dirHandle || fsNeedGrant) return;
+  if(!dirHandle || fsNeedGrant || fsMode !== "rw") return;
   clearTimeout(fsSaveTimer);
   fsSaveTimer = setTimeout(()=>{ folderWriteJSON(); }, 1200);
 }
 /* 영상 추가·삭제처럼 되돌리기 어려운 변화는 기다리지 않고 바로 폴더에 씁니다 */
 function flushFolder(){
-  if(!dirHandle || fsNeedGrant) return Promise.resolve(false);
+  if(!dirHandle || fsNeedGrant || fsMode !== "rw") return Promise.resolve(false);
   clearTimeout(fsSaveTimer);
   return folderWriteJSON(true);
 }
@@ -930,7 +1009,7 @@ async function restoreFolder(){
 /* 폴더가 연결돼 있으면 폴더의 videos/ 안에 실제 파일로,
    아니면 지금처럼 브라우저 내부(IndexedDB)에 저장합니다. */
 async function mediaPut(v, blob){
-  if(dirHandle && !fsNeedGrant){
+  if(dirHandle && !fsNeedGrant && fsMode === "rw"){
     try{
       const vd = await videosDir(true);
       const nm = v.file || (v.id+"__"+safeName(v.name));
@@ -940,8 +1019,9 @@ async function mediaPut(v, blob){
       v.store="fs"; v.file=nm; _vnames=null;
       return "fs";
     }catch(e){
-      if(e && (e.name === "NotAllowedError" || e.name === "SecurityError")) fsNeedGrant = true;
       fsErr = errText(e);
+      if(e && e.name === "NotAllowedError" && !(dirHandle && dirHandle.queryPermission)) downgradeRO();
+      else if(e && (e.name === "NotAllowedError" || e.name === "SecurityError")){ fsNeedGrant = true; armAutoGrant(); }
       console.warn("폴더 영상 저장 실패 — 기기에 저장합니다", e);
     }
   }
@@ -950,15 +1030,30 @@ async function mediaPut(v, blob){
   if(!v.file) v.file = v.id+"__"+safeName(v.name);
   return "idb";
 }
-let _vnames = null;                 // 폴더 videos/ 파일 이름 캐시
+let _vnames = null;                 // 폴더 안 파일 이름 캐시
+/* videos/ 를 먼저 훑고, 폴더 안의 다른 파일과 한 단계 아래 하위 폴더까지 함께 봅니다.
+   그래서 영상 원본을 폴더에 그냥 넣어 두어도 앱이 찾아 재생할 수 있습니다. */
 async function fsNames(fresh){
   if(!dirHandle) return null;
   if(_vnames && !fresh) return _vnames;
-  const vd = await videosDir(false);
   const m = new Map();
-  if(vd && vd.entries){
-    try{ for await (const ent of vd.entries()){ if(ent[1] && ent[1].kind==="file") m.set(ent[0], ent[1]); } }catch(e){}
+  const add = (name, h)=>{ if(h && h.kind==="file" && !m.has(name)) m.set(name, h); };
+  async function walk(dir, depth){
+    if(!dir || m.size > 4000) return;
+    try{
+      const it = dir.entries? dir.entries() : null;
+      if(!it) return;
+      for await (const ent of it){
+        if(m.size > 4000) return;
+        const h = ent[1];
+        if(h && h.kind === "file") add(ent[0], h);
+        else if(h && depth < 2) await walk(h, depth+1);
+      }
+    }catch(e){}
   }
+  const vd = await videosDir(false);
+  if(vd) await walk(vd, 2);
+  await walk(dirHandle, 1);
   _vnames = m; return m;
 }
 async function fsFind(v){
@@ -966,10 +1061,40 @@ async function fsFind(v){
   if(!m || !m.size) return null;
   if(v.file && m.has(v.file)) return m.get(v.file);
   for(const k of m.keys()){ if(k.indexOf(v.id+"__")===0 || k===v.id) return m.get(k); }
-  if(m.has(v.name)) return m.get(v.name);
   const want = nfc(v.file||""), wantN = nfc(v.name||"");
-  for(const k of m.keys()){ const n = nfc(k); if(n===want || n===wantN) return m.get(k); }
-  return null;
+  let loose = null;
+  for(const k of m.keys()){
+    const n = nfc(k);
+    if(want && n === want) return m.get(k);
+    if(wantN && n === wantN){
+      const h = m.get(k);
+      if(!v.size) return h;
+      try{ const f = await h.getFile(); if(f.size === v.size) return h; }catch(e){}
+      if(!loose) loose = h;                      // 이름은 같고 크기가 다른 경우 (마지막 후보)
+    }
+  }
+  return loose;
+}
+/* 폴더에 있는 영상 파일을 기록과 맞춰 연결합니다 — 복사하지 않고 그 자리에서 재생합니다 */
+async function scanFolderVideos(){
+  if(!dirHandle){ toast("먼저 폴더를 지정해 주세요"); return; }
+  const list = allVideos();
+  if(!list.length){ toast("등록된 영상 기록이 없습니다"); return; }
+  busy("폴더에서 영상을 찾는 중");
+  _vnames = null;
+  await fsNames(true);
+  let ok = 0;
+  for(let i=0;i<list.length;i++){
+    busyUp(i/list.length, (i+1) + " / " + list.length);
+    const v = list[i].v;
+    try{
+      const h = await fsFind(v);
+      if(h){ v.store = "fs"; v.file = h.name; ok++; }
+    }catch(e){}
+  }
+  busyEnd(); saveNow(); render();
+  toast(ok? ("폴더에서 영상 " + ok + "개를 연결했습니다")
+          : "폴더에서 맞는 영상 파일을 찾지 못했습니다 — 파일 이름이 기록과 같아야 합니다");
 }
 async function mediaGet(v){
   if(dirHandle){
@@ -998,6 +1123,7 @@ async function mediaDel(v){
 /* 기기(IndexedDB)에 있던 영상을 폴더로 옮깁니다 */
 async function moveToFolder(){
   if(!dirHandle){ toast("먼저 폴더를 지정해 주세요"); return; }
+  if(fsMode !== "rw"){ toast("이 브라우저는 폴더에 저장할 수 없습니다"); return; }
   const list=[];
   for(const it of allVideos()){
     let has=false; try{ has = await idbHas(it.v.id); }catch(e){}
@@ -1025,10 +1151,11 @@ async function initFS(){
   try{ h = await hGet("dir"); }catch(e){}
   if(!h) return;
   dirHandle = h; dirName = h.name || "";
+  try{ fsMode = (await hGet("dirMode")) || "rw"; }catch(e){ fsMode = "rw"; }
   let p = "granted";
   try{ if(h.queryPermission) p = await h.queryPermission({mode:"readwrite"}); }catch(e){ p = "granted"; }
   if(p === "granted"){ fsNeedGrant=false; await afterFolderReady(); }
-  else { fsNeedGrant = true; }
+  else { fsNeedGrant = true; armAutoGrant(); }
   render();
 }
 async function afterFolderReady(){
@@ -1036,7 +1163,7 @@ async function afterFolderReady(){
   if(o && o.games.length && !S.games.length){
     await applyFolderData(o, true);
     toast("저장 폴더에서 " + o.games.length + "경기를 복원했습니다");
-  } else {
+  } else if(fsMode === "rw"){
     await folderWriteJSON();
   }
   _vnames = null;
@@ -1171,7 +1298,8 @@ async function exportBundle(){
     }
     const zip = await zipMake(files, (p,n)=> busyUp(0.5+p*0.5, n? "묶는 중: "+n : "마무리 중"));
     busyEnd();
-    await download(fname("baseball-backup","zip"), zip, "bundle");
+    // 백업은 최신 것 하나만 두는 게 안전해서, 날짜 없이 항상 같은 이름으로 덮어씁니다
+    await download("baseball-backup.zip", zip, "bundle");
     S.backup = {at:Date.now(), sig:dataSig()};
     saveNow(); render();
   }catch(e){
@@ -1252,6 +1380,7 @@ async function fillMissing(){
          기기에 있는 <b>원본 영상 파일을 여러 개 한 번에</b> 골라 주면 이름·크기를 맞춰 자동으로 다시 연결합니다.
          <div class="btnrow" style="margin-top:8px">
            <button class="btn pri sm nb" data-act="relinkVideos">영상 파일 다시 연결</button>
+           ${dirHandle? `<button class="btn sm nb" data-act="scanFolderVideos">폴더에서 찾기</button>`:""}
          </div></div>`
     : "";
   els.forEach(e=> e.innerHTML = html);
@@ -2441,24 +2570,35 @@ function folderCard(){
       <div class="cap">폴더를 지정하면 기록과 영상이 그 폴더에 자동으로 저장됩니다. 브라우저 데이터를 지워도 폴더의 파일은 남습니다.</div></div></div>`
    + (FS_DIR_OK
      ? `<div class="hint" style="margin-bottom:10px">${on
-          ? `현재 폴더: <b>${esc(dirName)}</b>` + (fsNeedGrant
-              ? ` — <span style="color:var(--warn);font-weight:650">연결이 잠겨 있습니다</span>`
+          ? `현재 폴더: <b>${esc(dirName)}</b>`
+            + (fsMode==="ro"? ` <span style="color:var(--warn);font-weight:650">· 불러오기 전용</span>` : ` · 자동 저장 켜짐`)
+            + (fsNeedGrant
+              ? (fsDenied
+                  ? ` — <span style="color:var(--crit);font-weight:650">연결하지 못했습니다</span>`
+                  : ` — <span style="color:var(--warn);font-weight:650">화면을 한 번 터치하면 연결됩니다</span>`)
               : `<br>마지막 폴더 저장: ${lastFolderSave? new Date(lastFolderSave).toLocaleTimeString("ko-KR") : "아직 없음"}`)
             + (fsErr? `<br><span style="color:var(--crit)">최근 오류: ${esc(fsErr)}</span>` : "")
           : "아직 지정하지 않았습니다."}</div>
         <div class="btnrow">
           ${fsNeedGrant? `<button class="btn pri" data-act="grantFolder">폴더 다시 연결</button>`:""}
           <button class="btn ${on?"":"pri"}" data-act="pickFolder">${on?"폴더 바꾸기":"폴더 지정"}</button>
-          ${on? `<button class="btn" data-act="folderSaveNow">지금 폴더에 저장</button>
+          ${on? `${fsMode==="rw"? `<button class="btn" data-act="folderSaveNow">지금 폴더에 저장</button>`:""}
                  <button class="btn" data-act="restoreFolder">폴더에서 불러오기</button>
-                 <button class="btn" data-act="moveToFolder">기기 영상을 폴더로</button>
+                 <button class="btn" data-act="scanFolderVideos">폴더에서 영상 찾기</button>
+                 ${fsMode==="rw"? `<button class="btn" data-act="moveToFolder">기기 영상을 폴더로</button>`:""}
                  <button class="btn" data-act="forgetFolder">연결 해제</button>` : ""}
           <button class="btn sm" data-act="showEnv">진단</button>
         </div>
-        <div class="hint" style="margin-top:10px">
-          · 폴더를 <b>구글 드라이브·원드라이브·아이클라우드 동기화 폴더</b>로 잡아 두면 다른 기기와도 이어집니다.<br>
-          · 브라우저 데이터를 지우면 <b>폴더 연결만</b> 풀립니다 — 다시 <b>폴더 지정</b>을 누르면 기록과 영상이 그대로 돌아옵니다.<br>
-          · 새 영상은 폴더의 <b>videos</b> 안에 원본 파일로 저장됩니다.</div>`
+        <div class="hint" style="margin-top:10px">${fsMode==="ro"
+          ? `· 이 브라우저는 웹에서 폴더에 <b>저장</b>하는 것을 허용하지 않습니다(삼성 인터넷 등). 저장은 <b>전체 백업(zip)</b>으로 하세요.<br>
+             · 대신 이 폴더에서 <b>기록 불러오기</b>와 <b>영상 재생</b>은 됩니다 — 영상 원본을 폴더(또는 그 안 <b>videos</b> 폴더)에 넣고
+               <b>[폴더에서 영상 찾기]</b>를 누르면 복사 없이 그 자리에서 재생됩니다. 브라우저 데이터를 지워도 영상은 폴더에 남습니다.<br>
+             · 자동 저장까지 쓰려면 같은 주소를 <b>크롬</b>으로 열어 주세요.`
+          : `· 폴더를 <b>구글 드라이브·원드라이브·아이클라우드 동기화 폴더</b>로 잡아 두면 다른 기기와도 이어집니다.<br>
+             · 브라우저 데이터를 지우면 <b>폴더 연결만</b> 풀립니다 — 다시 <b>폴더 지정</b>을 누르면 기록과 영상이 그대로 돌아옵니다.<br>
+             · 새 영상은 폴더의 <b>videos</b> 안에 원본 파일로 저장됩니다.<br>
+             · 앱을 다시 열면 크롬이 폴더 권한을 한 번 확인합니다. 권한 창에서 <b>방문할 때마다 허용</b>을 고르면
+               그 뒤로는 묻지 않습니다.${isInstalledApp()? "" : ` <b>홈 화면에 추가</b>(크롬 메뉴 → 앱 설치)해 두면 더 확실합니다.`}`}</div>`
      : `<div class="hint">이 브라우저에서는 폴더 지정을 쓸 수 없습니다.
           <b>PC 크롬·엣지</b>, <b>안드로이드 크롬</b>, <b>삼성 인터넷 29 이상</b>에서 지원됩니다
           (아이폰·아이패드 사파리와 파이어폭스는 지원하지 않습니다).<br>
@@ -3138,7 +3278,7 @@ function fname(base, ext){
 /* key 는 내보내기 종류(json/batting/…) — 한 번 고른 파일을 기억해 두고 다음부터 덮어씁니다 */
 async function download(name, blob, key){
   // 1) 저장 폴더가 연결돼 있으면 그 폴더에 바로 덮어쓰기
-  if(dirHandle && !fsNeedGrant && S.settings.exportToFolder!==false && !S.settings.pickEach){
+  if(dirHandle && !fsNeedGrant && fsMode === "rw" && S.settings.exportToFolder!==false && !S.settings.pickEach){
     try{
       const fh = await dirHandle.getFileHandle(name, {create:true});
       const w  = await fh.createWritable();
@@ -3634,6 +3774,7 @@ document.addEventListener("click", ev=>{
     case "folderSaveNow":
       folderWriteJSON(true).then(ok=>{ render(); toast(ok? "폴더에 저장했습니다" : "폴더에 저장하지 못했습니다"); }); break;
     case "showEnv": showEnv(); break;
+    case "scanFolderVideos": scanFolderVideos(); break;
     case "copyEnv": copyEnv(); break;
     case "relinkVideos": relinkVideos(); break;
     case "relinkOne": {
@@ -3766,10 +3907,14 @@ function envBanner(){
 /* 화면 위쪽 알림 — 폴더 연결 잠김 / 백업 권유 */
 function banners(){
   let h = "";
-  if(dirHandle && fsNeedGrant){
+  // 권한 요청을 사용자가 거절했을 때만 안내합니다.
+  // (거절하지 않았다면 화면의 첫 터치에서 자동으로 다시 연결됩니다)
+  if(dirHandle && fsNeedGrant && fsDenied){
     h += `<div class="note" style="margin-bottom:12px;border:1px solid var(--border)">
-      저장 폴더 <b>${esc(dirName)}</b> 연결이 잠겨 있습니다 — 브라우저를 새로 연 뒤에는 한 번 확인이 필요합니다.
-      <div class="btnrow" style="margin-top:8px"><button class="btn pri sm nb" data-act="grantFolder">폴더 다시 연결</button></div></div>`;
+      저장 폴더 <b>${esc(dirName)}</b>에 연결하지 못했습니다.
+      <div class="btnrow" style="margin-top:8px"><button class="btn pri sm nb" data-act="grantFolder">폴더 다시 연결</button></div>
+      <div class="hint" style="margin-top:8px">권한 창에서 <b>방문할 때마다 허용</b>을 고르면 다음부터는 묻지 않습니다.${
+        isInstalledApp()? "" : `<br><b>홈 화면에 추가</b>(크롬 메뉴 → 앱 설치)해 두면 권한이 그대로 유지됩니다.`}</div></div>`;
   }
   if(!dirHandle && S.games.length){
     const b = S.backup||{};
@@ -3873,15 +4018,17 @@ function setTheme(v){
     if(document.visibilityState==="hidden"){ saveNow(); return; }
     // 앱으로 돌아왔을 때 홈 화면으로. 단 입력 중(시트가 열려 있음)이면 그대로 둡니다.
     if($("#modal").innerHTML) return;
+    if(dirHandle && fsNeedGrant) armAutoGrant();
     if(S.ui.tab!=="home" || S.ui.gameId){ S.ui.tab="home"; S.ui.gameId=null; saveNow(); render(); }
   });
   document.addEventListener("keydown", e=>{ if(e.key==="Escape" && $("#modal").innerHTML) closeSheet(); });
   // 개발용 훅 (자동 검증에 사용)
   window.__bb = {get S(){return S;}, set S(v){S=v;}, render, save:saveNow, battingOf, fieldingOf, pitchingOf, zoneOf, zoneCell, normalizeGames, geom, sampleData, inn2outs, RMAP,
     zipMake, zipRead, exportBundle, restoreBundle, mediaPut, mediaGet, mediaHas, allVideos, dataSig, fname,
-    get dir(){ return dirHandle; }};
-  window.__bbSetDir = (h)=>{ dirHandle=h; dirName=h? (h.name||"test"):""; fsNeedGrant=false; _vnames=null; };
-  window.__bbFolder = ()=>({name:dirName, last:lastFolderSave, err:fsErr,
+    get dir(){ return dirHandle; }, get mode(){ return fsMode; }, scanFolderVideos, probeFolder};
+  window.__bbSetDir = (h, m)=>{ dirHandle=h; dirName=h? (h.name||"test"):""; fsNeedGrant=false; _vnames=null; fsMode=h? (m||"rw"):""; };
+  window.__bbFolder = ()=>({name:dirName, last:lastFolderSave, err:fsErr, mode:fsMode,
+    need:fsNeedGrant, denied:fsDenied, armed:fsAutoArmed, arm:armAutoGrant,
     write:()=>folderWriteJSON(true), read:()=>folderReadJSON(), restore:()=>afterFolderReady(), relink:()=>relinkAll()});
   window.__bbCloseDb = ()=>{ try{ if(_db){ _db.close(); _db=null; } }catch(e){} _vnames=null; return Promise.resolve(); };
 })();
