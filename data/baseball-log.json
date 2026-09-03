@@ -472,8 +472,24 @@
    "myScore": "",
    "oppScore": "",
    "note": ""
+  },
+  {
+   "id": "mtl2xhnbfp7y0",
+   "pas": [],
+   "def": [],
+   "videos": [],
+   "pdec": "",
+   "date": "2026-09-03",
+   "opponent": "",
+   "venue": "",
+   "homeAway": "홈",
+   "level": "",
+   "type": "official",
+   "myScore": "",
+   "oppScore": "",
+   "note": ""
   }
  ],
- "savedAt": "2026-09-03T05:14:06.262Z",
+ "savedAt": "2026-09-03T05:23:37.983Z",
  "by": "성연제"
 }
