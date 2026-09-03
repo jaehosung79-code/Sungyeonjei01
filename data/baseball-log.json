@@ -270,6 +270,17 @@
      "defId": null,
      "note": "",
      "createdAt": 1788259564740
+    },
+    {
+     "id": "mtijl0auyjyg8",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/1YUQCbDtkKPTw4iWTf2IX1lj4TDHYqdgy/view?usp=drivesdk",
+     "title": "2번째 타석 · 4회 삼진",
+     "folder": "",
+     "paId": "mtgl0uax7hyuc",
+     "defId": null,
+     "note": "",
+     "createdAt": 1788259581990
     }
    ],
    "date": "2026-08-24",
@@ -602,6 +613,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:09:08.467Z",
+ "savedAt": "2026-09-03T07:09:45.235Z",
  "by": "성연제"
 }
