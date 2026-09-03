@@ -445,7 +445,18 @@
     }
    ],
    "def": [],
-   "videos": [],
+   "videos": [
+    {
+     "id": "mtl401xwznom8",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/1i79u2T-boqbqfVBB-v9MPjqEXAaRWoVr/view?usp=drivesdk",
+     "title": "https://drive.google.com/file/d/1i79u2T-boqbqfVBB-v9MPjqEXAa",
+     "paId": "mtkwezq0g7sz4",
+     "defId": null,
+     "note": "",
+     "createdAt": 1788414808532
+    }
+   ],
    "pdec": "",
    "date": "2026-03-14",
    "opponent": "효제초",
@@ -458,6 +469,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T05:48:45.816Z",
+ "savedAt": "2026-09-03T05:53:36.637Z",
  "by": "성연제"
 }
