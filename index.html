@@ -429,12 +429,15 @@ video{width:100%;border-radius:var(--r-sm);background:#000;display:block}
 .iobtn .sb{font-size:11.5px;color:var(--text-3)}
 .iobtn:active{opacity:.72}
 .mico{display:inline-flex;vertical-align:-5px;margin-right:4px;color:var(--accent-ink)}
-.ioitem{display:flex;align-items:center;gap:12px;text-align:left;margin-bottom:8px;padding:12px 14px;height:auto;min-height:60px}
+.ioitem{
+  display:flex;align-items:center;justify-content:flex-start;gap:12px;
+  text-align:left;margin-bottom:8px;padding:12px 14px;height:auto;min-height:60px;
+}
 .ioitem .no{
   flex:none;width:26px;height:26px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;
   background:var(--surface-3);color:var(--text-2);font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;
 }
-.ioitem .tx{display:block;min-width:0}
+.ioitem .tx{display:block;min-width:0;flex:1;text-align:left}
 .ioitem .tx b{display:block;font-size:13.5px;font-weight:650}
 .ioitem .tx em{display:block;font-style:normal;font-size:11.5px;color:var(--text-3);margin-top:2px;line-height:1.4;white-space:normal}
 .bar{height:7px;border-radius:999px;background:var(--surface-3);overflow:hidden}
