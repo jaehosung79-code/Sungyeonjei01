@@ -3751,18 +3751,23 @@ function embedFor(url){
   const drive = u.match(/(?:drive|docs|drive\.usercontent)\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=|download\?id=)([A-Za-z0-9_-]{10,})/)
              || u.match(/[?&]id=([A-Za-z0-9_-]{20,})/);
   if(drive && /google\.com/.test(u))
-    return {kind:"iframe", site:"drive", src:"https://drive.google.com/file/d/"+drive[1]+"/preview"};
+    return {kind:"iframe", site:"drive", id:drive[1], src:"https://drive.google.com/file/d/"+drive[1]+"/preview"};
   const vimeo = u.match(/vimeo\.com\/(?:video\/)?(\d+)/);
   if(vimeo) return {kind:"iframe", site:"vimeo", src:`https://player.vimeo.com/video/${vimeo[1]}?autoplay=${auto}&muted=${mute}`};
   if(/\.(mp4|webm|ogg|ogv|mov|m4v)(\?|$)/i.test(u)) return {kind:"video", site:"file", src:u};
   return null;
+}
+/* 드라이브 원본 주소 — 앱 자체 플레이어로 바로 재생해 보기 위한 주소입니다.
+   "링크가 있는 모든 사용자"로 공유된 파일이면 대개 그대로 재생됩니다. */
+function driveDirect(id){
+  return "https://drive.usercontent.google.com/download?id=" + id + "&export=download&confirm=t";
 }
 function playHint(v, site){
   if(v.kind !== "link") return "";
   const tip = site==="youtube"
     ? `화면이 비어 있다면 유튜브 <b>비공개</b> 영상입니다 — 공개 범위를 <b>일부 공개(미등록)</b>로 바꾸면 재생됩니다. · `
     : site==="drive"
-    ? `화면이 비어 있다면 드라이브 공유 설정이 <b>제한됨</b>입니다 — <b>링크가 있는 모든 사용자</b>로 바꿔 주세요. · `
+    ? `공유 설정이 <b>제한됨</b>이면 재생되지 않습니다 — <b>링크가 있는 모든 사용자</b>로 바꿔 주세요. · `
     : "";
   return `<div class="hint" style="margin-top:6px">${tip}<a href="${esc(v.url)}" target="_blank" rel="noopener">새 창에서 열기 ↗</a></div>`;
 }
@@ -3794,7 +3799,10 @@ function playVideo(gid, vid){
   setIcon();
 
   const ap = apMode();
-  const mountVideo = (src, site) =>{
+  const mountIframe = (em) =>{
+    host.innerHTML = `<div class="ratio"><iframe src="${esc(em.src)}" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen title="${esc(v.title||"영상")}"></iframe></div>` + playHint(v, em.site);
+  };
+  const mountVideo = (src, site, onFail) =>{
     const tail = playHint(v, site);
     const attrs = ap==="off"? "" : (ap==="muted"? " autoplay muted" : " autoplay");
     host.innerHTML = `<video controls playsinline preload="auto"${attrs} src="${src}"></video>` + tail;
@@ -3813,9 +3821,16 @@ function playVideo(gid, vid){
           }catch(e){}
         });
       }
-      el.addEventListener("error", ()=>{
+      let settled = false;
+      const fail = ()=>{
+        if(settled) return; settled = true;
+        if(onFail){ onFail(); return; }
         host.innerHTML = `<div class="hint">이 형식·주소는 앱 안에서 재생할 수 없습니다.</div>` + tail;
-      }, {once:true});
+      };
+      el.addEventListener("loadeddata", ()=>{ settled = true; }, {once:true});
+      el.addEventListener("error", fail, {once:true});
+      // 드라이브가 영상 대신 안내 페이지를 주는 경우 error 가 늦게 오기도 합니다
+      if(onFail) setTimeout(()=>{ if(!settled && !el.videoWidth) fail(); }, 8000);
     }
   };
 
@@ -3827,7 +3842,15 @@ function playVideo(gid, vid){
       return;
     }
     if(em.kind === "iframe"){
-      host.innerHTML = `<div class="ratio"><iframe src="${esc(em.src)}" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen title="${esc(v.title||"영상")}"></iframe></div>` + playHint(v, em.site);
+      /* 구글 드라이브는 먼저 앱 자체 플레이어로 재생해 봅니다.
+         (드라이브 플레이어의 조작 바가 화면을 덮지 않도록)
+         재생이 안 되면 원래대로 드라이브 플레이어로 넘어갑니다. */
+      if(em.site === "drive" && em.id){
+        host.innerHTML = `<div class="hint">불러오는 중…</div>`;
+        mountVideo(driveDirect(em.id), "drive", ()=> mountIframe(em));
+        return;
+      }
+      mountIframe(em);
     } else mountVideo(esc(em.src), em.site);
     return;
   }
