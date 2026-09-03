@@ -795,7 +795,25 @@
   },
   {
    "id": "mtl7j9ce5ymlm",
-   "pas": [],
+   "pas": [
+    {
+     "id": "mtl7k2pc19x01",
+     "inning": 2,
+     "pitcherNo": "45",
+     "pitcher": "김도율",
+     "result": "FO",
+     "zone": {
+      "x": 159.1,
+      "y": 245.7,
+      "z2": 1
+     },
+     "rbi": 0,
+     "runs": 0,
+     "sb": 0,
+     "cs": 0,
+     "note": ""
+    }
+   ],
    "def": [],
    "videos": [],
    "pdec": "",
@@ -810,6 +828,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:32:30.655Z",
+ "savedAt": "2026-09-03T07:33:10.279Z",
  "by": "성연제"
 }
