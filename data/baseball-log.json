@@ -690,8 +690,24 @@
    "myScore": "6",
    "oppScore": "5",
    "note": ""
+  },
+  {
+   "id": "mtl71967i58lm",
+   "pas": [],
+   "def": [],
+   "videos": [],
+   "pdec": "",
+   "date": "2026-03-15",
+   "opponent": "수유초",
+   "venue": "용산",
+   "homeAway": "홈",
+   "level": "",
+   "type": "official",
+   "myScore": "5",
+   "oppScore": "1",
+   "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:13:45.157Z",
+ "savedAt": "2026-09-03T07:18:30.654Z",
  "by": "성연제"
 }
