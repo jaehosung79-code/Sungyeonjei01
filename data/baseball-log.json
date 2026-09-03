@@ -747,7 +747,19 @@
     }
    ],
    "def": [],
-   "videos": [],
+   "videos": [
+    {
+     "id": "mtl78yqxs3ftm",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/1ttTVIfb0ywe-hcOIOtKmV1p1LHA-URpu/view?usp=drivesdk",
+     "title": "1번째 타석 · 1회 안타",
+     "folder": "",
+     "paId": "mtl75xiu4ggie",
+     "defId": null,
+     "note": "",
+     "createdAt": 1788420263145
+    }
+   ],
    "pdec": "",
    "date": "2026-03-15",
    "opponent": "수유초",
@@ -760,6 +772,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:24:01.714Z",
+ "savedAt": "2026-09-03T07:25:30.597Z",
  "by": "성연제"
 }
