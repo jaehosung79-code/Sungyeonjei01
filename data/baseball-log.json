@@ -849,7 +849,19 @@
     }
    ],
    "def": [],
-   "videos": [],
+   "videos": [
+    {
+     "id": "mtl7mp2vonuz9",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/1CDVA6o9l41x14I3woqiLpaOEP8WY85_t/view?usp=drivesdk",
+     "title": "1번째 타석 · 2회 뜬공 아웃",
+     "folder": "",
+     "paId": "mtl7k2pc19x01",
+     "defId": null,
+     "note": "",
+     "createdAt": 1788420903799
+    }
+   ],
    "pdec": "",
    "date": "2026-03-19",
    "opponent": "백운초",
@@ -862,6 +874,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:34:30.556Z",
+ "savedAt": "2026-09-03T07:36:11.663Z",
  "by": "성연제"
 }
