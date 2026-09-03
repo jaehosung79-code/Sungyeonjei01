@@ -465,6 +465,16 @@
      "defId": null,
      "note": "",
      "createdAt": 1788417965948
+    },
+    {
+     "id": "mtl5wct3k4jh5",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/1lMScXx4gf7hYzDHjYi5_Vl8ez-p8A_fk/view?usp=drivesdk",
+     "title": "3번째 타석 · 6회 볼넷",
+     "paId": "mtkwg12h8dt9o",
+     "defId": null,
+     "note": "",
+     "createdAt": 1788417995223
     }
    ],
    "pdec": "",
@@ -479,6 +489,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T06:46:14.510Z",
+ "savedAt": "2026-09-03T06:46:44.337Z",
  "by": "성연제"
 }
