@@ -2942,7 +2942,7 @@ function ghSheet(){
     <div class="hint" style="padding:2px 0 12px">기록(JSON)만 저장소의 파일 하나에 저장합니다.
       <b>동영상 파일은 올라가지 않습니다</b> — 링크로 등록한 영상 주소만 함께 저장됩니다.</div>
     <label class="f"><span>저장소 <span style="color:var(--text-3);font-weight:400">— 아이디/저장소이름</span></span>
-      <input id="gh_repo" value="${esc(c.repo)}" placeholder="himec03/baseball-log" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+      <input id="gh_repo" value="${esc(c.repo)}" placeholder="jaehosung79-code/SungyeonjeiBaseball" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
     <div class="f2">
       <label class="f"><span>브랜치</span><input id="gh_branch" value="${esc(c.branch)}" placeholder="main" autocapitalize="off" spellcheck="false"></label>
       <label class="f"><span>파일 경로</span><input id="gh_path" value="${esc(c.path)}" placeholder="data/baseball-log.json" autocapitalize="off" spellcheck="false"></label>
@@ -3459,9 +3459,14 @@ function videoSheet(gid, vid){
     </div>
     <div id="v_link" ${(V && V.kind==="link")? "" : "hidden"}>
       <label class="f"><span>영상 주소</span><input id="v_url" inputmode="url" value="${V&&V.kind==="link"?esc(V.url):""}" placeholder="https://youtu.be/... 또는 mp4 주소"></label>
-      <div class="hint" style="margin:-6px 0 12px">유튜브·구글 드라이브·Vimeo·mp4 주소는 앱 안에서 바로 재생됩니다.<br>
-        유튜브는 공개 범위를 <b>일부 공개(미등록)</b>로 올려 주세요 — <b>비공개</b> 영상은 유튜브 정책상 어떤 앱·사이트에서도 재생되지 않습니다.
-        일부 공개는 검색에 노출되지 않으니 비공개와 사실상 같습니다.</div>
+      <div class="hint" style="margin:-6px 0 12px">유튜브 · <b>구글 드라이브</b> · Vimeo · mp4 주소는 앱 안에서 바로 재생됩니다.<br><br>
+        <b>구글 드라이브</b> — 드라이브 앱에서 영상 파일 → <b>공유</b> → <b>일반 액세스</b>를
+        <b>“링크가 있는 모든 사용자”</b>로 바꾼 뒤 <b>링크 복사</b>해서 붙여넣으세요.
+        (<b>제한됨</b>으로 두면 화면이 비어 보입니다.) 폴더 링크가 아니라 <b>영상 파일 하나</b>의 링크여야 합니다.<br><br>
+        <b>유튜브</b> — 공개 범위를 <b>일부 공개(미등록)</b>로 올려 주세요.
+        <b>비공개</b> 영상은 유튜브 정책상 어떤 앱·사이트에서도 재생되지 않습니다.
+        일부 공개는 검색에 노출되지 않으니 비공개와 사실상 같습니다.<br><br>
+        기기 저장 공간을 쓰지 않고, <b>GitHub 기록 공유</b>에도 주소가 함께 저장돼 다른 사람도 같은 영상을 볼 수 있습니다.</div>
     </div>
     <div id="v_pick" class="pickbox" hidden></div>
     <label class="f"><span>제목 <span style="color:var(--text-3);font-weight:400">— 비우면 파일명</span></span>
@@ -3525,8 +3530,11 @@ function embedFor(url){
   const y = ytId(u);
   if(y) return {kind:"iframe", site:"youtube",
     src:`https://www.youtube.com/embed/${y}?autoplay=${auto}&mute=${mute}&playsinline=1&rel=0`};
-  const drive = u.match(/(?:drive|docs)\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([A-Za-z0-9_-]{10,})/);
-  if(drive) return {kind:"iframe", site:"drive", src:"https://drive.google.com/file/d/"+drive[1]+"/preview"};
+  /* 구글 드라이브 — 공유 링크, 내려받기 링크, 예전 형식까지 모두 받습니다 */
+  const drive = u.match(/(?:drive|docs|drive\.usercontent)\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=|download\?id=)([A-Za-z0-9_-]{10,})/)
+             || u.match(/[?&]id=([A-Za-z0-9_-]{20,})/);
+  if(drive && /google\.com/.test(u))
+    return {kind:"iframe", site:"drive", src:"https://drive.google.com/file/d/"+drive[1]+"/preview"};
   const vimeo = u.match(/vimeo\.com\/(?:video\/)?(\d+)/);
   if(vimeo) return {kind:"iframe", site:"vimeo", src:`https://player.vimeo.com/video/${vimeo[1]}?autoplay=${auto}&muted=${mute}`};
   if(/\.(mp4|webm|ogg|ogv|mov|m4v)(\?|$)/i.test(u)) return {kind:"video", site:"file", src:u};
