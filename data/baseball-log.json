@@ -697,7 +697,7 @@
     {
      "id": "mtl75xiu4ggie",
      "inning": 1,
-     "pitcherNo": "",
+     "pitcherNo": "07",
      "pitcher": "",
      "result": "1B",
      "zone": {
@@ -726,6 +726,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:22:10.506Z",
+ "savedAt": "2026-09-03T07:22:30.469Z",
  "by": "성연제"
 }
