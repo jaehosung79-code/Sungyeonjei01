@@ -672,7 +672,11 @@ function normalizeGames(list){
       } });
     if(g.pdec==null){ const pd=g.def.find(d=>d.pit && d.pit.dec); g.pdec = pd? pd.pit.dec : ""; }
     g.videos.forEach(v=>{ if(v.defId==null) v.defId=null; if(v.paId==null) v.paId=null;
-      if(v.kind==="file" && !v.store) v.store="idb"; });
+      if(v.kind==="file" && !v.store) v.store="idb";
+      // 예전 기록은 제목 칸에 주소가 그대로 들어가 있었습니다 — 장면 이름이나 서비스 이름으로 바꿉니다
+      if(v.kind==="link" && /^https?:\/\//i.test(String(v.title||"").trim()))
+        v.title = sceneTitle(g, v.paId, v.defId) || "";
+    });
   });
   return list;
 }
@@ -2612,7 +2616,9 @@ function viewSettings(){
       <div class="filters" style="margin-bottom:8px"><div class="seg" role="group" aria-label="자동 재생 방식">
         ${Object.keys(AUTOPLAY).map(k=>`<button data-act="autoplay" data-v="${k}" aria-pressed="${apMode()===k}">${AUTOPLAY[k]}</button>`).join("")}
       </div></div>
-      <div class="hint">브라우저가 소리 있는 자동 재생을 막는 경우가 있습니다. 눌렀는데 바로 시작되지 않으면 <b>음소거로</b>를 골라 보세요 — 재생 후 플레이어에서 음소거를 풀 수 있습니다.<br>
+      <div class="hint">기기에 저장한 <b>파일 영상</b>에 적용됩니다. 소리 있는 자동 재생이 막히면 자동으로 음소거로 이어서 재생합니다.<br>
+        <b>유튜브·Vimeo 링크</b>는 소리를 켠 채로는 자동 재생이 막혀서 <b>항상 음소거로 시작</b>합니다 — 재생 후 플레이어에서 소리를 켜 주세요.
+        <b>구글 드라이브</b>는 미리보기 플레이어가 자동 재생을 지원하지 않아 가운데 재생 버튼을 한 번 눌러야 합니다.<br>
         유튜브 링크는 공개 범위가 <b>일부 공개(미등록)</b>여야 앱 안에서 재생됩니다. <b>비공개</b>는 유튜브 정책상 임베드가 차단됩니다.</div>
     </div>
 
@@ -3720,7 +3726,10 @@ function ytId(u){ const m=String(u).match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\
 function embedFor(url){
   const u  = String(url||"").trim();
   const ap = apMode();
-  const auto = ap==="off"? 0 : 1, mute = ap==="muted"? 1 : 0;
+  /* 유튜브·Vimeo 같은 끼워 넣는 플레이어는 소리를 켠 채로는 자동 재생이 막힙니다.
+     그래서 링크 영상은 항상 음소거로 시작하고, 소리는 플레이어에서 켜면 됩니다.
+     (내려받은 파일 영상과 mp4 주소는 소리 있는 그대로 재생됩니다) */
+  const auto = ap==="off"? 0 : 1, mute = 1;
   const y = ytId(u);
   if(y) return {kind:"iframe", site:"youtube",
     src:`https://www.youtube.com/embed/${y}?autoplay=${auto}&mute=${mute}&playsinline=1&rel=0`};
@@ -4514,13 +4523,6 @@ function envBanner(){
 /* 화면 위쪽 알림 — 백업 권유 */
 function banners(){
   let h = "";
-  if(readOnly()){
-    h += `<div class="note" style="margin-bottom:12px;border:1px solid var(--border)">
-      <b>보기 모드</b> — 기록을 바꿀 수 없습니다.
-      ${roForced()? "이 기기는 GitHub 저장소의 기록을 받아서 보기만 합니다."
-                  : "설정 &gt; 보기 모드에서 <b>수정 가능</b>으로 바꾸면 다시 기록할 수 있습니다."}
-      </div>`;
-  }
   if(ghOn() && !ghCanPush() && ghState.err){
     h += `<div class="note" style="margin-bottom:12px;border:1px solid var(--crit)">
       GitHub에서 기록을 받지 못했습니다.<br>
