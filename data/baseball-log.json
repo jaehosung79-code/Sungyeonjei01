@@ -455,6 +455,16 @@
      "defId": null,
      "note": "",
      "createdAt": 1788417940845
+    },
+    {
+     "id": "mtl5vq7wk189u",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/1JLtSVjYBEZcPlH7vXTqPuA2hRWJRo4wv/view?usp=drivesdk",
+     "title": "2번째 타석 · 4회 땅볼 아웃",
+     "paId": "mtkwfskvfg6kj",
+     "defId": null,
+     "note": "",
+     "createdAt": 1788417965948
     }
    ],
    "pdec": "",
@@ -469,6 +479,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T06:45:57.469Z",
+ "savedAt": "2026-09-03T06:46:14.510Z",
  "by": "성연제"
 }
