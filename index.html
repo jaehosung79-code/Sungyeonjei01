@@ -404,8 +404,6 @@ video{width:100%;border-radius:var(--r-sm);background:#000;display:block}
 .ratio > *{position:absolute;inset:0;width:100%;height:100%;border:0}
 .hint{font-size:12px;color:var(--text-3);line-height:1.45}
 .note{background:var(--surface-2);border-radius:var(--r-sm);padding:10px 12px;font-size:12.5px;color:var(--text-2);line-height:1.5}
-.btn.filepick{justify-content:flex-start;gap:9px;min-height:52px;background:var(--surface-2);font-weight:600}
-.btn.filepick svg{flex:none;color:var(--accent-ink)}
 .pickbox{
   margin:-4px 0 12px;padding:9px 11px;max-height:200px;overflow:auto;
   background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-sm);
@@ -808,7 +806,7 @@ function envInfo(){
   return {
     font: fontStatus(),
     full: (document.fullscreenElement? "전체 화면(API)" : displayMode()==="fullscreen"? "전체 화면(설치됨)" : "아님")
-        + " · 설정 " + (S.settings.fullscreen===false? "꺼짐":"켜짐"),
+        + " · 설정 " + fsMode(),
     install: isInstalledApp()? "설치된 앱으로 실행 중"
            : (window.__installReady? "설치 가능 (아직 설치 안 함)"
            : "설치 신호 없음 — 이미 설치한 앱이면 정상입니다 (설치된 앱에는 신호가 오지 않습니다). 새로 설치하려면 크롬 메뉴(⋮) → 앱 설치"),
@@ -893,6 +891,23 @@ function installState(){
 const FULL_OK = (typeof document!=="undefined") && !!(document.documentElement.requestFullscreen
   || document.documentElement.webkitRequestFullscreen);
 let fsScreenArmed = false;
+/* 전체 화면 모드 — always: 열 때마다 자동 / once: 지금만 / off: 사용 안 함 */
+const FS_MODES = [["always","항상 켜기"],["once","이번만"],["off","끄기"]];
+function fsMode(){
+  if(S.settings.fullscreen === false) return "off";
+  if(S.settings.fullscreen === "once") return "once";
+  return "always";
+}
+function setFsMode(v){
+  S.settings.fullscreen = (v==="off")? false : (v==="once")? "once" : true;
+  saveNow();
+  if(v==="off"){ if(document.fullscreenElement || document.webkitFullscreenElement) exitFullscreen(); }
+  else if(FULL_OK && !document.fullscreenElement && displayMode()!=="fullscreen") enterFullscreen();
+  setTimeout(render, 180);
+  toast(v==="off"? "전체 화면을 쓰지 않습니다"
+      : v==="once"? "이번 화면만 전체 화면으로 봅니다"
+      : "앱을 열 때마다 전체 화면으로 시작합니다");
+}
 function displayMode(){
   try{
     for(const m of ["fullscreen","standalone","minimal-ui","browser"])
@@ -918,21 +933,9 @@ function exitFullscreen(){
     if(p && p.catch) p.catch(()=>{});
   }catch(e){}
 }
-function toggleFullscreen(){
-  if(displayMode()==="fullscreen" && !document.fullscreenElement){
-    toast("이미 전체 화면으로 실행 중입니다"); return;
-  }
-  if(!FULL_OK){ toast("이 브라우저는 전체 화면을 지원하지 않습니다"); return; }
-  if(document.fullscreenElement || document.webkitFullscreenElement){
-    S.settings.fullscreen = false; exitFullscreen();
-  } else {
-    S.settings.fullscreen = true; enterFullscreen();
-  }
-  saveNow();
-}
 function armFullscreen(){
   if(!FULL_OK || fsScreenArmed) return;
-  if(S.settings.fullscreen === false) return;
+  if(fsMode() !== "always") return;             // "이번만" · "끄기" 는 자동으로 켜지 않습니다
   if(displayMode() === "fullscreen") return;       // 이미 전체 화면으로 열렸습니다
   if(document.fullscreenElement) return;
   fsScreenArmed = true;
@@ -940,7 +943,7 @@ function armFullscreen(){
     document.removeEventListener("pointerdown", once, true);
     document.removeEventListener("keydown", once, true);
     fsScreenArmed = false;
-    if(S.settings.fullscreen !== false && !document.fullscreenElement) enterFullscreen();
+    if(fsMode()==="always" && !document.fullscreenElement) enterFullscreen();
   };
   document.addEventListener("pointerdown", once, true);
   document.addEventListener("keydown", once, true);
@@ -2365,6 +2368,8 @@ function pitchingSection(gs, defs){
 }
 
 /* ------------------------------- 영상 ------------------------------- */
+const ICON_FOLDER_L = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.4 6.7A1.9 1.9 0 0 1 5.3 4.8h3.5l1.9 2.3h8.1a1.9 1.9 0 0 1 1.9 1.9v8.3a1.9 1.9 0 0 1-1.9 1.9H5.3a1.9 1.9 0 0 1-1.9-1.9z"/></svg>';
+const ICON_GALLERY  = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.4" y="5" width="17.2" height="14" rx="2.4"/><circle cx="9" cy="10" r="1.6"/><path d="M4.2 16.6 9 12.4l3.2 2.8 3.1-2.6 4.4 3.8"/></svg>';
 const ICON_FOLDER = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6.8A1.8 1.8 0 0 1 5.3 5h3.4l1.8 2.2h8.2a1.8 1.8 0 0 1 1.8 1.8v8.2A1.8 1.8 0 0 1 18.7 19H5.3a1.8 1.8 0 0 1-1.8-1.8z"/></svg>';
 function videoCard(v, g, lite){
   const sub = [];
@@ -2422,23 +2427,23 @@ function togBtn(act, on, label){
   return `<button class="btn sm" data-act="${act}" aria-pressed="${on}">${on?"✓ ":""}${label}</button>`;
 }
 function screenCard(){
+  const mode = fsMode();
+  const now  = document.fullscreenElement? "전체 화면"
+             : displayMode()==="fullscreen"? "전체 화면 (설치된 앱)"
+             : displayMode()==="standalone"? "앱 모드"
+             : displayMode()==="minimal-ui"? "간단 모드" : "브라우저";
   return `<div class="card"><div class="hd"><div style="flex:1"><h3>전체 화면</h3>
       <div class="cap">주소창과 상태바를 숨기고 화면을 넓게 씁니다.</div></div></div>
-      ${(displayMode()==="fullscreen" && !document.fullscreenElement)
-        ? `<div class="hint" style="color:var(--good);font-weight:650">전체 화면으로 실행 중입니다.</div>
-           <div class="hint" style="margin-top:8px">홈 화면 아이콘으로 열면 항상 이 상태로 시작합니다.</div>`
-        : FULL_OK
-        ? `<div class="btnrow">
-             <button class="btn ${document.fullscreenElement?"":"pri"}" data-act="fullscreen">${
-               document.fullscreenElement? "전체 화면 끄기" : "전체 화면으로 보기"}</button>
-           </div>
-           <div class="hint" style="margin-top:10px">
-             현재 <b>${document.fullscreenElement? "전체 화면" : (displayMode()==="standalone"? "앱 모드" : "브라우저")}</b> ·
-             다음 실행에도 유지 <b>${S.settings.fullscreen===false? "아니오" : "예"}</b><br>
-             켜 두면 앱을 열고 화면을 한 번 터치할 때 자동으로 전체 화면이 됩니다.
-             빠져나올 때는 화면 위에서 아래로 쓸어내리거나 이 버튼을 다시 누르세요.</div>`
-        : `<div class="hint">이 브라우저는 전체 화면 전환을 지원하지 않습니다.
-             <b>홈 화면에 추가</b>해서 실행하면 주소창 없이 열립니다.</div>`}
+      <div class="filters" style="margin-bottom:8px"><div class="seg" role="group" aria-label="전체 화면 모드">
+        ${FS_MODES.map(([v,l])=>`<button data-act="fsmode" data-v="${v}" aria-pressed="${mode===v}">${l}</button>`).join("")}
+      </div></div>
+      <div class="hint">현재 화면: <b>${now}</b>${FULL_OK? "" : " · 이 브라우저는 전체 화면 전환을 지원하지 않습니다"}</div>
+      <div class="hint" style="margin-top:8px">
+        · <b>항상 켜기</b> — 앱을 열고 화면을 한 번 터치하면 자동으로 전체 화면이 됩니다.<br>
+        · <b>이번만</b> — 지금 화면만 전체 화면으로 바꾸고, 다음에 열 때는 그대로 둡니다.<br>
+        · <b>끄기</b> — 전체 화면으로 바꾸지 않습니다.<br>
+        빠져나올 때는 화면 위에서 아래로 쓸어내리거나 <b>끄기</b>를 누르세요.
+        ${isInstalledApp()? "" : "<br><b>홈 화면에 추가</b>해서 열면 처음부터 주소창 없이 시작합니다."}</div>
     </div>`;
 }
 function installCard(){
@@ -3301,10 +3306,17 @@ function videoSheet(gid, vid){
            "작업 선택 — 카메라 / 캠코더" 창을 먼저 띄웁니다.
            별표 없이 구체적인 형식만 적으면 그 창 없이 파일 관리자가 바로 열립니다. -->
       <input id="v_input" type="file" multiple accept="video/mp4,video/quicktime,video/x-m4v,video/webm,video/x-matroska,video/3gpp,video/3gpp2,video/mp2t,video/x-msvideo,video/x-ms-wmv,video/x-flv,video/ogg,.mp4,.m4v,.mov,.webm,.mkv,.avi,.3gp,.3g2,.ts,.mts,.m2ts,.wmv,.flv,.ogv" class="sr" tabindex="-1" aria-hidden="true">
-      <button type="button" class="btn block filepick" data-act="pickVideoFiles">${ICON_FOLDER}<span>내 파일에서 동영상 고르기</span></button>
-      <div class="hint" style="margin:8px 0 12px">기기의 <b>파일 관리자(내 파일)</b>가 열립니다 — 폴더를 열어 동영상을 고르세요.
-        여러 개를 한 번에 고를 수 있고, 동영상이 아닌 파일은 자동으로 걸러집니다.<br>
-        이 기기의 브라우저 안에만 저장됩니다(인터넷 업로드 아님). 저장 공간을 쓰니 <b>하이라이트 클립(수십 MB)</b> 위주를 권합니다.</div>
+      <div class="iorow">
+        <button type="button" class="iobtn" data-act="pickVideoFiles">
+          <span class="ic">${ICON_FOLDER_L}</span><span class="lb">내 파일</span><span class="sb">폴더 · 파일명으로</span></button>
+        <button type="button" class="iobtn" data-act="pickVideoGallery">
+          <span class="ic">${ICON_GALLERY}</span><span class="lb">갤러리</span><span class="sb">썸네일로</span></button>
+      </div>
+      <div class="hint" style="margin:8px 0 12px">
+        · <b>내 파일</b> — 파일 관리자가 열립니다. 폴더를 열어 <b>파일명</b>으로 고를 수 있습니다.<br>
+        · <b>갤러리</b> — 사진·동영상 앱이 열립니다. <b>미리보기 그림</b>으로 고를 수 있습니다.<br>
+        둘 다 여러 개를 한 번에 고를 수 있고, 동영상이 아닌 파일은 자동으로 걸러집니다.
+        이 기기의 브라우저 안에만 저장됩니다(인터넷 업로드 아님).</div>
     </div>
     <div id="v_link" ${(V && V.kind==="link")? "" : "hidden"}>
       <label class="f"><span>영상 주소</span><input id="v_url" inputmode="url" value="${V&&V.kind==="link"?esc(V.url):""}" placeholder="https://youtu.be/... 또는 mp4 주소"></label>
@@ -3902,13 +3914,16 @@ document.addEventListener("click", ev=>{
       $("#v_link").hidden = v!=="link";
       const pk = $("#v_pick"); if(pk){ pk.hidden = true; pk.innerHTML = ""; }
       break; }
-    case "pickVideoFiles": { const fi=$("#v_input"); if(fi) fi.click(); break; }
+    case "pickVideoFiles": {      // 파일 관리자 — 별표 없는 형식 목록이라 카메라·캠코더가 붙지 않습니다
+      const fi=$("#v_input"); if(fi){ fi.accept = VIDEO_ACCEPT; fi.click(); } break; }
+    case "pickVideoGallery": {    // 갤러리(사진 앱) — video/* 로 열면 미리보기 그림으로 고릅니다
+      const fi=$("#v_input"); if(fi){ fi.accept = "video/*"; fi.click(); } break; }
     case "saveVideo": saveVideo(gid, el); break;
     case "playVideo": playVideo(gid, id); break;
     case "openVideo": openVideoTab(gid, id); break;
     case "autoplay": S.settings.autoplay=v; saveNow(); render(); toast("자동 재생: "+AUTOPLAY[v]); break;
     case "theme": setTheme(v); break;
-    case "fullscreen": toggleFullscreen(); setTimeout(render, 150); break;
+    case "fsmode": setFsMode(v); break;
     case "toggleVG": {
       if(openVG.has(id)) openVG.delete(id); else openVG.add(id);
       render(); break; }
