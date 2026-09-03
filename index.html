@@ -504,6 +504,8 @@ body.ro .row[data-act="editPA"] .r, body.ro .row[data-act="editDef"] .r{ visibil
 
 /* ---------------------------- 상수 / 도메인 ---------------------------- */
 const KEY = "bb_note_v1";
+// GitHub 기본 저장소 — 설정에서 바꿀 수 있습니다
+const GH_DEFAULT_REPO = "jaehosung79-code/SungyeonjeiBaseball";
 const THEME_KEY = "bb_note_theme";
 
 // 타석 결과 정의 (ab: 타수, h: 안타, tb: 총루타, bb: 볼넷, hbp: 사구, so: 삼진,
@@ -629,7 +631,7 @@ const blank = ()=>({
   games:[],
   settings:{ level:"elem", inningsBy:{elem:6, mid:7, high:7, univ:9}, autoplay:"sound",
              fullscreen:true, viewOnly:false,
-             gh:{repo:"", branch:"main", path:"data/baseball-log.json", auto:true, wifi:true, autoPull:true} },
+             gh:{repo:GH_DEFAULT_REPO, branch:"main", path:"data/baseball-log.json", auto:true, wifi:true, autoPull:true, off:false} },
   backup:{ at:0, sig:"" },
   ui:{ tab:"home", year:"all", gtype:"all", metric:"avg" }
 });
@@ -2644,6 +2646,10 @@ function viewSettings(){
         · 타석을 기록할 때 야구장 그림을 누르면 타구 위치가 저장되고 스프레이 차트가 만들어집니다.
       </div></div>
 
+    <div class="card"><div class="hd"><div style="flex:1"><h3>설정 잠금</h3>
+      <div class="cap">설정을 닫고 다시 잠급니다. 앱을 다시 열어도 잠깁니다.</div></div></div>
+      <div class="btnrow"><button class="btn" data-act="lockSettings">설정 잠그기</button></div></div>
+
     <div class="card"><div class="hd"><div style="flex:1"><h3>데이터 관리</h3></div></div>
       <div class="btnrow" style="align-items:center">
         ${delBtn("wipe", "", "전체 기록 삭제")}
@@ -2668,7 +2674,10 @@ let ghBusy  = false;
 
 function ghCfg(){
   const c = (S.settings && S.settings.gh) || {};
-  return {repo:(c.repo||"").trim(), branch:(c.branch||"main").trim(), path:(c.path||"data/baseball-log.json").trim(),
+  const off = c.off === true;                       // [연결 해제]로 껐을 때
+  const repo = (c.repo || "").trim();
+  return {off:off, repo: off? "" : (repo || GH_DEFAULT_REPO),
+          branch:(c.branch||"main").trim(), path:(c.path||"data/baseball-log.json").trim(),
           auto:c.auto!==false, wifi:c.wifi!==false, autoPull:c.autoPull!==false};
 }
 function ghOn(){ return !!ghCfg().repo; }
@@ -2912,7 +2921,8 @@ async function ghPull(manual){
       if(S.ui.tab==="settings") render();
       return false;
     }
-    const dirty = ghDirty() && !!ghState.hash;   // 이 기기에서 고친 내용이 있는지
+    // 이 기기에서 고친 내용이 있거나, 아직 한 번도 맞춰 본 적이 없는데 기록이 있으면 반드시 물어봅니다
+    const dirty = (ghDirty() && !!ghState.hash) || (!ghState.hash && S.games.length > 0);
     let mode = "replace";
     if(manual || dirty){
       const k = await ask("GitHub에서 받기",
@@ -2959,7 +2969,8 @@ function ghSheet(){
     <div class="hint" style="padding:2px 0 12px">기록(JSON)만 저장소의 파일 하나에 저장합니다.
       <b>동영상 파일은 올라가지 않습니다</b> — 링크로 등록한 영상 주소만 함께 저장됩니다.</div>
     <label class="f"><span>저장소 <span style="color:var(--text-3);font-weight:400">— 아이디/저장소이름</span></span>
-      <input id="gh_repo" value="${esc(c.repo)}" placeholder="jaehosung79-code/SungyeonjeiBaseball" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+      <input id="gh_repo" value="${esc(c.repo || GH_DEFAULT_REPO)}" placeholder="${esc(GH_DEFAULT_REPO)}" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+    <div class="hint" style="margin:-6px 0 12px">기본값은 <b>${esc(GH_DEFAULT_REPO)}</b> 입니다 — 다른 저장소를 쓰려면 바꿔 주세요.</div>
     <div class="f2">
       <label class="f"><span>브랜치</span><input id="gh_branch" value="${esc(c.branch)}" placeholder="main" autocapitalize="off" spellcheck="false"></label>
       <label class="f"><span>파일 경로</span><input id="gh_path" value="${esc(c.path)}" placeholder="data/baseball-log.json" autocapitalize="off" spellcheck="false"></label>
@@ -2985,7 +2996,7 @@ async function ghSaveCfg(){
   const branch = $("#gh_branch").value.trim() || "main";
   const path   = ($("#gh_path").value.trim() || "data/baseball-log.json").replace(/^\/+/,"");
   const token  = $("#gh_token").value.trim();
-  S.settings.gh = Object.assign(ghCfg(), {repo:repo, branch:branch, path:path});
+  S.settings.gh = Object.assign(ghCfg(), {repo:repo, branch:branch, path:path, off:false});
   ghToken = token;
   try{ token? localStorage.setItem(GH_TOKEN_KEY, token) : localStorage.removeItem(GH_TOKEN_KEY); }catch(e){}
   ghState.sha = ""; ghState.hash = ""; ghState.err = ""; ghSaveState();
@@ -3006,7 +3017,7 @@ async function ghSaveCfg(){
   }
 }
 function ghForget(){
-  S.settings.gh = {repo:"", branch:"main", path:"data/baseball-log.json", auto:true, wifi:true, autoPull:true};
+  S.settings.gh = {repo:"", branch:"main", path:"data/baseball-log.json", auto:true, wifi:true, autoPull:true, off:true};
   ghToken = ""; ghState = {sha:"", push:0, pull:0, hash:"", err:""};
   try{ localStorage.removeItem(GH_TOKEN_KEY); localStorage.removeItem(GH_STATE_KEY); }catch(e){}
   saveNow(); render(); toast("GitHub 연결을 해제했습니다 (저장소의 파일은 그대로입니다)");
@@ -3060,6 +3071,45 @@ function pfAddYearSheet(){
       <input id="pf_y" type="number" inputmode="numeric" value="${esc(thisYear())}" min="1900" max="2199"></label>
     <div class="sf"><button class="btn" data-act="close">취소</button>
       <button class="btn pri" data-act="pfAddYearSave">추가</button></div>`);
+}
+
+/* ============================== 설정 잠금 ==============================
+   설정 화면에 들어갈 때 비밀번호를 묻습니다. 앱을 다시 열면 다시 잠깁니다.
+   (한 파일로 된 앱이라 완벽한 잠금은 아니고, 실수로 바꾸는 것을 막는 용도입니다) */
+const SET_PW = "1231";
+let setUnlocked = false;
+function pwSheet(){
+  openSheet(`<div class="sh"><h3>설정 잠금</h3><div class="spacer" style="flex:1"></div>
+      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+    <div class="hint" style="padding:2px 0 12px">설정을 열려면 비밀번호를 입력해 주세요.</div>
+    <label class="f"><span>비밀번호</span>
+      <input id="pw_in" type="password" inputmode="numeric" autocomplete="off" placeholder="••••"></label>
+    <div class="sf"><button class="btn" data-act="close">취소</button>
+      <button class="btn pri" data-act="pwOk">확인</button></div>`,
+  sheet=>{
+    const el = sheet.querySelector("#pw_in");
+    if(el){
+      try{ el.focus(); }catch(e){}
+      el.addEventListener("keydown", e=>{ if(e.key === "Enter"){ e.preventDefault(); pwCheck(); } });
+    }
+  });
+}
+function pwCheck(){
+  const el = $("#pw_in"); if(!el) return;
+  if(el.value.trim() !== SET_PW){
+    el.value = ""; try{ el.focus(); }catch(e){}
+    toast("비밀번호가 맞지 않습니다");
+    return;
+  }
+  setUnlocked = true;
+  closeSheet();
+  S.ui.tab = "settings"; S.ui.gameId = null;
+  save(); render();
+}
+function lockSettings(){
+  setUnlocked = false;
+  S.ui.tab = "home"; S.ui.gameId = null;
+  save(); render(); toast("설정을 잠갔습니다");
 }
 
 /* ============================== 보기 모드 ==============================
@@ -3944,7 +3994,10 @@ function readGameSheet(){
 }
 document.addEventListener("click", ev=>{
   const nav = ev.target.closest("nav.tabs button");
-  if(nav){ S.ui.tab = nav.dataset.nav; S.ui.gameId = null; save(); render(); return; }
+  if(nav){
+    if(nav.dataset.nav === "settings" && !setUnlocked){ pwSheet(); return; }
+    S.ui.tab = nav.dataset.nav; S.ui.gameId = null; save(); render(); return;
+  }
 
   const tg = ev.target.closest("[data-toggle]");
   if(tg){ const box=document.getElementById(tg.dataset.toggle);
@@ -3963,7 +4016,11 @@ document.addEventListener("click", ev=>{
 
   switch(a){
     case "close": closeSheet(); break;
-    case "nav": S.ui.tab=v; S.ui.gameId=null; save(); render(); break;
+    case "nav":
+      if(v === "settings" && !setUnlocked){ pwSheet(); break; }
+      S.ui.tab=v; S.ui.gameId=null; save(); render(); break;
+    case "pwOk": pwCheck(); break;
+    case "lockSettings": lockSettings(); break;
     case "year": S.ui.year=v; save(); render(); break;
     case "gtype": S.ui.gtype=v; save(); render(); break;
     case "pickGType": {
