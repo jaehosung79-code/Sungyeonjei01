@@ -2313,13 +2313,13 @@ function viewStats(){
       <div class="cap">타석 기록에 남긴 도루 시도 ${b.SB+b.CS}회 · 성공률 = 성공 / (성공+실패)</div></div></div>
       <div class="tiles">${tile("시도", b.SB+b.CS)+tile("성공", b.SB)+tile("실패", b.CS)+tile("성공률", pct1(b.SBP))
         +tile("경기당 시도", fx2(gs.length? (b.SB+b.CS)/gs.length : null))+tile("추가 진루", b.SB-b.CS)}</div>
-      <div class="hint" style="margin-top:8px">일반적으로 성공률이 <b>70%</b>를 넘어야 팀 득점에 도움이 됩니다 — 그 아래면 시도 자체가 손해일 수 있습니다.</div></div>` : "")
-  + chartCard("타구 방향 (스프레이 차트)", `타구 위치가 기록된 인플레이 타구 ${bip.length}개 · 그림은 ${esc(LEVELS[curLevel()].ko)} 규격 (${esc(LEVELS[curLevel()].note)}) · 모든 규격이 같은 배율이라 거리가 그대로 비교됩니다`,
+      <div class="hint" style="margin-top:8px">일반적으로 성공률이 <b>70%</b>를 넘어야 팀 득점에 도움.</div></div>` : "")
+  + chartCard("타구 방향 (스프레이 차트)", `타구 위치가 기록된 인플레이 타구 ${bip.length}개 · 그림은 ${esc(LEVELS[curLevel()].ko)} 규격 (${esc(LEVELS[curLevel()].note)})`,
       sprayChart(pas, curLevel(), {ruler:true}),
       bip.length? tableHTML(["날짜","이닝","결과","위치","추정 거리"], bip.map(p=>{const z=zoneOf(p.zone, gameLevel(p._g));
         return [fmtDate(p._g.date), (p.inning||"-")+"회", esc(RMAP[p.result].ko), esc(z.label), Math.round(z.m)+"m"];})) : "")
   + `<div class="grid g2">`
-  + chartCard("방향별 타구 수", "당겨치는 성향인지 밀어치는 성향인지 확인합니다",
+  + chartCard("방향별 타구 수", "당겨치는 성향인지 밀어치는 성향인지 확인",
       colChart(dirs, {aria:"방향별 타구 수", labelTop:true, fmt:v=>String(Math.round(v))}),
       tableHTML(["방향","타구","안타"], dirs.map(d=>[d.label, d.value, d._h])))
   + chartCard("타구 깊이", "내야 / 외야로 나눈 타구 분포",
@@ -2336,7 +2336,7 @@ function viewStats(){
       colChart(months, {aria:"월별 타율", fmt:avg3}),
       tableHTML(["월","타수","안타","타점","타율","OPS"], months.map(d=>[d.label, d._t.AB, d._t.H, d._t.RBI, avg3(d._t.AVG), avg3(d._t.OPS)]))) : "")
   + (pTeams.length? `<div class="card"><div class="hd"><div style="flex:1"><h3>상대 투수별 성적</h3>
-      <div class="cap">시즌 · 상대팀(학교)별로 묶었습니다 — 같은 해 같은 학교의 같은 배번·이름은 한 명으로 합산 · ${pYears}개 시즌 ${pTeams.length}개 팀 · 투수 ${pitcherN}명 · 투수 배번이나 이름을 입력한 타석만 집계됩니다</div></div></div>
+      <div class="cap">시즌 · 상대팀(학교)별로 집계</div></div></div>
       ${vsPitcherTable(pTeams)}</div>` : "")
   + pitchingSection(gs, defs)
   + (defDist.length? chartCard("수비 결과 분포", `결과를 입력한 수비 기록 ${defPlays.length}건`,
@@ -2462,12 +2462,8 @@ const ICON_FOLDER_L = '<svg viewBox="0 0 24 24" width="24" height="24" fill="non
 const ICON_GALLERY  = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.4" y="5" width="17.2" height="14" rx="2.4"/><circle cx="9" cy="10" r="1.6"/><path d="M4.2 16.6 9 12.4l3.2 2.8 3.1-2.6 4.4 3.8"/></svg>';
 const ICON_FOLDER = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6.8A1.8 1.8 0 0 1 5.3 5h3.4l1.8 2.2h8.2a1.8 1.8 0 0 1 1.8 1.8v8.2A1.8 1.8 0 0 1 18.7 19H5.3a1.8 1.8 0 0 1-1.8-1.8z"/></svg>';
 function videoCard(v, g, lite){
-  const sub = [];
-  if(v.kind==="file") sub.push(lite? bytes(v.size) : bytes(v.size)+" · 이 기기에 저장");
-  const lt = videoLinkText(v, g);
-  if(lt) sub.push(lt);
-  if(v.kind==="file" && v.url) sub.push("예비 주소 있음");
-  if(v.kind==="link") sub.push("누르면 새 창에서 열립니다");
+  /* 제목 아래 회색 안내줄은 제목과 겹쳐서 쓰지 않습니다 — 직접 적은 메모만 보여 줍니다 */
+  const note = String(v.note||"").trim();
   // 링크 영상은 주소를 보여 주지 않습니다 — 제목(또는 연결한 장면 이름)만 나옵니다
   const head = v.kind==="file"? (v.title || v.name || "영상") : (v.title || linkName(v.url));
   return `<div class="vidcard" data-vid="${v.id}">
@@ -2479,7 +2475,7 @@ function videoCard(v, g, lite){
       ${lite? "" : `<button class="iconbtn sm" data-act="editVideo" data-gid="${g.id}" data-id="${v.id}" title="영상 정보 수정" aria-label="영상 정보 수정">${ICON_EDIT}</button>
       ${delBtn("delVideo", `data-gid="${g.id}" data-id="${v.id}"`, "영상 삭제")}`}
     </div>
-    <div class="hint">${esc(sub.join(" · "))}${v.note?" — "+esc(v.note):""}</div>
+    ${note? `<div class="hint">${esc(note)}</div>` : ""}
     <div class="player" style="margin-top:8px"></div>
   </div>`;
 }
@@ -3635,20 +3631,6 @@ function sceneTitle(g, paId, defId){
       + (num(d.inning,0)? " " + num(d.inning,0) + "회" : "")
       + (PMAP[d.pos]? " · " + PMAP[d.pos] : "")
       + (d.result? " " + dko(d.result) : "");
-  }
-  return "";
-}
-// 영상에 연결된 장면 설명
-function videoLinkText(v, g){
-  if(v.defId){
-    const d = g.def.find(x=>x.id===v.defId);
-    if(d) return "수비 " + (num(d.inning,0)?num(d.inning,0)+"회 ":"") + (PMAP[d.pos]||d.pos||"") + (d.result?" "+dko(d.result):"");
-    return "수비 연결";
-  }
-  if(v.paId){
-    const p = g.pas.find(x=>x.id===v.paId);
-    if(p) return "타석 " + (p.inning?p.inning+"회 ":"") + (RMAP[p.result]?RMAP[p.result].ko:"");
-    return "타석 연결";
   }
   return "";
 }
