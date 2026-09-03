@@ -381,7 +381,19 @@
      "dp": 0
     }
    ],
-   "videos": [],
+   "videos": [
+    {
+     "id": "mtijflmnhpnwn",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/12cmCJrCRCHMqmuunvoqw-8BA9dmO-8hf/view?usp=drivesdk",
+     "title": "수비01-런다운",
+     "folder": "",
+     "paId": null,
+     "defId": "mtgnhulbk3ghn",
+     "note": "",
+     "createdAt": 1788259329677
+    }
+   ],
    "date": "2026-08-30",
    "opponent": "수유초",
    "venue": "구의구장",
@@ -489,6 +501,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T06:46:44.337Z",
+ "savedAt": "2026-09-03T07:02:55.762Z",
  "by": "성연제"
 }
