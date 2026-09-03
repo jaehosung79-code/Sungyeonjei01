@@ -698,7 +698,7 @@
      "id": "mtl75xiu4ggie",
      "inning": 1,
      "pitcherNo": "07",
-     "pitcher": "",
+     "pitcher": "강무경",
      "result": "1B",
      "zone": {
       "x": 129.8,
@@ -726,6 +726,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:22:30.469Z",
+ "savedAt": "2026-09-03T07:22:52.489Z",
  "by": "성연제"
 }
