@@ -301,7 +301,19 @@
      "dp": 0
     }
    ],
-   "videos": [],
+   "videos": [
+    {
+     "id": "mtijis1c4m64c",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/19fnz8kkgn6oYUP52P-PwjKSj17TX9Rwu/view?usp=drivesdk",
+     "title": "타격01",
+     "folder": "",
+     "paId": "mtgm117nf7a0x",
+     "defId": null,
+     "note": "",
+     "createdAt": 1788259477956
+    }
+   ],
    "date": "2026-08-29",
    "opponent": "방배초",
    "venue": "구의구장",
@@ -545,6 +557,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:04:22.085Z",
+ "savedAt": "2026-09-03T07:06:45.427Z",
  "by": "성연제"
 }
