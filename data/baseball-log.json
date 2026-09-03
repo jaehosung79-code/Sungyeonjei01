@@ -727,6 +727,19 @@
      "sb": 0,
      "cs": 0,
      "note": ""
+    },
+    {
+     "id": "mtl77llwe7hb3",
+     "inning": 6,
+     "pitcherNo": "14",
+     "pitcher": "",
+     "result": "2B",
+     "zone": null,
+     "rbi": 0,
+     "runs": 0,
+     "sb": 0,
+     "cs": 0,
+     "note": ""
     }
    ],
    "def": [],
@@ -743,6 +756,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:23:09.588Z",
+ "savedAt": "2026-09-03T07:23:30.481Z",
  "by": "성연제"
 }
