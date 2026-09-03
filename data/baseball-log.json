@@ -472,35 +472,8 @@
    "myScore": "",
    "oppScore": "",
    "note": ""
-  },
-  {
-   "id": "mtl2xhnbfp7y0",
-   "pas": [],
-   "def": [],
-   "videos": [
-    {
-     "id": "mtl328n3m0dat",
-     "kind": "link",
-     "url": "https://drive.google.com/file/d/1i79u2T-boqbqfVBB-v9MPjqEXAaRWoVr/view?usp=drivesdk",
-     "title": "https://drive.google.com/file/d/1i79u2T-boqbqfVBB-v9MPjqEXAa",
-     "paId": null,
-     "defId": null,
-     "note": "",
-     "createdAt": 1788413230911
-    }
-   ],
-   "pdec": "",
-   "date": "2026-09-03",
-   "opponent": "",
-   "venue": "",
-   "homeAway": "홈",
-   "level": "",
-   "type": "official",
-   "myScore": "",
-   "oppScore": "",
-   "note": ""
   }
  ],
- "savedAt": "2026-09-03T05:27:20.082Z",
+ "savedAt": "2026-09-03T05:48:05.883Z",
  "by": "성연제"
 }
