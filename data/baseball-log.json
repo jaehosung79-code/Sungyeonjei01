@@ -693,7 +693,25 @@
   },
   {
    "id": "mtl71967i58lm",
-   "pas": [],
+   "pas": [
+    {
+     "id": "mtl75xiu4ggie",
+     "inning": 1,
+     "pitcherNo": "",
+     "pitcher": "",
+     "result": "1B",
+     "zone": {
+      "x": 129.8,
+      "y": 231,
+      "z2": 1
+     },
+     "rbi": 0,
+     "runs": 0,
+     "sb": 1,
+     "cs": 0,
+     "note": ""
+    }
+   ],
    "def": [],
    "videos": [],
    "pdec": "",
@@ -708,6 +726,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:18:30.654Z",
+ "savedAt": "2026-09-03T07:22:10.506Z",
  "by": "성연제"
 }
