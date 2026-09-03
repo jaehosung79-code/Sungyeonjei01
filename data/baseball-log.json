@@ -769,6 +769,17 @@
      "defId": null,
      "note": "",
      "createdAt": 1788420282414
+    },
+    {
+     "id": "mtl79od0sdihb",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/1BmcnWVGY9b7ikjUR1uvzUUTQP0b4eXds/view?usp=drivesdk",
+     "title": "3번째 타석 · 6회 2루타",
+     "folder": "",
+     "paId": "mtl77llwe7hb3",
+     "defId": null,
+     "note": "",
+     "createdAt": 1788420296340
     }
    ],
    "pdec": "",
@@ -781,8 +792,24 @@
    "myScore": "5",
    "oppScore": "1",
    "note": ""
+  },
+  {
+   "id": "mtl7j9ce5ymlm",
+   "pas": [],
+   "def": [],
+   "videos": [],
+   "pdec": "",
+   "date": "2026-03-19",
+   "opponent": "백운초",
+   "venue": "용산",
+   "homeAway": "홈",
+   "level": "",
+   "type": "official",
+   "myScore": "4",
+   "oppScore": "7",
+   "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:25:56.502Z",
+ "savedAt": "2026-09-03T07:32:30.655Z",
  "by": "성연제"
 }
