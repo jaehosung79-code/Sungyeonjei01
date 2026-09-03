@@ -614,7 +614,8 @@ const blank = ()=>({
   profile:{ name:"", team:"", number:"", position:"", bats:"우타", throws:"우투" },
   games:[],
   settings:{ level:"elem", inningsBy:{elem:6, mid:7, high:7, univ:9}, autoplay:"sound",
-             pickEach:false, stampNames:false, fullscreen:true },
+             pickEach:false, stampNames:false, fullscreen:true,
+             gh:{repo:"", branch:"main", path:"data/baseball-log.json", auto:true, wifi:true, autoPull:true} },
   backup:{ at:0, sig:"" },
   ui:{ tab:"home", year:"all", gtype:"all", metric:"avg" }
 });
@@ -679,12 +680,12 @@ function save(){
   saveTimer = setTimeout(()=>{
     try{ localStorage.setItem(KEY, JSON.stringify(S)); saveFailed=false; }
     catch(e){ saveFailed=true; toast("⚠ 저장되지 않았습니다 — 저장 공간을 확인하세요"); console.error(e); }
-    folderSave();
+    folderSave(); ghSchedule();
   }, 120);
 }
 function saveNow(){
   clearTimeout(saveTimer);
-  try{ localStorage.setItem(KEY, JSON.stringify(S)); saveFailed=false; folderSave(); return true; }
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); saveFailed=false; folderSave(); ghSchedule(); return true; }
   catch(e){
     console.error(e);
     saveFailed = true;
@@ -1203,9 +1204,9 @@ async function relinkAll(){
 function relinkVideos(){
   if(!missCache.length){ toast("다시 연결할 영상이 없습니다"); return; }
   const inp = document.createElement("input");
-  // accept 를 지정하면 안드로이드가 갤러리(사진 앱)를 열어 파일명이 보이지 않습니다.
-  // 지정하지 않으면 파일 관리자(내 파일)의 파일 목록이 그대로 열립니다.
-  inp.type = "file"; inp.multiple = true;
+  // 별표(video/*) 없이 구체적인 형식만 지정해야 카메라·캠코더 선택창 없이
+  // 파일 관리자(내 파일)가 바로 열립니다.
+  inp.type = "file"; inp.multiple = true; inp.accept = VIDEO_ACCEPT;
   inp.addEventListener("change", async ()=>{
     const fs = Array.from(inp.files||[]);
     if(!fs.length) return;
@@ -2550,6 +2551,8 @@ function viewSettings(){
       <div class="hint" style="margin-top:10px">${exportHint()}</div>
     </div>
 
+    ${ghCard()}
+
     <div class="card"><div class="hd"><div style="flex:1"><h3>저장 상태</h3></div></div>
       <div class="tiles">${tile("경기",S.games.length)+tile("타석",S.games.reduce((a,g)=>a+g.pas.length,0))
         +tile("영상",S.games.reduce((a,g)=>a+g.videos.length,0))+tile("기록 크기",raw!=null?bytes(raw):"-")
@@ -2572,6 +2575,332 @@ function viewSettings(){
         <span class="hint">전체 기록 삭제</span>
       </div>
       <div class="hint" style="margin-top:8px">삭제 전에 <b>JSON 내보내기</b>로 백업해 두세요. 삭제하면 되돌릴 수 없습니다.</div></div>`;
+}
+
+/* ========================= GitHub 기록 공유 =========================
+   기록(JSON)만 GitHub 저장소의 파일 하나에 저장합니다. 동영상 파일은 올리지 않습니다
+   (용량 제한 때문에 — 링크로 등록한 영상 주소는 함께 저장됩니다).
+   · 인터넷이 없어도 앱은 그대로 동작하고, 연결되면 바뀐 기록만 올립니다.
+   · 토큰을 넣은 기기 = 올리기(쓰기), 토큰이 없으면 = 받기 전용(공개 저장소).
+   · 토큰은 이 기기에만 저장되며 백업 파일에는 들어가지 않습니다.
+   ------------------------------------------------------------------ */
+const GH_TOKEN_KEY = "bb_gh_token";
+const GH_STATE_KEY = "bb_gh_state";
+let ghToken = "";
+let ghState = {sha:"", push:0, pull:0, hash:"", err:""};
+let ghTimer = null;
+let ghBusy  = false;
+
+function ghCfg(){
+  const c = (S.settings && S.settings.gh) || {};
+  return {repo:(c.repo||"").trim(), branch:(c.branch||"main").trim(), path:(c.path||"data/baseball-log.json").trim(),
+          auto:c.auto!==false, wifi:c.wifi!==false, autoPull:c.autoPull!==false};
+}
+function ghOn(){ return !!ghCfg().repo; }
+function ghCanPush(){ return ghOn() && !!ghToken; }
+function ghLoad(){
+  try{ ghToken = localStorage.getItem(GH_TOKEN_KEY) || ""; }catch(e){}
+  try{ ghState = Object.assign(ghState, JSON.parse(localStorage.getItem(GH_STATE_KEY) || "{}")); }catch(e){}
+}
+function ghSaveState(){
+  try{ localStorage.setItem(GH_STATE_KEY, JSON.stringify({sha:ghState.sha, push:ghState.push, pull:ghState.pull, hash:ghState.hash})); }catch(e){}
+}
+/* 키 순서와 상관없이 같은 내용이면 같은 값이 나오도록 */
+function stableStr(v){
+  if(v===null || typeof v!=="object") return JSON.stringify(v);
+  if(Array.isArray(v)) return "[" + v.map(stableStr).join(",") + "]";
+  return "{" + Object.keys(v).sort().map(k=> JSON.stringify(k)+":"+stableStr(v[k])).join(",") + "}";
+}
+function hashStr(t){ let h=5381; for(let i=0;i<t.length;i++){ h=((h<<5)+h) ^ t.charCodeAt(i); h|=0; } return (h>>>0).toString(36); }
+/* 올릴 내용 — 동영상 "파일"은 빼고 링크 영상만 남깁니다 */
+function ghPayload(){
+  const games = JSON.parse(JSON.stringify(S.games||[]));
+  games.forEach(g=>{ g.videos = (g.videos||[]).filter(v=> v.kind==="link"); });
+  return {app:"bb-note", version:1, profile:S.profile, games:games};
+}
+function ghHash(o){ return hashStr(stableStr(o || ghPayload())); }
+function ghDirty(){ return ghHash() !== ghState.hash; }
+
+function b64enc(str){
+  const b = new TextEncoder().encode(str);
+  let out = "", CH = 0x8000;
+  for(let i=0;i<b.length;i+=CH) out += String.fromCharCode.apply(null, b.subarray(i, i+CH));
+  return btoa(out);
+}
+function b64dec(t){
+  const raw = atob(String(t||"").replace(/\s+/g,""));
+  const u = new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++) u[i] = raw.charCodeAt(i);
+  return new TextDecoder().decode(u);
+}
+function ghApiUrl(){ const c=ghCfg(); return "https://api.github.com/repos/"+c.repo+"/contents/"+c.path.split("/").map(encodeURIComponent).join("/"); }
+function ghRawUrl(){ const c=ghCfg(); return "https://raw.githubusercontent.com/"+c.repo+"/"+encodeURIComponent(c.branch)+"/"+c.path.split("/").map(encodeURIComponent).join("/"); }
+function ghHeaders(){
+  const h = {"Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28"};
+  if(ghToken) h["Authorization"] = "Bearer " + ghToken;
+  return h;
+}
+async function ghErrText(r){
+  let m=""; try{ const j = await r.json(); m = j.message||""; }catch(e){}
+  if(r.status===401) return "토큰이 올바르지 않습니다 (401)";
+  if(r.status===403) return "권한이 없거나 잠시 제한되었습니다 (403)" + (m? " · "+m : "");
+  if(r.status===404) return "저장소·브랜치·경로를 찾을 수 없습니다 (404)";
+  return "GitHub 오류 " + r.status + (m? " · "+m : "");
+}
+/* 저장소에서 기록 읽기 — 토큰이 있으면 API로(비공개 가능), 없으면 공개 주소로 */
+async function ghGet(){
+  const c = ghCfg();
+  if(ghToken){
+    const r = await fetch(ghApiUrl()+"?ref="+encodeURIComponent(c.branch)+"&t="+Date.now(), {headers:ghHeaders(), cache:"no-store"});
+    if(r.status===404) return {missing:true};
+    if(!r.ok) throw new Error(await ghErrText(r));
+    const j = await r.json();
+    let data; try{ data = JSON.parse(b64dec(j.content)); }catch(e){ throw new Error("저장소의 기록 파일을 읽을 수 없습니다"); }
+    return {sha:j.sha, data:data};
+  }
+  const r = await fetch(ghRawUrl()+"?t="+Date.now(), {cache:"no-store"});
+  if(r.status===404) return {missing:true};
+  if(!r.ok) throw new Error("기록을 받지 못했습니다 (" + r.status + ") — 저장소가 비공개면 토큰이 필요합니다");
+  let data; try{ data = await r.json(); }catch(e){ throw new Error("저장소의 기록 파일을 읽을 수 없습니다"); }
+  return {sha:"", data:data};
+}
+async function ghPut(text, sha, msg){
+  const c = ghCfg();
+  const body = {message:msg, content:b64enc(text), branch:c.branch};
+  if(sha) body.sha = sha;
+  const r = await fetch(ghApiUrl(), {method:"PUT",
+    headers:Object.assign({"Content-Type":"application/json"}, ghHeaders()), body:JSON.stringify(body)});
+  if(r.status===409 || r.status===422) return {conflict:true};
+  if(!r.ok) throw new Error(await ghErrText(r));
+  const j = await r.json();
+  return {sha:(j.content && j.content.sha) || ""};
+}
+/* 와이파이에서만 올리기 (알 수 없는 기기는 막지 않습니다) */
+function ghNetOk(){
+  if(!ghCfg().wifi) return true;
+  try{
+    const n = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if(!n || !n.type) return true;
+    return n.type==="wifi" || n.type==="ethernet" || n.type==="unknown";
+  }catch(e){ return true; }
+}
+function ghNetLabel(){
+  if(!navigator.onLine) return "오프라인";
+  try{
+    const n = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if(n && n.type==="wifi") return "와이파이";
+    if(n && n.type==="cellular") return "모바일 데이터";
+  }catch(e){}
+  return "온라인";
+}
+/* 받은 기록을 앱에 적용 — 이 기기의 동영상 "파일"은 그대로 지킵니다 */
+function ghApply(o, mode){
+  if(!o || !Array.isArray(o.games)) return false;
+  const inc = JSON.parse(JSON.stringify(o.games));
+  normalizeGames(inc);
+  const mine = new Map();
+  (S.games||[]).forEach(g=> mine.set(g.id, (g.videos||[]).filter(v=> v.kind==="file")));
+  if(mode==="merge"){
+    const have = new Set(S.games.map(g=>g.id));
+    inc.forEach(g=>{
+      if(!have.has(g.id)){ S.games.push(g); return; }
+      const cur = S.games.find(x=>x.id===g.id);
+      g.pas.forEach(x=>{ if(!cur.pas.some(y=>y.id===x.id)) cur.pas.push(x); });
+      g.def.forEach(x=>{ if(!cur.def.some(y=>y.id===x.id)) cur.def.push(x); });
+      g.videos.forEach(x=>{ if(!cur.videos.some(y=>y.id===x.id)) cur.videos.push(x); });
+    });
+  } else {
+    inc.forEach(g=>{ const f = mine.get(g.id); if(f && f.length) g.videos = (g.videos||[]).concat(f); });
+    S.games = inc;
+    if(o.profile) S.profile = Object.assign(blank().profile, o.profile);
+    S.ui.gameId = null;
+  }
+  S.games.forEach(g=>{ g.pas.sort((x,y)=>num(x.inning,0)-num(y.inning,0)); g.def.sort((x,y)=>num(x.inning,0)-num(y.inning,0)); });
+  saveNow();
+  return true;
+}
+/* 올리기 — 바뀐 게 없으면 아무 것도 하지 않습니다 */
+async function ghPush(manual){
+  if(!ghCanPush()){ if(manual) toast("올리려면 토큰이 필요합니다"); return false; }
+  if(ghBusy) return false;
+  if(!navigator.onLine){ if(manual) toast("인터넷에 연결되어 있지 않습니다 — 연결되면 자동으로 올립니다"); return false; }
+  if(!manual && !ghNetOk()) return false;
+  if(!ghDirty()){ if(manual) toast("바뀐 기록이 없습니다"); return false; }
+  ghBusy = true; ghState.err = "";
+  try{
+    let got = await ghGet();
+    let sha = got.missing? "" : got.sha;
+    const who = (S.profile && S.profile.name)? S.profile.name : "기록";
+    const mk = ()=> JSON.stringify(Object.assign(ghPayload(), {savedAt:new Date().toISOString(), by:who}), null, 1);
+    const msg = who + " · " + S.games.length + "경기 · " + new Date().toLocaleString("ko-KR");
+    let res = await ghPut(mk(), sha, msg);
+    if(res.conflict){
+      // 그 사이 다른 기기가 먼저 올린 경우 — 받아서 합친 뒤 다시 시도
+      const g2 = await ghGet();
+      if(!g2.missing){ ghApply(g2.data, "merge"); render(); }
+      res = await ghPut(mk(), g2.missing? "" : g2.sha, msg);
+      if(res.conflict) throw new Error("다른 기기에서 동시에 저장했습니다 — 잠시 후 다시 시도합니다");
+    }
+    ghState.sha = res.sha; ghState.hash = ghHash(); ghState.push = Date.now(); ghSaveState();
+    if(manual) toast("GitHub에 저장했습니다");
+    if(S.ui.tab==="settings") render();
+    return true;
+  }catch(e){
+    ghState.err = e.message || String(e);
+    if(manual) toast("저장 실패: " + ghState.err);
+    if(S.ui.tab==="settings") render();
+    return false;
+  }finally{ ghBusy = false; }
+}
+/* 받기 — 자동일 때는 이 기기에서 고친 게 없을 때만 조용히 바꿉니다 */
+async function ghPull(manual){
+  if(!ghOn()){ if(manual) toast("먼저 저장소를 연결해 주세요"); return false; }
+  if(ghBusy) return false;
+  if(!navigator.onLine){ if(manual) toast("인터넷에 연결되어 있지 않습니다"); return false; }
+  ghBusy = true; ghState.err = "";
+  try{
+    const got = await ghGet();
+    if(got.missing){ if(manual) toast("저장소에 기록 파일이 아직 없습니다"); return false; }
+    const o = got.data;
+    if(!o || !Array.isArray(o.games)) throw new Error("야구 기록 파일이 아닙니다");
+    const same = ghHash({app:"bb-note", version:1, profile:o.profile||{}, games:(o.games||[]).map(g=>Object.assign({}, g, {videos:(g.videos||[]).filter(v=>v.kind==="link")}))}) === ghHash();
+    if(same){
+      ghState.sha = got.sha; ghState.hash = ghHash(); ghState.pull = Date.now(); ghSaveState();
+      if(manual) toast("이미 최신입니다");
+      if(S.ui.tab==="settings") render();
+      return false;
+    }
+    const dirty = ghDirty() && !!ghState.hash;   // 이 기기에서 고친 내용이 있는지
+    let mode = "replace";
+    if(manual || dirty){
+      const k = await ask("GitHub에서 받기",
+        `저장소에 <b>${o.games.length}경기</b>가 있습니다. 이 기기에는 ${S.games.length}경기가 있습니다.`
+        + (dirty? `<br><br>이 기기에서 <b>바뀐 기록</b>이 있습니다 — 교체하면 그 내용이 사라집니다.` : ""),
+        [{label:"저장소 기록으로 교체", style:"pri"},{label:"현재 기록에 합치기"},{label:"취소"}]);
+      if(k===0) mode = "replace"; else if(k===1) mode = "merge"; else return false;
+    }
+    ghApply(o, mode);
+    ghState.sha = got.sha; ghState.hash = ghHash(); ghState.pull = Date.now(); ghSaveState();
+    await relinkAll(); render();
+    toast("GitHub에서 " + o.games.length + "경기를 받았습니다");
+    return true;
+  }catch(e){
+    ghState.err = e.message || String(e);
+    if(manual) toast("받기 실패: " + ghState.err);
+    if(S.ui.tab==="settings") render();
+    return false;
+  }finally{ ghBusy = false; }
+}
+/* 기록이 바뀌면 잠시 뒤 한 번만 올립니다 */
+function ghSchedule(){
+  if(!ghCanPush() || !ghCfg().auto) return;
+  clearTimeout(ghTimer);
+  ghTimer = setTimeout(()=>{ if(ghDirty()) ghPush(false); }, 8000);
+}
+function ghTry(){
+  if(!ghOn() || !navigator.onLine) return;
+  if(ghCanPush()){ if(ghCfg().auto && ghDirty()) ghPush(false); }
+  else if(ghCfg().autoPull) ghPull(false);
+}
+function ghInit(){
+  ghLoad();
+  // 앱을 켤 때 한 번, 인터넷이 연결될 때마다, 그리고 1분마다 (실패했거나 오프라인이었던 경우 대비)
+  setTimeout(ghTry, 1500);
+  window.addEventListener("online", ()=> setTimeout(ghTry, 1200));
+  setInterval(()=>{ if(ghCanPush() && ghCfg().auto && ghDirty()) ghTry(); }, 60000);
+}
+/* ------------------------------ 설정 화면 ------------------------------ */
+function ghSheet(){
+  const c = ghCfg();
+  openSheet(`<div class="sh"><h3>GitHub 연결</h3><div class="spacer" style="flex:1"></div>
+      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+    <div class="hint" style="padding:2px 0 12px">기록(JSON)만 저장소의 파일 하나에 저장합니다.
+      <b>동영상 파일은 올라가지 않습니다</b> — 링크로 등록한 영상 주소만 함께 저장됩니다.</div>
+    <label class="f"><span>저장소 <span style="color:var(--text-3);font-weight:400">— 아이디/저장소이름</span></span>
+      <input id="gh_repo" value="${esc(c.repo)}" placeholder="himec03/baseball-log" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+    <div class="f2">
+      <label class="f"><span>브랜치</span><input id="gh_branch" value="${esc(c.branch)}" placeholder="main" autocapitalize="off" spellcheck="false"></label>
+      <label class="f"><span>파일 경로</span><input id="gh_path" value="${esc(c.path)}" placeholder="data/baseball-log.json" autocapitalize="off" spellcheck="false"></label>
+    </div>
+    <label class="f"><span>토큰 <span style="color:var(--text-3);font-weight:400">— 올리는 기기에만 입력</span></span>
+      <input id="gh_token" type="password" value="${esc(ghToken)}" placeholder="github_pat_..." autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+    <div class="hint" style="margin:-6px 0 12px">
+      · 토큰을 <b>비우면 받기 전용</b>입니다 (공개 저장소의 기록을 받아 보기만 합니다).<br>
+      · 토큰은 GitHub → Settings → Developer settings → <b>Fine-grained personal access token</b>에서
+        <b>이 저장소 하나</b>에 <b>Contents: Read and write</b> 권한만 주고 만료일을 넣어 발급하세요.<br>
+      · 토큰은 <b>이 기기에만</b> 저장되며 백업(zip·JSON) 파일에는 들어가지 않습니다.
+    </div>
+    <div class="sf"><button class="btn" data-act="close">취소</button>
+      <button class="btn pri" data-act="ghSaveCfg">연결</button></div>`);
+}
+async function ghSaveCfg(){
+  const repo = $("#gh_repo").value.trim().replace(/^https?:\/\/github\.com\//i,"").replace(/\.git$/i,"").replace(/\/+$/,"");
+  if(!/^[\w.-]+\/[\w.-]+$/.test(repo)){ toast("저장소를 아이디/저장소이름 형식으로 입력해 주세요"); return; }
+  const branch = $("#gh_branch").value.trim() || "main";
+  const path   = ($("#gh_path").value.trim() || "data/baseball-log.json").replace(/^\/+/,"");
+  const token  = $("#gh_token").value.trim();
+  S.settings.gh = Object.assign(ghCfg(), {repo:repo, branch:branch, path:path});
+  ghToken = token;
+  try{ token? localStorage.setItem(GH_TOKEN_KEY, token) : localStorage.removeItem(GH_TOKEN_KEY); }catch(e){}
+  ghState.sha = ""; ghState.hash = ""; ghState.err = ""; ghSaveState();
+  saveNow(); closeSheet(); render();
+  busy("저장소를 확인하는 중");
+  try{
+    const got = await ghGet();
+    busyEnd();
+    if(got.missing){
+      toast(ghToken? "연결했습니다 — 첫 저장 때 파일이 만들어집니다" : "저장소에 기록 파일이 아직 없습니다");
+      if(ghToken) ghPush(true);
+    } else {
+      await ghPull(true);
+    }
+  }catch(e){
+    busyEnd(); ghState.err = e.message||String(e); render();
+    toast("연결 확인 실패: " + ghState.err);
+  }
+}
+function ghForget(){
+  S.settings.gh = {repo:"", branch:"main", path:"data/baseball-log.json", auto:true, wifi:true, autoPull:true};
+  ghToken = ""; ghState = {sha:"", push:0, pull:0, hash:"", err:""};
+  try{ localStorage.removeItem(GH_TOKEN_KEY); localStorage.removeItem(GH_STATE_KEY); }catch(e){}
+  saveNow(); render(); toast("GitHub 연결을 해제했습니다 (저장소의 파일은 그대로입니다)");
+}
+function ghCard(){
+  const c = ghCfg();
+  const on = ghOn();
+  const t = x => x? new Date(x).toLocaleString("ko-KR") : "없음";
+  return `<div class="card"><div class="hd"><div style="flex:1"><h3>GitHub 기록 공유</h3>
+      <div class="cap">기록(JSON)만 저장소에 올립니다 — 동영상 파일은 올라가지 않습니다.</div></div></div>`
+   + (on
+    ? `<div class="hint" style="margin-bottom:10px">
+         저장소 <b>${esc(c.repo)}</b> · ${esc(c.branch)} · <b>${esc(c.path)}</b><br>
+         모드: <b>${ghCanPush()? "올리기 · 받기" : "받기 전용"}</b> · 연결 상태: <b>${ghNetLabel()}</b><br>
+         마지막 저장: ${t(ghState.push)} · 마지막 받기: ${t(ghState.pull)}<br>
+         ${ghDirty()
+            ? `<span style="color:var(--warn);font-weight:650">아직 올리지 않은 변경이 있습니다</span>`
+            : `<span style="color:var(--good);font-weight:650">저장소와 같은 상태입니다</span>`}
+         ${ghState.err? `<br><span style="color:var(--crit)">최근 오류: ${esc(ghState.err)}</span>`:""}</div>
+       <div class="btnrow">
+         ${ghCanPush()? `<button class="btn pri" data-act="ghPushNow">지금 저장</button>`:""}
+         <button class="btn ${ghCanPush()?"":"pri"}" data-act="ghPullNow">지금 받기</button>
+         <button class="btn" data-act="ghSheet">연결 정보 수정</button>
+         <button class="btn" data-act="ghForget">연결 해제</button>
+       </div>
+       <div class="btnrow" style="margin-top:8px">
+         ${ghCanPush()? togBtn("ghAuto", c.auto, "바뀌면 자동 저장") : ""}
+         ${ghCanPush()? togBtn("ghWifi", c.wifi, "와이파이에서만") : ""}
+         ${ghCanPush()? "" : togBtn("ghAutoPull", c.autoPull, "앱 열 때 자동으로 받기")}
+       </div>
+       <div class="hint" style="margin-top:10px">
+         · 인터넷이 없어도 앱은 그대로 동작합니다 — 기록은 이 기기에 저장되고, 연결되면 <b>바뀐 내용만</b> 올라갑니다.<br>
+         · 다른 사람은 같은 저장소 주소를 넣고 <b>토큰 없이</b> 받기 전용으로 볼 수 있습니다 (공개 저장소일 때).<br>
+         · 저장할 때마다 커밋으로 남아 GitHub에서 <b>변경 이력</b>을 보고 되돌릴 수 있습니다.</div>`
+    : `<div class="hint" style="margin-bottom:10px">저장소를 연결하면 기록이 자동으로 저장되고, 다른 사람과 같은 기록을 볼 수 있습니다.</div>
+       <div class="btnrow"><button class="btn pri" data-act="ghSheet">저장소 연결</button></div>
+       <div class="hint" style="margin-top:10px">
+         · <b>비공개 저장소</b>를 권장합니다 — 공개로 두면 기록이 인터넷에 그대로 공개됩니다.<br>
+         · 올리는 기기에만 토큰을 넣고, 보기만 하는 사람은 토큰 없이 주소만 넣으면 됩니다.</div>`)
+   + `</div>`;
 }
 
 /* ---------------------- 저장(Save) / 불러오기(Open) ---------------------- */
@@ -2968,9 +3297,10 @@ function videoSheet(gid, vid){
     <div id="v_file" ${V?"hidden":""}>
       <span style="display:block;font-size:12.5px;color:var(--text-2);margin-bottom:6px;font-weight:550">동영상 파일
         <span style="color:var(--text-3);font-weight:400">— 여러 개 한 번에 고를 수 있습니다</span></span>
-      <!-- accept / capture 를 지정하지 않아야 안드로이드가 카메라·갤러리 선택창 없이
-           파일 관리자(내 파일)의 파일 목록을 바로 엽니다 -->
-      <input id="v_input" type="file" multiple class="sr" tabindex="-1" aria-hidden="true">
+      <!-- 안드로이드 크롬은 accept 가 비어 있거나 video/* 처럼 별표가 있으면
+           "작업 선택 — 카메라 / 캠코더" 창을 먼저 띄웁니다.
+           별표 없이 구체적인 형식만 적으면 그 창 없이 파일 관리자가 바로 열립니다. -->
+      <input id="v_input" type="file" multiple accept="video/mp4,video/quicktime,video/x-m4v,video/webm,video/x-matroska,video/3gpp,video/3gpp2,video/mp2t,video/x-msvideo,video/x-ms-wmv,video/x-flv,video/ogg,.mp4,.m4v,.mov,.webm,.mkv,.avi,.3gp,.3g2,.ts,.mts,.m2ts,.wmv,.flv,.ogv" class="sr" tabindex="-1" aria-hidden="true">
       <button type="button" class="btn block filepick" data-act="pickVideoFiles">${ICON_FOLDER}<span>내 파일에서 동영상 고르기</span></button>
       <div class="hint" style="margin:8px 0 12px">기기의 <b>파일 관리자(내 파일)</b>가 열립니다 — 폴더를 열어 동영상을 고르세요.
         여러 개를 한 번에 고를 수 있고, 동영상이 아닌 파일은 자동으로 걸러집니다.<br>
@@ -3607,6 +3937,16 @@ document.addEventListener("click", ev=>{
         position:$("#pf_pos").value, bats:$("#pf_bats").value, throws:$("#pf_thr").value};
       saveNow(); render(); toast("선수 정보를 저장했습니다"); break;
 
+    case "ghSheet": ghSheet(); break;
+    case "ghSaveCfg": ghSaveCfg(); break;
+    case "ghPushNow": ghPush(true); break;
+    case "ghPullNow": ghPull(true); break;
+    case "ghForget":
+      ask("연결 해제","이 기기에서 GitHub 연결과 토큰을 지웁니다. 저장소의 파일은 그대로 남습니다.",
+        [{label:"해제",style:"dan"},{label:"취소"}]).then(k=>{ if(k===0) ghForget(); }); break;
+    case "ghAuto":     S.settings.gh = Object.assign(ghCfg(), {auto:!ghCfg().auto});         saveNow(); render(); break;
+    case "ghWifi":     S.settings.gh = Object.assign(ghCfg(), {wifi:!ghCfg().wifi});         saveNow(); render(); break;
+    case "ghAutoPull": S.settings.gh = Object.assign(ghCfg(), {autoPull:!ghCfg().autoPull}); saveNow(); render(); break;
     case "saveMenu": saveMenu(); break;
     case "openMenu": openMenu(); break;
     case "exportJSON": closeSheet(); exportJSON(); break;
@@ -3656,6 +3996,9 @@ function updateVideo(gid, vid){
   v.paId   = lk.paId; v.defId = lk.defId;
   saveNow(); closeSheet(); render(); toast("영상 정보를 수정했습니다");
 }
+/* 파일 선택 창에 쓰는 형식 목록 — 별표(video/*)를 쓰면 안드로이드가
+   "작업 선택 (카메라·캠코더)" 창을 띄우므로 구체적인 형식만 적습니다 */
+const VIDEO_ACCEPT = "video/mp4,video/quicktime,video/x-m4v,video/webm,video/x-matroska,video/3gpp,video/3gpp2,video/mp2t,video/x-msvideo,video/x-ms-wmv,video/x-flv,video/ogg,.mp4,.m4v,.mov,.webm,.mkv,.avi,.3gp,.3g2,.ts,.mts,.m2ts,.wmv,.flv,.ogv";
 /* 고른 파일 중 동영상만 골라냅니다 */
 function isVideoFile(f){
   if(f.type && f.type.indexOf("video/")===0) return true;
@@ -3867,6 +4210,7 @@ function setTheme(v){
   S.ui.gtype = "all";
   render();
   askPersist().then(fillQuota);
+  ghInit();
   // 설치 가능 신호는 조금 늦게 오기도 합니다
   window.__onInstallReady = ()=>{ if(S.ui.tab==="settings") render(); };
   window.__onInstalled = ()=>{ render(); toast("앱으로 설치했습니다 — 이제 홈 화면 아이콘으로 열어 주세요"); };
@@ -3890,6 +4234,8 @@ function setTheme(v){
     // 앱으로 돌아왔을 때 홈 화면으로. 단 입력 중(시트가 열려 있음)이면 그대로 둡니다.
     if($("#modal").innerHTML) return;
     armFullscreen();
+    if(ghCanPush()){ if(ghCfg().auto && ghDirty()) ghSchedule(); }
+    else if(ghOn() && ghCfg().autoPull) ghPull(false);
     if(S.ui.tab!=="home" || S.ui.gameId){
       // 앱을 다시 열면 홈에서 새로 시작합니다 — 지나온 화면 기록도 비웁니다
       S.ui.tab="home"; S.ui.gameId=null; saveNow();
