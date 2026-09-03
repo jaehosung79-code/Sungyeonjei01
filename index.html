@@ -1203,7 +1203,9 @@ async function relinkAll(){
 function relinkVideos(){
   if(!missCache.length){ toast("다시 연결할 영상이 없습니다"); return; }
   const inp = document.createElement("input");
-  inp.type = "file"; inp.multiple = true; inp.accept = "video/*";
+  // accept 를 지정하면 안드로이드가 갤러리(사진 앱)를 열어 파일명이 보이지 않습니다.
+  // 지정하지 않으면 파일 관리자(내 파일)의 파일 목록이 그대로 열립니다.
+  inp.type = "file"; inp.multiple = true;
   inp.addEventListener("change", async ()=>{
     const fs = Array.from(inp.files||[]);
     if(!fs.length) return;
@@ -2966,6 +2968,8 @@ function videoSheet(gid, vid){
     <div id="v_file" ${V?"hidden":""}>
       <span style="display:block;font-size:12.5px;color:var(--text-2);margin-bottom:6px;font-weight:550">동영상 파일
         <span style="color:var(--text-3);font-weight:400">— 여러 개 한 번에 고를 수 있습니다</span></span>
+      <!-- accept / capture 를 지정하지 않아야 안드로이드가 카메라·갤러리 선택창 없이
+           파일 관리자(내 파일)의 파일 목록을 바로 엽니다 -->
       <input id="v_input" type="file" multiple class="sr" tabindex="-1" aria-hidden="true">
       <button type="button" class="btn block filepick" data-act="pickVideoFiles">${ICON_FOLDER}<span>내 파일에서 동영상 고르기</span></button>
       <div class="hint" style="margin:8px 0 12px">기기의 <b>파일 관리자(내 파일)</b>가 열립니다 — 폴더를 열어 동영상을 고르세요.
