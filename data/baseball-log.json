@@ -106,6 +106,17 @@
      "defId": "mtgjvn48linzo",
      "note": "",
      "createdAt": 1788259116201
+    },
+    {
+     "id": "mtijbh1slz9ni",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/17HlZh3tczoclpTCmhu-9Sam_4DDOZfhb/view?usp=drivesdk",
+     "title": "1번째 타석 · 2회 직선타 아웃",
+     "folder": "",
+     "paId": "mtgjsla5dcnd1",
+     "defId": null,
+     "note": "",
+     "createdAt": 1788259137080
     }
    ],
    "date": "2026-06-27",
@@ -670,6 +681,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:13:14.136Z",
+ "savedAt": "2026-09-03T07:13:32.480Z",
  "by": "성연제"
 }
