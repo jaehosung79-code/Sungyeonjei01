@@ -95,6 +95,17 @@
      "defId": "mtgjugrqj10o6",
      "note": "",
      "createdAt": 1788259049359
+    },
+    {
+     "id": "mtijb0xo855xh",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/1laIGLWLeSJkZfCReQOF-9VWZz1UienUT/view?usp=drivesdk",
+     "title": "수비 5회 · 2루수 포구 실책",
+     "folder": "",
+     "paId": null,
+     "defId": "mtgjvn48linzo",
+     "note": "",
+     "createdAt": 1788259116201
     }
    ],
    "date": "2026-06-27",
@@ -659,6 +670,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:12:28.540Z",
+ "savedAt": "2026-09-03T07:13:14.136Z",
  "by": "성연제"
 }
