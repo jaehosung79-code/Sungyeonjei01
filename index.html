@@ -388,8 +388,6 @@ video{width:100%;border-radius:var(--r-sm);background:#000;display:block}
   min-height:38px;color:var(--accent-ink);
 }
 .vtitle .tx{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.vtitle .vico{flex:none;display:inline-flex;margin-right:7px;opacity:.75}
-.vgame .fico{flex:none;display:inline-flex;color:var(--accent-ink)}
 .vtitle:active{opacity:.7}
 .vgame{
   width:100%;display:flex;align-items:center;gap:10px;background:none;border:0;cursor:pointer;
@@ -615,7 +613,7 @@ const blank = ()=>({
   settings:{ level:"elem", inningsBy:{elem:6, mid:7, high:7, univ:9}, autoplay:"sound",
              pickEach:false, stampNames:false, fullscreen:true },
   backup:{ at:0, sig:"" },
-  ui:{ tab:"home", year:"all", gtype:"all", metric:"avg", vmode:"folder" }
+  ui:{ tab:"home", year:"all", gtype:"all", metric:"avg" }
 });
 let S = blank();
 let saveTimer = null;
@@ -2363,27 +2361,19 @@ function pitchingSection(gs, defs){
 
 /* ------------------------------- 영상 ------------------------------- */
 const ICON_FOLDER = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6.8A1.8 1.8 0 0 1 5.3 5h3.4l1.8 2.2h8.2a1.8 1.8 0 0 1 1.8 1.8v8.2A1.8 1.8 0 0 1 18.7 19H5.3a1.8 1.8 0 0 1-1.8-1.8z"/></svg>';
-const ICON_LINKF  = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a3.5 3.5 0 0 0 5 0l2.5-2.5a3.5 3.5 0 0 0-5-5L11 7.5"/><path d="M14 10.5a3.5 3.5 0 0 0-5 0L6.5 13a3.5 3.5 0 0 0 5 5L13 16.5"/></svg>';
-const ICON_PLAY   = '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8.5 6.4 17 12l-8.5 5.6z"/></svg>';
-
-/* nameFirst=true 면 제목 대신 "파일명"을 앞에 보여 줍니다 (탐색기 화면) */
-function videoCard(v, g, lite, nameFirst){
+function videoCard(v, g, lite){
   const sub = [];
-  if(v.kind==="file") sub.push(bytes(v.size));
-  else sub.push("링크");
-  if(nameFirst && v.title && v.title !== v.name) sub.push(v.title);
-  if(!nameFirst && v.kind==="file"){
-    if(v.folder) sub.push(v.folder);
-    if(v.name && v.name !== v.title) sub.push(v.name);
-  }
-  if(nameFirst) sub.push(fmtDate(g.date) + " vs " + (g.opponent||"-"));
+  if(v.kind==="file"){
+    sub.push(bytes(v.size));
+    if(v.name && v.name !== v.title) sub.push(v.name);     // 파일명
+    if(v.folder) sub.push(v.folder);                        // 폴더명
+  } else sub.push("링크");
   const lt = videoLinkText(v, g);
   if(lt) sub.push(lt);
-  const head = nameFirst? (v.name || v.title || "영상") : (v.title || v.name || "영상");
   return `<div class="vidcard" data-vid="${v.id}">
     <div class="vh">
       <button class="vtitle" data-act="playVideo" data-gid="${g.id}" data-id="${v.id}">
-        <span class="vico" aria-hidden="true">${ICON_PLAY}</span><span class="tx">${esc(head)}</span>
+        <span class="tx">${esc(v.title||v.name||"영상")}</span>
       </button>
       ${v.kind==="link"?`<button class="iconbtn sm" data-act="openVideo" data-gid="${g.id}" data-id="${v.id}" title="새 창에서 열기" aria-label="새 창에서 열기">↗</button>`:""}
       ${lite? "" : `<button class="iconbtn sm" data-act="editVideo" data-gid="${g.id}" data-id="${v.id}" title="영상 정보 수정" aria-label="영상 정보 수정">${ICON_EDIT}</button>
@@ -2393,66 +2383,16 @@ function videoCard(v, g, lite, nameFirst){
     <div class="player" style="margin-top:8px"></div>
   </div>`;
 }
-const NOFOLDER   = "기타 (폴더 없음)";
-const LINKFOLDER = "링크 영상";
-function folderKey(v){
-  if(v.kind === "link") return LINKFOLDER;
-  return (v.folder && String(v.folder).trim()) || NOFOLDER;
-}
-/* 폴더명 > 파일명 트리 — 파일명을 누르면 그 자리에서 재생됩니다 */
-function videoExplorer(gs){
-  const map = new Map();
-  gs.forEach(g=>(g.videos||[]).forEach(v=>{
-    const k = folderKey(v);
-    if(!map.has(k)) map.set(k, []);
-    map.get(k).push({g:g, v:v});
-  }));
-  if(!map.size){
-    return `<div class="empty"><span class="big">▶</span>등록된 영상이 없습니다<br>
-      <span class="hint">위의 <b>+ 영상 추가</b>에서 파일 여러 개 또는 폴더를 통째로 올릴 수 있습니다</span></div>`;
-  }
-  const rank = k => k===NOFOLDER? 1 : k===LINKFOLDER? 2 : 0;
-  const keys = Array.from(map.keys()).sort((a,b)=>
-    rank(a)!==rank(b)? rank(a)-rank(b) : a.localeCompare(b, "ko"));
-  return keys.map(k=>{
-    const items = map.get(k).slice().sort((a,b)=>
-      String(a.v.name||a.v.title||"").localeCompare(String(b.v.name||b.v.title||""), "ko", {numeric:true}));
-    const open = openVF.has(k);
-    const sz = items.reduce((a,x)=>a+(x.v.size||0),0);
-    return `<div class="card">
-      <button class="vgame" data-act="toggleVF" data-k="${esc(k)}" aria-expanded="${open}">
-        <span class="fico" aria-hidden="true">${k===LINKFOLDER? ICON_LINKF : ICON_FOLDER}</span>
-        <div class="gt">
-          <div class="t">${esc(k)}</div>
-          <div class="s">파일 ${items.length}개${sz?" · "+bytes(sz):""}</div>
-        </div>
-        <span class="chev" aria-hidden="true">▼</span>
-      </button>
-      <div class="vlist" ${open?"":"hidden"}>
-        ${items.map(x=>videoCard(x.v, x.g, false, true)).join("")}
-      </div>
-    </div>`;
-  }).join("");
-}
 function viewVideos(){
   const gs = scopedGames().slice().reverse();
   const withV = gs.filter(g=>g.videos.length);
   const total = withV.reduce((a,g)=>a+g.videos.reduce((x,v)=>x+(v.size||0),0),0);
   const cnt = withV.reduce((a,g)=>a+g.videos.length,0);
-  const mode = S.ui.vmode==="game"? "game" : "folder";
-  const last = S.games.length? S.games[S.games.length-1].id : "";
   return filterRow()
   + `<div class="card"><div class="hd"><div style="flex:1"><h3>영상 보관함</h3>
-      <div class="cap">${cnt}개 · 기기 저장 용량 ${bytes(total)}</div></div>
-      ${last? `<button class="btn sm pri nb" data-act="newVideo" data-gid="${last}">+ 영상 추가</button>` : ""}</div>
-      <div class="filters" style="margin:10px 0 0"><div class="seg" role="group" aria-label="보기 방식">
-        <button data-act="vmode" data-v="folder" aria-pressed="${mode==="folder"}">폴더별 (탐색기)</button>
-        <button data-act="vmode" data-v="game" aria-pressed="${mode==="game"}">경기별</button>
-      </div></div>
-      <div id="quota" class="hint" style="margin-top:10px">저장 공간 확인 중…</div><div id="missvid"></div></div>`
-  + (mode==="folder"
-    ? videoExplorer(gs)
-    : (withV.length? withV.map(g=>{
+      <div class="cap">${cnt}개 · 기기 저장 용량 ${bytes(total)}</div></div></div>
+      <div id="quota" class="hint">저장 공간 확인 중…</div><div id="missvid"></div></div>`
+  + (withV.length? withV.map(g=>{
       const open = openVG.has(g.id);
       return `<div class="card">
         <button class="vgame" data-act="toggleVG" data-id="${g.id}" aria-expanded="${open}">
@@ -2472,7 +2412,7 @@ function viewVideos(){
       </div>`;
     }).join("")
     : `<div class="empty"><span class="big">▶</span>등록된 영상이 없습니다<br>
-       <span class="hint">경기 상세 화면에서 영상을 추가할 수 있습니다</span></div>`));
+       <span class="hint">경기 상세 화면에서 영상을 추가할 수 있습니다</span></div>`);
 }
 
 /* ------------------------------- 설정 ------------------------------- */
@@ -3041,7 +2981,7 @@ function videoSheet(gid, vid){
       <label class="f"><span>폴더 통째로 선택</span>
         <input id="v_dir" type="file" webkitdirectory directory multiple></label>
       <div class="hint" style="margin:-6px 0 12px">폴더 안의 <b>동영상 파일만</b> 골라 저장합니다.
-        <b>폴더명이 그대로 남아</b> 영상 탐색기에 <b>폴더명 › 파일명</b> 으로 표시되고, 파일명을 누르면 바로 재생됩니다.</div>
+        고른 파일의 <b>폴더명 · 파일명</b>이 아래에 그대로 표시됩니다.</div>
     </div>
     <div id="v_link" ${(V && V.kind==="link")? "" : "hidden"}>
       <label class="f"><span>영상 주소</span><input id="v_url" inputmode="url" value="${V&&V.kind==="link"?esc(V.url):""}" placeholder="https://youtu.be/... 또는 mp4 주소"></label>
@@ -3051,13 +2991,13 @@ function videoSheet(gid, vid){
     </div>
     <div id="v_pick" class="pickbox" hidden></div>
     <div class="f2">
-      <label class="f"><span>폴더명 <span style="color:var(--text-3);font-weight:400">— 탐색기 분류</span></span>
+      <label class="f"><span>폴더명 <span style="color:var(--text-3);font-weight:400">— 분류용 (선택)</span></span>
         <input id="v_folder" value="${V?esc(V.folder||""):""}" list="dl_vfold" placeholder="예: 2026 봄리그 하이라이트">
         <datalist id="dl_vfold">${folders.map(o=>`<option value="${esc(o)}">`).join("")}</datalist></label>
       <label class="f"><span>제목 <span style="color:var(--text-3);font-weight:400">— 비우면 파일명</span></span>
         <input id="v_title" value="${V?esc(V.title||""):""}" placeholder="예: 3회 좌중간 2루타"></label>
     </div>
-    <div class="hint" id="v_fhint" style="margin:-6px 0 12px">폴더명은 <b>영상 탐색기</b>에서 묶어 보는 이름입니다 — 비우면 <b>기타</b>로 분류됩니다.</div>
+    <div class="hint" id="v_fhint" style="margin:-6px 0 12px">폴더명은 영상 목록에 함께 표시되는 분류 이름입니다 — 비워 두어도 됩니다.</div>
     <div class="f2">
       <label class="f"><span>연결할 장면</span><select id="v_target">
         <option value="" ${linkKind===""?"selected":""}>연결 안 함</option>
@@ -3668,7 +3608,7 @@ document.addEventListener("click", ev=>{
       const fh = $("#v_fhint");
       if(fh) fh.innerHTML = v==="folder"
         ? `폴더를 통째로 고르면 이 칸은 무시하고 <b>실제 폴더명</b>이 그대로 쓰입니다.`
-        : `폴더명은 <b>영상 탐색기</b>에서 묶어 보는 이름입니다 — 비우면 <b>기타</b>로 분류됩니다.`;
+        : `폴더명은 영상 목록에 함께 표시되는 분류 이름입니다 — 비워 두어도 됩니다.`;
       break; }
     case "saveVideo": saveVideo(gid, el); break;
     case "playVideo": playVideo(gid, id); break;
@@ -3679,11 +3619,7 @@ document.addEventListener("click", ev=>{
     case "toggleVG": {
       if(openVG.has(id)) openVG.delete(id); else openVG.add(id);
       render(); break; }
-    case "toggleVF": {
-      const k = el.dataset.k || "";
-      if(openVF.has(k)) openVF.delete(k); else openVF.add(k);
-      render(); break; }
-    case "vmode": S.ui.vmode = v; save(); render(); break;
+
     case "delVideo":
       ask("영상 삭제","이 영상을 기록에서 삭제합니다. 업로드한 파일도 기기에서 지워집니다.",
         [{label:"삭제",style:"dan"},{label:"취소"}]).then(k=>{
@@ -3778,7 +3714,7 @@ async function addVideoFiles(g, files, opt){
     const rec = {id:uid(), kind:"file", name:f.name, mime:f.type, size:f.size, folder:folder,
       title: (files.length===1 && opt.title)? opt.title : f.name.replace(/\.[^.]+$/,""),
       paId:opt.paId, defId:opt.defId, note:opt.note, createdAt:Date.now(), store:"idb"};
-    try{ await mediaPut(rec, f); g.videos.push(rec); openVF.add(folder||NOFOLDER); ok++; }
+    try{ await mediaPut(rec, f); g.videos.push(rec); ok++; }
     catch(e){ console.warn(e); fail++; }
   }
   busyEnd(); saveNow(); render();
@@ -3820,10 +3756,34 @@ function saveVideo(gid, btn){
   addVideoFiles(g, files, opt);
 }
 /* --------------------- 뒤로(되돌아가기) 버튼 처리 ---------------------
-   한 번 누르면 홈으로, 홈에서 두 번 연속 누르면 앱을 나갑니다.
+   한 번 누르면 "바로 앞에 보던 화면"으로 돌아갑니다.
+   더 돌아갈 화면이 없을 때 두 번 연속 누르면 앱을 나갑니다.
    (시트가 열려 있으면 먼저 시트를 닫습니다)
    -------------------------------------------------------------------- */
 let backArmed = 0;
+let navStack = [];       // 지나온 화면들
+let navCur   = null;     // 지금 화면
+let navBack  = false;    // 되돌아가기로 인한 이동인지
+function navKey(){ return S.ui.tab + "|" + (S.ui.gameId || ""); }
+/* 화면이 바뀔 때마다 직전 화면을 쌓아 둡니다 (render 안에서 호출) */
+function navTrack(){
+  const cur = navKey();
+  if(navCur === null){ navCur = cur; return; }
+  if(cur === navCur) return;
+  if(!navBack){
+    navStack.push(navCur);
+    if(navStack.length > 60) navStack.shift();
+  }
+  navCur = cur;
+}
+function navGo(key){
+  const i = key.indexOf("|");
+  navBack = true;
+  S.ui.tab    = key.slice(0, i) || "home";
+  S.ui.gameId = key.slice(i+1) || null;
+  save(); render();
+  navBack = false;
+}
 function pushBackState(){ try{ history.pushState({bb:"app"}, ""); }catch(e){} }
 function initBackButton(){
   if(!window.history || !history.pushState) return;
@@ -3833,12 +3793,12 @@ function initBackButton(){
     // 1) 열려 있는 시트/모달 먼저 닫기
     const m = $("#modal");
     if(m && m.innerHTML){ closeSheet(); pushBackState(); return; }
-    // 2) 홈이 아니면 홈으로
-    if(S.ui.gameId || S.ui.tab!=="home"){
-      S.ui.gameId = null; S.ui.tab = "home"; save(); render();
+    // 2) 바로 앞에 보던 화면으로
+    if(navStack.length){
+      navGo(navStack.pop());
       backArmed = 0; pushBackState(); return;
     }
-    // 3) 홈에서 두 번 연속(2초 이내) 누르면 나가기
+    // 3) 더 돌아갈 화면이 없으면 두 번 연속(2초 이내) 눌러 나가기
     const now = Date.now();
     if(now - backArmed < 2000){
       saveNow();
@@ -3857,7 +3817,6 @@ function initBackButton(){
 /* ------------------------------ 렌더 / 초기화 ------------------------------ */
 const ENV = {storage:true, idb:true};
 const openVG = new Set();   // 영상 화면에서 펼쳐 둔 경기
-const openVF = new Set();   // 영상 탐색기에서 펼쳐 둔 폴더
 function envBanner(){
   const v=$("#view"); if(!v) return;
   if(document.getElementById("envwarn")) return;
@@ -3889,6 +3848,7 @@ let lastTab = null;
 function render(){
   const v = $("#view");
   calcChartFont();
+  navTrack();
   const t = S.ui.tab;
   const html = (t==="games" && S.ui.gameId)? viewGame(S.ui.gameId)
     : t==="games"? viewGames()
@@ -3979,7 +3939,11 @@ function setTheme(v){
     // 앱으로 돌아왔을 때 홈 화면으로. 단 입력 중(시트가 열려 있음)이면 그대로 둡니다.
     if($("#modal").innerHTML) return;
     armFullscreen();
-    if(S.ui.tab!=="home" || S.ui.gameId){ S.ui.tab="home"; S.ui.gameId=null; saveNow(); render(); }
+    if(S.ui.tab!=="home" || S.ui.gameId){
+      // 앱을 다시 열면 홈에서 새로 시작합니다 — 지나온 화면 기록도 비웁니다
+      S.ui.tab="home"; S.ui.gameId=null; saveNow();
+      navBack = true; render(); navBack = false; navStack = [];
+    }
   });
   document.addEventListener("keydown", e=>{ if(e.key==="Escape" && $("#modal").innerHTML) closeSheet(); });
   // 개발용 훅 (자동 검증에 사용)
