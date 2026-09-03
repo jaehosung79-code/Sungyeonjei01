@@ -281,6 +281,17 @@
      "defId": null,
      "note": "",
      "createdAt": 1788259581990
+    },
+    {
+     "id": "mtijlbah91duo",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/1CH0H8NiFVeM_u76-UAspO7PNDA9SVKb4/view?usp=drivesdk",
+     "title": "3번째 타석 · 5회 땅볼 아웃",
+     "folder": "",
+     "paId": "mtgl1h6qqf8h3",
+     "defId": null,
+     "note": "",
+     "createdAt": 1788259596182
     }
    ],
    "date": "2026-08-24",
@@ -613,6 +624,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:09:45.235Z",
+ "savedAt": "2026-09-03T07:10:15.034Z",
  "by": "성연제"
 }
