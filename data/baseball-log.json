@@ -392,6 +392,28 @@
      "defId": "mtgnhulbk3ghn",
      "note": "",
      "createdAt": 1788259329677
+    },
+    {
+     "id": "mtijg5vi9jndj",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/1Mo39sUNVeX_in4uEDRvSIALq2G5QpUj0/view?usp=drivesdk",
+     "title": "수비02",
+     "folder": "",
+     "paId": null,
+     "defId": "mtgni38nlpqmr",
+     "note": "",
+     "createdAt": 1788259355932
+    },
+    {
+     "id": "mtijh3fgti0dk",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/18_-2O_qRw9gu-jUwW6b4pzgXkkiuUMoM/view?usp=drivesdk",
+     "title": "수비03",
+     "folder": "",
+     "paId": null,
+     "defId": "mtgnibynn7g2q",
+     "note": "",
+     "createdAt": 1788259399369
     }
    ],
    "date": "2026-08-30",
@@ -501,6 +523,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:02:55.762Z",
+ "savedAt": "2026-09-03T07:03:25.324Z",
  "by": "성연제"
 }
