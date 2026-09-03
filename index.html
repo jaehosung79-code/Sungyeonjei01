@@ -416,6 +416,21 @@ video{width:100%;border-radius:var(--r-sm);background:#000;display:block}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;
 }
 .pickbox li span{color:var(--text-3)}
+/* 보기 모드 — 기록을 바꾸는 버튼을 감춥니다 */
+body.ro [data-act="newGame"], body.ro [data-act="editGame"], body.ro [data-act="delGame"],
+body.ro [data-act="newPA"],   body.ro [data-act="delPA"],
+body.ro [data-act="newDef"],  body.ro [data-act="delDef"],
+body.ro [data-act="newVideo"],body.ro [data-act="editVideo"], body.ro [data-act="delVideo"],
+body.ro [data-act="relinkVideos"], body.ro [data-act="relinkOne"],
+body.ro [data-act="saveProfile"],  body.ro [data-act="pfAddYear"], body.ro [data-act="pfDelYear"],
+body.ro [data-act="wipe"],    body.ro [data-act="openMenu"],
+body.ro [data-act="ghPushNow"]{ display:none!important }
+body.ro .row[data-act="editPA"] .r, body.ro .row[data-act="editDef"] .r{ visibility:hidden }
+.robadge{
+  display:inline-flex;align-items:center;gap:5px;margin-left:8px;padding:3px 9px;border-radius:999px;
+  background:var(--surface-2);border:1px solid var(--border);color:var(--text-2);
+  font-size:11px;font-weight:650;white-space:nowrap;
+}
 .iorow{display:flex;gap:10px}
 .iobtn{
   flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
@@ -613,7 +628,7 @@ const blank = ()=>({
   profiles:{},          // 연도별 선수 정보 { "2026": {name, team, number, position, bats, throws}, ... }
   games:[],
   settings:{ level:"elem", inningsBy:{elem:6, mid:7, high:7, univ:9}, autoplay:"sound",
-             fullscreen:true,
+             fullscreen:true, viewOnly:false,
              gh:{repo:"", branch:"main", path:"data/baseball-log.json", auto:true, wifi:true, autoPull:true} },
   backup:{ at:0, sig:"" },
   ui:{ tab:"home", year:"all", gtype:"all", metric:"avg" }
@@ -2611,6 +2626,8 @@ function viewSettings(){
 
     ${ghCard()}
 
+    ${viewCard()}
+
     <div class="card"><div class="hd"><div style="flex:1"><h3>저장 상태</h3></div></div>
       <div class="tiles">${tile("경기",S.games.length)+tile("타석",S.games.reduce((a,g)=>a+g.pas.length,0))
         +tile("영상",S.games.reduce((a,g)=>a+g.videos.length,0))+tile("기록 크기",raw!=null?bytes(raw):"-")
@@ -2942,7 +2959,7 @@ function ghSheet(){
     <div class="hint" style="padding:2px 0 12px">기록(JSON)만 저장소의 파일 하나에 저장합니다.
       <b>동영상 파일은 올라가지 않습니다</b> — 링크로 등록한 영상 주소만 함께 저장됩니다.</div>
     <label class="f"><span>저장소 <span style="color:var(--text-3);font-weight:400">— 아이디/저장소이름</span></span>
-      <input id="gh_repo" value="${esc(c.repo)}" placeholder="jaehosung79-code/SungyeonjeiBaseball" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+      <input id="gh_repo" value="${esc(c.repo)}" placeholder="himec03/baseball-log" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
     <div class="f2">
       <label class="f"><span>브랜치</span><input id="gh_branch" value="${esc(c.branch)}" placeholder="main" autocapitalize="off" spellcheck="false"></label>
       <label class="f"><span>파일 경로</span><input id="gh_path" value="${esc(c.path)}" placeholder="data/baseball-log.json" autocapitalize="off" spellcheck="false"></label>
@@ -3043,6 +3060,45 @@ function pfAddYearSheet(){
       <input id="pf_y" type="number" inputmode="numeric" value="${esc(thisYear())}" min="1900" max="2199"></label>
     <div class="sf"><button class="btn" data-act="close">취소</button>
       <button class="btn pri" data-act="pfAddYearSave">추가</button></div>`);
+}
+
+/* ============================== 보기 모드 ==============================
+   기록을 바꾸지 못하게 잠급니다. GitHub 토큰을 넣지 않은 기기(= 받기 전용)는
+   자동으로 보기 모드가 되고, 설정에서 끌 수 없습니다. */
+function roForced(){ return ghOn() && !ghToken; }
+function readOnly(){ return roForced() || S.settings.viewOnly === true; }
+function roMsg(){
+  return roForced()
+    ? "받기 전용 기기입니다 — 기록을 바꿀 수 없습니다 (설정에서 토큰을 넣으면 수정할 수 있습니다)"
+    : "보기 모드입니다 — 설정에서 끄면 수정할 수 있습니다";
+}
+/* 보기 모드에서 막는 동작 */
+const RO_BLOCK = new Set([
+  "newGame","editGame","saveGame","delGame",
+  "newPA","editPA","savePA","delPA",
+  "newDef","editDef","saveDef","delDef",
+  "newVideo","editVideo","saveVideo","updateVideo","delVideo",
+  "relinkVideos","relinkOne",
+  "saveProfile","pfAddYear","pfAddYearSave","pfDelYear",
+  "wipe","openMenu","importBundle","importJSON","importAny","ghPushNow"
+]);
+function viewCard(){
+  const on = readOnly(), forced = roForced();
+  return `<div class="card"><div class="hd"><div style="flex:1"><h3>보기 모드</h3>
+      <div class="cap">기록을 바꿀 수 없게 잠급니다 — 함께 볼 때 실수로 지우거나 고치는 것을 막아 줍니다.</div></div></div>
+      <div class="filters" style="margin-bottom:8px"><div class="seg" role="group" aria-label="보기 모드">
+        <button data-act="viewOnly" data-v="off" aria-pressed="${!on}" ${forced?"disabled":""}>수정 가능</button>
+        <button data-act="viewOnly" data-v="on"  aria-pressed="${on}"  ${forced?"disabled":""}>보기 모드</button>
+      </div></div>
+      <div class="hint">${forced
+        ? `<b style="color:var(--warn)">GitHub 토큰을 넣지 않아 자동으로 보기 모드입니다.</b><br>
+           이 기기는 저장소의 기록을 <b>받아서 보기만</b> 합니다.
+           수정하려면 위의 <b>GitHub 기록 공유 → 연결 정보 수정</b>에서 토큰을 넣어 주세요.`
+        : on
+        ? `지금은 <b>보기 모드</b>입니다 — 경기·타석·수비·영상의 추가·수정·삭제와 불러오기가 잠겨 있습니다.
+           백업 저장(Save)과 GitHub 받기는 그대로 됩니다.`
+        : `지금은 <b>수정 가능</b> 상태입니다. 보기 모드로 바꾸면 추가·수정·삭제 버튼이 모두 사라집니다.`}</div>
+    </div>`;
 }
 
 /* ---------------------- 저장(Save) / 불러오기(Open) ---------------------- */
@@ -3902,6 +3958,9 @@ document.addEventListener("click", ev=>{
   const el = ev.target.closest("[data-act]"); if(!el) return;
   const a = el.dataset.act, id = el.dataset.id, gid = el.dataset.gid, v = el.dataset.v;
 
+  // 보기 모드에서는 기록을 바꾸는 동작을 모두 막습니다
+  if(readOnly() && RO_BLOCK.has(a)){ toast(roMsg()); return; }
+
   switch(a){
     case "close": closeSheet(); break;
     case "nav": S.ui.tab=v; S.ui.gameId=null; save(); render(); break;
@@ -4112,6 +4171,12 @@ document.addEventListener("click", ev=>{
     case "ghAuto":     S.settings.gh = Object.assign(ghCfg(), {auto:!ghCfg().auto});         saveNow(); render(); break;
     case "ghWifi":     S.settings.gh = Object.assign(ghCfg(), {wifi:!ghCfg().wifi});         saveNow(); render(); break;
     case "ghAutoPull": S.settings.gh = Object.assign(ghCfg(), {autoPull:!ghCfg().autoPull}); saveNow(); render(); break;
+    case "viewOnly": {
+      if(roForced()){ toast(roMsg()); break; }
+      S.settings.viewOnly = (v === "on");
+      saveNow(); render();
+      toast(S.settings.viewOnly? "보기 모드로 잠갔습니다" : "수정할 수 있습니다");
+      break; }
     case "saveMenu": saveMenu(); break;
     case "openMenu": openMenu(); break;
     case "exportJSON": closeSheet(); exportJSON(); break;
@@ -4288,7 +4353,14 @@ function envBanner(){
 /* 화면 위쪽 알림 — 백업 권유 */
 function banners(){
   let h = "";
-  if(S.games.length){
+  if(readOnly()){
+    h += `<div class="note" style="margin-bottom:12px;border:1px solid var(--border)">
+      <b>보기 모드</b> — 기록을 바꿀 수 없습니다.
+      ${roForced()? "이 기기는 GitHub 저장소의 기록을 받아서 보기만 합니다."
+                  : "설정 &gt; 보기 모드에서 <b>수정 가능</b>으로 바꾸면 다시 기록할 수 있습니다."}
+      </div>`;
+  }
+  if(!readOnly() && S.games.length){
     const b = S.backup||{};
     const stale = !b.at || (b.sig !== dataSig() && (Date.now()-b.at) > 3*86400000);
     if(stale){
@@ -4313,6 +4385,7 @@ function render(){
     : t==="videos"? viewVideos()
     : t==="settings"? viewSettings()
     : viewHome();
+  document.body.classList.toggle("ro", readOnly());
   v.innerHTML = banners() + html;
   $$("nav.tabs button").forEach(b=>{
     if(b.dataset.nav===t) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current");
