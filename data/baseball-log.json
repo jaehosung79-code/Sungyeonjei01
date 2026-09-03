@@ -1,0 +1,479 @@
+{
+ "app": "bb-note",
+ "version": 1,
+ "profile": {
+  "name": "성연제",
+  "team": "강남초",
+  "number": "",
+  "position": "2B",
+  "bats": "우타",
+  "throws": "우투"
+ },
+ "profiles": {
+  "2026": {
+   "name": "성연제",
+   "team": "강남초",
+   "number": "",
+   "position": "2B",
+   "bats": "우타",
+   "throws": "우투"
+  }
+ },
+ "games": [
+  {
+   "id": "mtgjq9yvi0lac",
+   "pas": [
+    {
+     "id": "mtgjsla5dcnd1",
+     "inning": 2,
+     "pitcherNo": "21",
+     "pitcher": "김선우",
+     "result": "LO",
+     "zone": {
+      "x": 143.4,
+      "y": 229,
+      "z2": 1
+     },
+     "rbi": 0,
+     "runs": 0,
+     "sb": 0,
+     "cs": 0,
+     "note": ""
+    },
+    {
+     "id": "mtgjtq0ppaod8",
+     "inning": 4,
+     "pitcherNo": "03",
+     "pitcher": "송원석",
+     "result": "1B",
+     "zone": {
+      "x": 133.6,
+      "y": 231.4,
+      "z2": 1
+     },
+     "rbi": 1,
+     "runs": 0,
+     "sb": 0,
+     "cs": 0,
+     "note": ""
+    }
+   ],
+   "def": [
+    {
+     "id": "mtgjugrqj10o6",
+     "pos": "2B",
+     "inning": 1,
+     "result": "A",
+     "innings": "6",
+     "note": "",
+     "po": 0,
+     "a": 1,
+     "e": 0,
+     "dp": 0
+    },
+    {
+     "id": "mtgjvn48linzo",
+     "pos": "2B",
+     "inning": 5,
+     "result": "EF",
+     "innings": "",
+     "note": "약 강습타구에 포구 및 공 방향 놓침",
+     "po": 0,
+     "a": 0,
+     "e": 1,
+     "dp": 0
+    }
+   ],
+   "videos": [],
+   "date": "2026-06-27",
+   "opponent": "역삼초",
+   "venue": "강남초",
+   "homeAway": "홈",
+   "level": "",
+   "type": "practice",
+   "myScore": "2",
+   "oppScore": "5",
+   "note": "",
+   "pdec": ""
+  },
+  {
+   "id": "mtgkjj8rdk1xb",
+   "pas": [
+    {
+     "id": "mtgkm42k58z02",
+     "inning": 2,
+     "pitcherNo": "01",
+     "pitcher": "김동하",
+     "result": "LO",
+     "zone": {
+      "x": 144.8,
+      "y": 233.8,
+      "z2": 1
+     },
+     "rbi": 0,
+     "runs": 0,
+     "sb": 0,
+     "cs": 0,
+     "note": ""
+    },
+    {
+     "id": "mtgknol5pnlif",
+     "inning": 4,
+     "pitcherNo": "21",
+     "pitcher": "문태양",
+     "result": "3B",
+     "zone": {
+      "x": 216.1,
+      "y": 210.3,
+      "z2": 1
+     },
+     "rbi": 0,
+     "runs": 0,
+     "sb": 0,
+     "cs": 0,
+     "note": "실수:선행주자의 주루를 보고 판단필요"
+    }
+   ],
+   "def": [
+    {
+     "id": "mtgu3h12wmtc5",
+     "pos": "2B",
+     "inning": 1,
+     "result": "",
+     "innings": "6",
+     "note": "",
+     "po": 0,
+     "a": 0,
+     "e": 0,
+     "dp": 0
+    }
+   ],
+   "videos": [],
+   "date": "2026-08-16",
+   "opponent": "상일초",
+   "venue": "강남초",
+   "homeAway": "홈",
+   "level": "",
+   "type": "practice",
+   "myScore": "4",
+   "oppScore": "4",
+   "note": "",
+   "pdec": ""
+  },
+  {
+   "id": "mtgksphkkshbr",
+   "pas": [
+    {
+     "id": "mtgl0b4gsfmui",
+     "inning": 2,
+     "pitcherNo": "19",
+     "pitcher": "김율서",
+     "result": "FO",
+     "zone": {
+      "x": 205.1,
+      "y": 212.9,
+      "z2": 1
+     },
+     "rbi": 0,
+     "runs": 0,
+     "sb": 0,
+     "cs": 0,
+     "note": ""
+    },
+    {
+     "id": "mtgl0uax7hyuc",
+     "inning": 4,
+     "pitcherNo": "21",
+     "pitcher": "조경준",
+     "result": "K",
+     "zone": null,
+     "rbi": 0,
+     "runs": 0,
+     "sb": 0,
+     "cs": 0,
+     "note": "루킹삼진"
+    },
+    {
+     "id": "mtgl1h6qqf8h3",
+     "inning": 5,
+     "pitcherNo": "05",
+     "pitcher": "박지호",
+     "result": "GO",
+     "zone": {
+      "x": 175.1,
+      "y": 234.5,
+      "z2": 1
+     },
+     "rbi": 0,
+     "runs": 0,
+     "sb": 0,
+     "cs": 0,
+     "note": ""
+    }
+   ],
+   "def": [
+    {
+     "id": "mtgl524o10c8c",
+     "pos": "2B",
+     "inning": 5,
+     "result": "A",
+     "innings": "6",
+     "note": "",
+     "po": 0,
+     "a": 1,
+     "e": 0,
+     "dp": 0
+    },
+    {
+     "id": "mtgl5rq7b3nu1",
+     "pos": "2B",
+     "inning": 5,
+     "result": "NP",
+     "innings": "",
+     "note": "조금 더 빨리 다음 동작 연결 필요",
+     "po": 0,
+     "a": 0,
+     "e": 0,
+     "dp": 0
+    }
+   ],
+   "videos": [],
+   "date": "2026-08-24",
+   "opponent": "봉천초",
+   "venue": "구의구장",
+   "homeAway": "중립",
+   "level": "",
+   "type": "official",
+   "myScore": "7",
+   "oppScore": "7",
+   "note": "",
+   "pdec": ""
+  },
+  {
+   "id": "mtgm0is8j7bna",
+   "pas": [
+    {
+     "id": "mtgm117nf7a0x",
+     "inning": 2,
+     "pitcherNo": "15",
+     "pitcher": "배찬영",
+     "result": "GO",
+     "zone": {
+      "x": 147.4,
+      "y": 241.7,
+      "z2": 1
+     },
+     "rbi": 0,
+     "runs": 0,
+     "sb": 0,
+     "cs": 0,
+     "note": ""
+    },
+    {
+     "id": "mtgm1f5qh6yko",
+     "inning": 5,
+     "pitcherNo": "18",
+     "pitcher": "이민준",
+     "result": "GO",
+     "zone": {
+      "x": 190.5,
+      "y": 218.6,
+      "z2": 1
+     },
+     "rbi": 0,
+     "runs": 0,
+     "sb": 0,
+     "cs": 0,
+     "note": ""
+    }
+   ],
+   "def": [
+    {
+     "id": "mtgu0374cegzf",
+     "pos": "2B",
+     "inning": 6,
+     "result": "INN",
+     "innings": "6",
+     "note": "",
+     "po": 0,
+     "a": 0,
+     "e": 0,
+     "dp": 0
+    }
+   ],
+   "videos": [],
+   "date": "2026-08-29",
+   "opponent": "방배초",
+   "venue": "구의구장",
+   "homeAway": "중립",
+   "level": "",
+   "type": "official",
+   "myScore": "0",
+   "oppScore": "2",
+   "note": "",
+   "pdec": ""
+  },
+  {
+   "id": "mtgn5tioac16p",
+   "pas": [
+    {
+     "id": "mtgnfk1j0s70i",
+     "inning": 2,
+     "pitcherNo": "14",
+     "pitcher": "신예수",
+     "result": "BB",
+     "zone": null,
+     "rbi": 0,
+     "runs": 1,
+     "sb": 1,
+     "cs": 0,
+     "note": ""
+    },
+    {
+     "id": "mtgng54fae0i2",
+     "inning": 4,
+     "pitcherNo": "07",
+     "pitcher": "강무경",
+     "result": "K",
+     "zone": null,
+     "rbi": 0,
+     "runs": 0,
+     "sb": 0,
+     "cs": 0,
+     "note": ""
+    }
+   ],
+   "def": [
+    {
+     "id": "mtgnhulbk3ghn",
+     "pos": "2B",
+     "inning": 1,
+     "result": "EF",
+     "innings": "6",
+     "note": "런다운 상황에서 포구 실책,단 유격수의 송구 및 콜 플레이 미스",
+     "po": 0,
+     "a": 0,
+     "e": 1,
+     "dp": 0
+    },
+    {
+     "id": "mtgni38nlpqmr",
+     "pos": "2B",
+     "inning": 1,
+     "result": "A",
+     "innings": "",
+     "note": "",
+     "po": 0,
+     "a": 1,
+     "e": 0,
+     "dp": 0
+    },
+    {
+     "id": "mtgnibynn7g2q",
+     "pos": "2B",
+     "inning": 5,
+     "result": "A",
+     "innings": "",
+     "note": "",
+     "po": 0,
+     "a": 1,
+     "e": 0,
+     "dp": 0
+    }
+   ],
+   "videos": [],
+   "date": "2026-08-30",
+   "opponent": "수유초",
+   "venue": "구의구장",
+   "homeAway": "중립",
+   "level": "",
+   "type": "official",
+   "myScore": "3",
+   "oppScore": "3",
+   "note": "수비 : 포구. 그리고 조금더 빨리 다음 동작으로 이어질수 있게",
+   "pdec": ""
+  },
+  {
+   "id": "mtkwdv0pnhq1o",
+   "pas": [
+    {
+     "id": "mtkwezq0g7sz4",
+     "inning": 2,
+     "pitcherNo": "54",
+     "pitcher": "장한준",
+     "result": "GO",
+     "zone": {
+      "x": 161.1,
+      "y": 254.4,
+      "z2": 1
+     },
+     "rbi": 0,
+     "runs": 0,
+     "sb": 0,
+     "cs": 0,
+     "note": ""
+    },
+    {
+     "id": "mtkwfskvfg6kj",
+     "inning": 4,
+     "pitcherNo": "05",
+     "pitcher": "신예준",
+     "result": "GO",
+     "zone": {
+      "x": 148.3,
+      "y": 247.9,
+      "z2": 1
+     },
+     "rbi": 0,
+     "runs": 0,
+     "sb": 0,
+     "cs": 0,
+     "note": ""
+    },
+    {
+     "id": "mtkwg12h8dt9o",
+     "inning": 6,
+     "pitcherNo": "05",
+     "pitcher": "신예준",
+     "result": "BB",
+     "zone": null,
+     "rbi": 0,
+     "runs": 0,
+     "sb": 0,
+     "cs": 0,
+     "note": ""
+    }
+   ],
+   "def": [],
+   "videos": [],
+   "pdec": "",
+   "date": "2026-03-14",
+   "opponent": "효제초",
+   "venue": "용산",
+   "homeAway": "홈",
+   "level": "",
+   "type": "official",
+   "myScore": "6",
+   "oppScore": "5",
+   "note": ""
+  },
+  {
+   "id": "mtl26thv8n47t",
+   "pas": [],
+   "def": [],
+   "videos": [],
+   "pdec": "",
+   "date": "2026-09-03",
+   "opponent": "",
+   "venue": "",
+   "homeAway": "홈",
+   "level": "",
+   "type": "official",
+   "myScore": "",
+   "oppScore": "",
+   "note": ""
+  }
+ ],
+ "savedAt": "2026-09-03T05:14:06.262Z",
+ "by": "성연제"
+}
