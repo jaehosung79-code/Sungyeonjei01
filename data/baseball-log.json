@@ -860,6 +860,28 @@
      "defId": null,
      "note": "",
      "createdAt": 1788420903799
+    },
+    {
+     "id": "mtl7n108qxv77",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/1iN5Q4fSnzPQORw9TqSb7JZoIswUHqH-r/view?usp=drivesdk",
+     "title": "2번째 타석 · 4회 안타",
+     "folder": "",
+     "paId": "mtl7kx9aa68hk",
+     "defId": null,
+     "note": "",
+     "createdAt": 1788420919256
+    },
+    {
+     "id": "mtl7n9pos77u1",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/1vOKDSWu-61ia2_lmuHyp1VB-EVnQKAUK/view?usp=drivesdk",
+     "title": "3번째 타석 · 5회 야수 선택",
+     "folder": "",
+     "paId": "mtl7lr89untl2",
+     "defId": null,
+     "note": "",
+     "createdAt": 1788420930540
     }
    ],
    "pdec": "",
@@ -874,6 +896,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:36:11.663Z",
+ "savedAt": "2026-09-03T07:36:30.583Z",
  "by": "성연제"
 }
