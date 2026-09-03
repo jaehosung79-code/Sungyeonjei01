@@ -379,7 +379,12 @@ td.ind{padding-left:20px}
 #tip b{font-weight:650}
 
 /* ---------- video ---------- */
-video{width:100%;border-radius:var(--r-sm);background:#000;display:block}
+/* 플레이어는 기기 화면 높이에 맞춰 자동으로 줄어듭니다 (가로 태블릿에서 너무 커지지 않게) */
+video{
+  width:100%;max-width:100%;display:block;margin:0 auto;
+  max-height:min(62vh, 520px);object-fit:contain;
+  border-radius:var(--r-sm);background:#000;
+}
 .vidcard{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px;margin-bottom:8px}
 .vidcard .vh{display:flex;gap:8px;align-items:center;margin-bottom:8px}
 .vtitle{
@@ -400,8 +405,17 @@ video{width:100%;border-radius:var(--r-sm);background:#000;display:block}
 .vgame[aria-expanded="true"] .chev{transform:rotate(180deg)}
 .vlist{margin-top:10px;border-top:1px solid var(--grid);padding-top:10px}
 .vidcard .vh .t{flex:1;min-width:0;font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ratio{position:relative;padding-top:56.25%;border-radius:var(--r-sm);overflow:hidden;background:#000}
+/* 16:9 비율을 지키면서, 화면 높이의 62%(최대 520px)를 넘지 않게 폭을 제한합니다 */
+.ratio{
+  position:relative;width:100%;margin:0 auto;
+  max-width:min(100%, calc(min(62vh, 520px) * 16 / 9));
+  padding-top:56.25%;border-radius:var(--r-sm);overflow:hidden;background:#000;
+}
 .ratio > *{position:absolute;inset:0;width:100%;height:100%;border:0}
+@supports (aspect-ratio: 16 / 9){
+  .ratio{padding-top:0;aspect-ratio:16 / 9;max-height:min(62vh, 520px)}
+  .ratio > *{position:absolute;inset:0}
+}
 .hint{font-size:12px;color:var(--text-3);line-height:1.45}
 .note{background:var(--surface-2);border-radius:var(--r-sm);padding:10px 12px;font-size:12.5px;color:var(--text-2);line-height:1.5}
 .pickbox{
