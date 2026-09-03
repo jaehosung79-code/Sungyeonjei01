@@ -610,9 +610,10 @@ function toast(msg){
 const blank = ()=>({
   version:1,
   profile:{ name:"", team:"", number:"", position:"", bats:"우타", throws:"우투" },
+  profiles:{},          // 연도별 선수 정보 { "2026": {name, team, number, position, bats, throws}, ... }
   games:[],
   settings:{ level:"elem", inningsBy:{elem:6, mid:7, high:7, univ:9}, autoplay:"sound",
-             pickEach:false, stampNames:false, fullscreen:true,
+             fullscreen:true,
              gh:{repo:"", branch:"main", path:"data/baseball-log.json", auto:true, wifi:true, autoPull:true} },
   backup:{ at:0, sig:"" },
   ui:{ tab:"home", year:"all", gtype:"all", metric:"avg" }
@@ -663,16 +664,62 @@ function load(){
     const raw = localStorage.getItem(KEY);
     if(raw){ const o = JSON.parse(raw); S = Object.assign(blank(), o); S.ui = Object.assign(blank().ui, o.ui||{}); S.settings = Object.assign(blank().settings, o.settings||{});
       S.settings.inningsBy = Object.assign(blank().settings.inningsBy, (o.settings&&o.settings.inningsBy)||{});
-      S.backup = Object.assign(blank().backup, o.backup||{}); }
+      S.backup = Object.assign(blank().backup, o.backup||{});
+      S.profiles = (o.profiles && typeof o.profiles==="object")? o.profiles : {}; }
   }catch(e){ console.warn("저장 데이터를 읽지 못했습니다.", e); }
   if(!Array.isArray(S.games)) S.games = [];
   if(!S.ui.gtype) S.ui.gtype = "all";
   normalizeGames(S.games);
+  migrateProfiles();
   S.games.forEach(g=>{ g.pas=g.pas||[]; g.def=g.def||[]; g.videos=g.videos||[];
     // 삼진·볼넷 등 타구가 없는 결과에 남아 있던 타구 위치는 정리
     g.pas.forEach(p=>{ if(p.zone && !(RMAP[p.result] && RMAP[p.result].bip)) p.zone = null; });
   });
 }
+/* ------------------------ 연도별 선수 정보 ------------------------
+   배번·소속 팀·포지션은 해마다 달라질 수 있어 연도별로 따로 보관합니다.
+   S.profile 은 "가장 최근 연도"의 정보로 유지해 예전 형식과도 맞춥니다. */
+function thisYear(){ return String(new Date().getFullYear()); }
+function profYears(){
+  const set = new Set(Object.keys(S.profiles || {}));
+  (S.games||[]).forEach(g=>{ const y=(g.date||"").slice(0,4); if(y) set.add(y); });
+  set.add(thisYear());
+  return Array.from(set).filter(Boolean).sort().reverse();
+}
+function latestProfYear(){
+  const ks = Object.keys(S.profiles || {}).sort();
+  return ks.length? ks[ks.length-1] : thisYear();
+}
+/* 그 해 정보가 없으면 그 이전 가장 가까운 해의 정보를 씁니다 */
+function profileFor(y){
+  const P = S.profiles || {}, base = blank().profile;
+  if(y && P[y]) return Object.assign({}, base, P[y]);
+  const ks = Object.keys(P).sort();
+  let pick = null;
+  ks.forEach(k=>{ if(!y || k <= y) pick = k; });
+  if(!pick && ks.length) pick = ks[0];
+  if(pick) return Object.assign({}, base, P[pick]);
+  return Object.assign({}, base, S.profile || {});
+}
+/* 화면 상단에 쓸 정보 — 시즌을 고른 상태면 그 해 정보를 보여 줍니다 */
+function curProfile(){
+  const y = (S.ui.year && S.ui.year !== "all")? S.ui.year : latestProfYear();
+  return profileFor(y);
+}
+function syncProfile(){
+  const ks = Object.keys(S.profiles || {});
+  if(ks.length) S.profile = profileFor(latestProfYear());
+}
+/* 예전 기록(연도 구분 없는 선수 정보)을 연도별로 옮깁니다 */
+function migrateProfiles(){
+  S.profiles = S.profiles || {};
+  if(Object.keys(S.profiles).length) return;
+  const p = S.profile || {};
+  if(!(p.name || p.team || p.number || p.position)) return;
+  const ys = (S.games||[]).map(g=>(g.date||"").slice(0,4)).filter(Boolean).sort();
+  S.profiles[ys.length? ys[ys.length-1] : thisYear()] = Object.assign({}, p);
+}
+
 function save(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(()=>{
@@ -806,7 +853,7 @@ function envInfo(){
   return {
     font: fontStatus(),
     full: (document.fullscreenElement? "전체 화면(API)" : displayMode()==="fullscreen"? "전체 화면(설치됨)" : "아님")
-        + " · 설정 " + fsMode(),
+        + " · 설정 " + (S.settings.fullscreen===false? "꺼짐":"켜짐"),
     install: isInstalledApp()? "설치된 앱으로 실행 중"
            : (window.__installReady? "설치 가능 (아직 설치 안 함)"
            : "설치 신호 없음 — 이미 설치한 앱이면 정상입니다 (설치된 앱에는 신호가 오지 않습니다). 새로 설치하려면 크롬 메뉴(⋮) → 앱 설치"),
@@ -890,15 +937,7 @@ function installState(){
    화면의 첫 터치에 얹어 실행합니다. */
 const FULL_OK = (typeof document!=="undefined") && !!(document.documentElement.requestFullscreen
   || document.documentElement.webkitRequestFullscreen);
-let fsDisarm  = null;    // 첫 터치 자동 전환 대기 해제
-let fsPending = false;   // 전체 화면 요청이 진행 중인지
-/* 전체 화면 모드 — always: 열 때마다 자동 / once: 지금만 / off: 사용 안 함 */
-const FS_MODES = [["always","항상 켜기"],["once","이번만"],["off","끄기"]];
-function fsMode(){
-  if(S.settings.fullscreen === false) return "off";
-  if(S.settings.fullscreen === "once") return "once";
-  return "always";
-}
+let fsScreenArmed = false;
 function displayMode(){
   try{
     for(const m of ["fullscreen","standalone","minimal-ui","browser"])
@@ -909,30 +948,13 @@ function displayMode(){
 function isFullscreen(){
   return !!(document.fullscreenElement || document.webkitFullscreenElement) || displayMode()==="fullscreen";
 }
-/* 브라우저마다 지원 방식이 달라 순서대로 시도하고, 결과를 알려 줍니다 */
-function enterFullscreen(cb){
+function enterFullscreen(){
   const el = document.documentElement;
-  if(document.fullscreenElement || document.webkitFullscreenElement){ if(cb) cb(true); return; }
-  if(fsPending){ if(cb) cb(true); return; }
-  fsPending = true;
-  const done = ok =>{ fsPending = false; if(cb) cb(!!ok); };
-  const plain = ()=>{
-    try{
-      const q = el.requestFullscreen();
-      if(q && q.then) q.then(()=>done(true), ()=>done(false)); else done(true);
-    }catch(e){ done(false); }
-  };
   try{
-    if(el.requestFullscreen){
-      let pr = null;
-      try{ pr = el.requestFullscreen({navigationUI:"hide"}); }
-      catch(e){ plain(); return; }
-      if(pr && pr.then) pr.then(()=>done(true), plain); else done(true);
-      return;
-    }
-    if(el.webkitRequestFullscreen){ el.webkitRequestFullscreen(); done(true); return; }
-    done(false);
-  }catch(e){ done(false); }
+    const p = el.requestFullscreen? el.requestFullscreen({navigationUI:"hide"})
+            : el.webkitRequestFullscreen? el.webkitRequestFullscreen() : null;
+    if(p && p.catch) p.catch(()=>{});
+  }catch(e){}
 }
 function exitFullscreen(){
   try{
@@ -941,53 +963,37 @@ function exitFullscreen(){
     if(p && p.catch) p.catch(()=>{});
   }catch(e){}
 }
-/* 모드를 바꿀 때는 대기 중인 자동 전환을 먼저 끕니다 —
-   그러지 않으면 같은 터치에서 자동 전환과 버튼이 동시에 걸려 아무 일도 일어나지 않습니다 */
-function setFsMode(v){
-  disarmFullscreen();
-  S.settings.fullscreen = (v==="off")? false : (v==="once")? "once" : true;
-  saveNow();
-  if(v==="off"){
-    exitFullscreen();
-    setTimeout(render, 200);
-    toast(displayMode()==="fullscreen"? "설치된 앱은 항상 전체 화면으로 열립니다" : "전체 화면을 쓰지 않습니다");
-    return;
-  }
+function toggleFullscreen(){
   if(displayMode()==="fullscreen" && !document.fullscreenElement){
-    setTimeout(render, 200); toast("이미 전체 화면으로 실행 중입니다"); return;
+    toast("이미 전체 화면으로 실행 중입니다"); return;
   }
-  if(!FULL_OK){
-    setTimeout(render, 200); toast("이 브라우저는 전체 화면 전환을 지원하지 않습니다"); return;
+  if(!FULL_OK){ toast("이 브라우저는 전체 화면을 지원하지 않습니다"); return; }
+  if(document.fullscreenElement || document.webkitFullscreenElement){
+    S.settings.fullscreen = false; exitFullscreen();
+  } else {
+    S.settings.fullscreen = true; enterFullscreen();
   }
-  enterFullscreen(ok=>{
-    setTimeout(render, 200);
-    toast(!ok? "이 브라우저에서 전체 화면으로 바꾸지 못했습니다 — 홈 화면에 추가해 열면 주소창 없이 시작합니다"
-        : v==="once"? "이번 화면만 전체 화면으로 봅니다"
-        : "앱을 열 때마다 전체 화면으로 시작합니다");
-  });
+  saveNow();
 }
-/* "항상 켜기"일 때, 앱을 연 뒤 첫 터치에 전체 화면으로 바꿉니다
-   (전체 화면 전환은 사용자의 터치 안에서만 허용됩니다) */
 function armFullscreen(){
-  if(!FULL_OK || fsDisarm) return;
-  if(fsMode() !== "always") return;
-  if(displayMode() === "fullscreen") return;
+  if(!FULL_OK || fsScreenArmed) return;
+  if(S.settings.fullscreen === false) return;
+  if(displayMode() === "fullscreen") return;       // 이미 전체 화면으로 열렸습니다
   if(document.fullscreenElement) return;
-  const once = ev=>{
-    // 전체 화면 모드 버튼을 누른 경우는 그 버튼이 직접 처리합니다
-    try{ if(ev && ev.target && ev.target.closest && ev.target.closest("[data-act='fsmode']")) return; }catch(e){}
-    disarmFullscreen();
-    if(fsMode()==="always" && !document.fullscreenElement) enterFullscreen();
-  };
-  fsDisarm = ()=>{
+  fsScreenArmed = true;
+  const once = (ev)=>{
+    /* [전체 화면으로 보기] 버튼을 누른 터치는 그냥 둡니다 —
+       여기서 먼저 전체 화면으로 바꾸면, 이어서 실행되는 버튼이
+       "이미 전체 화면이네" 하고 다시 꺼 버려서 아무 일도 안 일어납니다. */
+    try{ if(ev && ev.target && ev.target.closest && ev.target.closest("[data-act='fullscreen']")) return; }catch(e){}
     document.removeEventListener("pointerdown", once, true);
     document.removeEventListener("keydown", once, true);
-    fsDisarm = null;
+    fsScreenArmed = false;
+    if(S.settings.fullscreen !== false && !document.fullscreenElement) enterFullscreen();
   };
   document.addEventListener("pointerdown", once, true);
   document.addEventListener("keydown", once, true);
 }
-function disarmFullscreen(){ if(fsDisarm) fsDisarm(); }
 function isInstalledApp(){
   /* 설치한 앱은 manifest 의 display 값(fullscreen·standalone·minimal-ui)으로 열립니다.
      예전에는 standalone 만 확인해서, "display":"fullscreen" 으로 설치하면
@@ -2466,23 +2472,23 @@ function togBtn(act, on, label){
   return `<button class="btn sm" data-act="${act}" aria-pressed="${on}">${on?"✓ ":""}${label}</button>`;
 }
 function screenCard(){
-  const mode = fsMode();
-  const now  = document.fullscreenElement? "전체 화면"
-             : displayMode()==="fullscreen"? "전체 화면 (설치된 앱)"
-             : displayMode()==="standalone"? "앱 모드"
-             : displayMode()==="minimal-ui"? "간단 모드" : "브라우저";
   return `<div class="card"><div class="hd"><div style="flex:1"><h3>전체 화면</h3>
       <div class="cap">주소창과 상태바를 숨기고 화면을 넓게 씁니다.</div></div></div>
-      <div class="filters" style="margin-bottom:8px"><div class="seg" role="group" aria-label="전체 화면 모드">
-        ${FS_MODES.map(([v,l])=>`<button data-act="fsmode" data-v="${v}" aria-pressed="${mode===v}">${l}</button>`).join("")}
-      </div></div>
-      <div class="hint">현재 화면: <b>${now}</b>${FULL_OK? "" : " · 이 브라우저는 전체 화면 전환을 지원하지 않습니다"}</div>
-      <div class="hint" style="margin-top:8px">
-        · <b>항상 켜기</b> — 앱을 열고 화면을 한 번 터치하면 자동으로 전체 화면이 됩니다.<br>
-        · <b>이번만</b> — 지금 화면만 전체 화면으로 바꾸고, 다음에 열 때는 그대로 둡니다.<br>
-        · <b>끄기</b> — 전체 화면으로 바꾸지 않습니다.<br>
-        빠져나올 때는 화면 위에서 아래로 쓸어내리거나 <b>끄기</b>를 누르세요.
-        ${isInstalledApp()? "" : "<br><b>홈 화면에 추가</b>해서 열면 처음부터 주소창 없이 시작합니다."}</div>
+      ${(displayMode()==="fullscreen" && !document.fullscreenElement)
+        ? `<div class="hint" style="color:var(--good);font-weight:650">전체 화면으로 실행 중입니다.</div>
+           <div class="hint" style="margin-top:8px">홈 화면 아이콘으로 열면 항상 이 상태로 시작합니다.</div>`
+        : FULL_OK
+        ? `<div class="btnrow">
+             <button class="btn ${document.fullscreenElement?"":"pri"}" data-act="fullscreen">${
+               document.fullscreenElement? "전체 화면 끄기" : "전체 화면으로 보기"}</button>
+           </div>
+           <div class="hint" style="margin-top:10px">
+             현재 <b>${document.fullscreenElement? "전체 화면" : (displayMode()==="standalone"? "앱 모드" : "브라우저")}</b> ·
+             다음 실행에도 유지 <b>${S.settings.fullscreen===false? "아니오" : "예"}</b><br>
+             켜 두면 앱을 열고 화면을 한 번 터치할 때 자동으로 전체 화면이 됩니다.
+             빠져나올 때는 화면 위에서 아래로 쓸어내리거나 이 버튼을 다시 누르세요.</div>`
+        : `<div class="hint">이 브라우저는 전체 화면 전환을 지원하지 않습니다.
+             <b>홈 화면에 추가</b>해서 실행하면 주소창 없이 열립니다.</div>`}
     </div>`;
 }
 function installCard(){
@@ -2512,24 +2518,29 @@ function bundleHint(){
     + (stale? ` <span style="color:var(--warn);font-weight:650">— 백업 이후 바뀐 기록이 있습니다</span>` : "");
 }
 function exportHint(){
-  if(S.settings.pickEach)
-    return `저장할 때 <b>공유 시트</b>가 열립니다 — <b>파일에 저장</b>을 골라 원하는 폴더에 넣을 수 있습니다.<br>
-      영상까지 담은 <b>전체 백업</b>은 파일을 만드는 데 시간이 걸려 공유 시트가 열리지 않을 수 있는데,
-      그때는 <b>다운로드 폴더</b>에 저장되고 그렇게 알려 드립니다.`;
-  return `내보낸 파일은 이 기기의 <b>다운로드 폴더</b>에 저장됩니다.
-    저장 위치를 직접 고르고 싶으면 위의 <b>저장할 때 위치 고르기</b>를 켜 주세요.<br>
-    <b>파일 이름에 날짜 넣기</b>를 켜면 <span style="font-variant-numeric:tabular-nums">baseball-backup_${stamp()}.zip</span> 처럼 저장돼
-    날짜별로 쌓이고, 꺼 두면 항상 같은 이름으로 덮어씁니다.`;
+  return `저장한 파일은 이 기기의 <b>다운로드 폴더</b>에 들어갑니다 —
+    <span style="font-variant-numeric:tabular-nums">baseball-backup_${stamp()}.zip</span> 처럼
+    <b>날짜가 붙어</b> 저장되므로 예전 백업을 덮어쓰지 않습니다.
+    다른 곳에 두고 싶으면 파일 앱에서 옮기거나 공유하세요.`;
 }
 function viewSettings(){
-  const p = S.profile;
+  const pfYears = profYears();
+  const pfY = (S.ui.pfYear && pfYears.indexOf(S.ui.pfYear)>=0)? S.ui.pfYear : pfYears[0];
+  const p = profileFor(pfY);
+  const pfSaved = !!(S.profiles && S.profiles[pfY]);
   const raw = (()=>{ try{ return new Blob([JSON.stringify(S)]).size; }catch(e){ return null; } })();
   const vids = S.games.reduce((a,g)=>a+g.videos.filter(v=>v.kind==="file").reduce((x,v)=>x+(v.size||0),0),0);
   return `${installCard()}
     ${screenCard()}
 
     <div class="card"><div class="hd"><div style="flex:1"><h3>선수 정보</h3>
-      <div class="cap">기록지 상단과 내보내기 파일에 함께 저장됩니다</div></div></div>
+      <div class="cap">연도별로 따로 저장됩니다 — 배번·소속 팀·포지션이 해마다 달라도 그대로 남습니다</div></div></div>
+      <div class="filters" style="margin-bottom:10px"><div class="seg" role="group" aria-label="연도 선택">
+        ${pfYears.map(y=>`<button data-act="pfYear" data-v="${y}" aria-pressed="${pfY===y}">${y}</button>`).join("")}
+      </div>
+      <button class="btn sm" data-act="pfAddYear">+ 연도</button></div>
+      <div class="hint" style="margin:-4px 0 10px">
+        <b>${esc(pfY)}년</b> 정보를 ${pfSaved? "수정합니다" : "새로 입력합니다 — 지금은 이전 연도 정보를 그대로 보여 주고 있습니다"}.</div>
     <div class="f2">
       <label class="f"><span>이름</span><input id="pf_name" value="${esc(p.name)}" placeholder="홍길동"></label>
       <label class="f"><span>소속 팀</span><input id="pf_team" value="${esc(p.team)}" placeholder="○○ 베어스"></label>
@@ -2539,7 +2550,11 @@ function viewSettings(){
       <label class="f"><span>타석</span><select id="pf_bats">${["우타","좌타","양타"].map(x=>`<option ${p.bats===x?"selected":""}>${x}</option>`).join("")}</select></label>
       <label class="f"><span>투구</span><select id="pf_thr">${["우투","좌투"].map(x=>`<option ${p.throws===x?"selected":""}>${x}</option>`).join("")}</select></label>
     </div>
-    <button class="btn pri block nb" data-act="saveProfile">선수 정보 저장</button></div>
+    <button class="btn pri block nb" data-act="saveProfile" data-v="${pfY}">${esc(pfY)}년 선수 정보 저장</button>
+    ${pfSaved? `<div class="btnrow" style="margin-top:8px;align-items:center">
+        ${delBtn("pfDelYear", `data-v="${pfY}"`, pfY+"년 정보 삭제")}
+        <span class="hint">${esc(pfY)}년 정보 삭제</span></div>` : ""}
+    <div class="hint" style="margin-top:10px">시즌(연도)을 고르면 화면 위쪽 이름·배번도 그 해 정보로 바뀝니다.</div></div>
 
     <div class="card"><div class="hd"><div style="flex:1"><h3>경기장 규격</h3>
       <div class="cap">타구 위치 그림과 추정 거리에 쓰입니다. 경기마다 다른 구장을 쓸 때는 경기 정보에서 따로 지정할 수 있습니다.</div></div></div>
@@ -2591,10 +2606,6 @@ function viewSettings(){
       </div>
       <div class="hint" style="margin-top:10px">${bundleHint()}</div>
       <div id="missvid"></div>
-      <div class="btnrow" style="margin-top:12px">
-        ${togBtn("optPick",  !!S.settings.pickEach,   "저장할 때 위치 고르기")}
-        ${togBtn("optStamp", !!S.settings.stampNames, "파일 이름에 날짜 넣기")}
-      </div>
       <div class="hint" style="margin-top:10px">${exportHint()}</div>
     </div>
 
@@ -2663,7 +2674,7 @@ function hashStr(t){ let h=5381; for(let i=0;i<t.length;i++){ h=((h<<5)+h) ^ t.c
 function ghPayload(){
   const games = JSON.parse(JSON.stringify(S.games||[]));
   games.forEach(g=>{ g.videos = (g.videos||[]).filter(v=> v.kind==="link"); });
-  return {app:"bb-note", version:1, profile:S.profile, games:games};
+  return {app:"bb-note", version:1, profile:S.profile, profiles:S.profiles||{}, games:games};
 }
 function ghHash(o){ return hashStr(stableStr(o || ghPayload())); }
 function ghDirty(){ return ghHash() !== ghState.hash; }
@@ -2760,6 +2771,8 @@ function ghApply(o, mode){
     inc.forEach(g=>{ const f = mine.get(g.id); if(f && f.length) g.videos = (g.videos||[]).concat(f); });
     S.games = inc;
     if(o.profile) S.profile = Object.assign(blank().profile, o.profile);
+    if(o.profiles && typeof o.profiles==="object") S.profiles = o.profiles;
+    migrateProfiles(); syncProfile();
     S.ui.gameId = null;
   }
   S.games.forEach(g=>{ g.pas.sort((x,y)=>num(x.inning,0)-num(y.inning,0)); g.def.sort((x,y)=>num(x.inning,0)-num(y.inning,0)); });
@@ -2810,7 +2823,7 @@ async function ghPull(manual){
     if(got.missing){ if(manual) toast("저장소에 기록 파일이 아직 없습니다"); return false; }
     const o = got.data;
     if(!o || !Array.isArray(o.games)) throw new Error("야구 기록 파일이 아닙니다");
-    const same = ghHash({app:"bb-note", version:1, profile:o.profile||{}, games:(o.games||[]).map(g=>Object.assign({}, g, {videos:(g.videos||[]).filter(v=>v.kind==="link")}))}) === ghHash();
+    const same = ghHash({app:"bb-note", version:1, profile:o.profile||{}, profiles:o.profiles||{}, games:(o.games||[]).map(g=>Object.assign({}, g, {videos:(g.videos||[]).filter(v=>v.kind==="link")}))}) === ghHash();
     if(same){
       ghState.sha = got.sha; ghState.hash = ghHash(); ghState.pull = Date.now(); ghSaveState();
       if(manual) toast("이미 최신입니다");
@@ -2948,6 +2961,17 @@ function ghCard(){
          · <b>비공개 저장소</b>를 권장합니다 — 공개로 두면 기록이 인터넷에 그대로 공개됩니다.<br>
          · 올리는 기기에만 토큰을 넣고, 보기만 하는 사람은 토큰 없이 주소만 넣으면 됩니다.</div>`)
    + `</div>`;
+}
+
+function pfAddYearSheet(){
+  openSheet(`<div class="sh"><h3>연도 추가</h3><div class="spacer" style="flex:1"></div>
+      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+    <div class="hint" style="padding:2px 0 12px">그 해의 배번·소속 팀·포지션을 따로 저장합니다.
+      비워 두는 항목은 이전 연도 정보가 그대로 채워집니다.</div>
+    <label class="f"><span>연도</span>
+      <input id="pf_y" type="number" inputmode="numeric" value="${esc(thisYear())}" min="1900" max="2199"></label>
+    <div class="sf"><button class="btn" data-act="close">취소</button>
+      <button class="btn pri" data-act="pfAddYearSave">추가</button></div>`);
 }
 
 /* ---------------------- 저장(Save) / 불러오기(Open) ---------------------- */
@@ -3538,37 +3562,13 @@ function mimeOf(name){
   if(/\.zip$/i.test(name))  return {"application/zip":[".zip"]};
   return {"application/octet-stream":[".bin"]};
 }
-/* 모바일(아이폰·아이패드 등) — 공유 시트로 저장 위치를 직접 고르게 합니다.
-   iOS는 "파일에 저장"을 고르면 아이클라우드·내 아이패드 등 원하는 폴더에 넣을 수 있고,
-   같은 이름이면 "바꾸기"로 덮어쓸 수 있습니다. */
-async function shareFile(name, blob){
-  try{
-    if(!navigator.canShare || !window.File) return false;
-    const f = new File([blob], name, {type: blob.type || "application/octet-stream"});
-    if(!navigator.canShare({files:[f]})) return false;
-    await navigator.share({files:[f], title:name});
-    return true;
-  }catch(e){
-    // 사용자가 공유 시트를 닫은 경우만 "완료"로 봅니다.
-    // NotAllowedError 는 파일을 만드는 동안 터치 승인이 만료된 경우라
-    // 실패로 두고 일반 다운로드로 넘어가야 합니다 (안 그러면 아무 일도 안 일어납니다).
-    if(e && e.name==="AbortError") return true;
-    console.warn("공유 시트 실패 — 일반 다운로드로 저장합니다", e);
-    return false;
-  }
-}
 function fname(base, ext){
-  return base + (S.settings.stampNames? "_"+stamp() : "") + "." + ext;
+  return base + "_" + stamp() + "." + ext;
 }
 /* 파일 저장 — 폴더 권한 없이, 브라우저의 일반 다운로드(또는 공유 시트)로만 저장합니다 */
 async function download(name, blob, key){
   void key;
-  // 1) 저장 위치를 직접 고르는 설정이면 공유 시트를 먼저 띄웁니다 (휴대폰)
-  if(S.settings.pickEach){
-    if(await shareFile(name, blob)) return;
-    toast("이 기기에서는 위치를 고를 수 없어 다운로드 폴더에 저장합니다");
-  }
-  // 2) 앱 내장 다운로드 경로
+  // 1) 앱 내장 다운로드 경로
   const ns = await dlNs();
   if(ns){
     try{ await ns.save({filename:name, data:blob}); toast("파일을 저장했습니다"); return; }
@@ -3582,7 +3582,7 @@ async function download(name, blob, key){
       if(code === "too_large"){ toast("파일이 너무 커서 저장할 수 없습니다"); return; }
     }
   }
-  // 3) 일반 다운로드 (다운로드 폴더)
+  // 2) 일반 다운로드 (다운로드 폴더)
   anchorDownload(name, blob);
   toast("파일을 내보냈습니다 · " + name);
 }
@@ -3972,7 +3972,7 @@ document.addEventListener("click", ev=>{
     case "openVideo": openVideoTab(gid, id); break;
     case "autoplay": S.settings.autoplay=v; saveNow(); render(); toast("자동 재생: "+AUTOPLAY[v]); break;
     case "theme": setTheme(v); break;
-    case "fsmode": setFsMode(v); break;
+    case "fullscreen": toggleFullscreen(); setTimeout(render, 150); break;
     case "toggleVG": {
       if(openVG.has(id)) openVG.delete(id); else openVG.add(id);
       render(); break; }
@@ -3996,10 +3996,31 @@ document.addEventListener("click", ev=>{
       try{ inp.dispatchEvent(new Event("input", {bubbles:true})); }catch(e){}
       break; }
 
-    case "saveProfile":
-      S.profile = {name:$("#pf_name").value.trim(), team:$("#pf_team").value.trim(), number:$("#pf_num").value.trim(),
+    case "pfYear": S.ui.pfYear = v; save(); render(); break;
+    case "pfAddYear": pfAddYearSheet(); break;
+    case "pfAddYearSave": {
+      const y = String(num($("#pf_y").value, 0));
+      if(!/^\d{4}$/.test(y)){ toast("연도를 네 자리로 입력해 주세요 (예: 2026)"); return; }
+      S.profiles = S.profiles || {};
+      if(!S.profiles[y]) S.profiles[y] = Object.assign({}, profileFor(y));
+      S.ui.pfYear = y; syncProfile(); saveNow(); closeSheet(); render();
+      toast(y + "년 선수 정보를 추가했습니다"); break; }
+    case "pfDelYear":
+      ask(v + "년 정보 삭제", "이 연도의 선수 정보를 지웁니다. 경기·타석 기록은 그대로 남습니다.",
+        [{label:"삭제", style:"dan"},{label:"취소"}]).then(k=>{
+        if(k!==0) return;
+        if(S.profiles) delete S.profiles[v];
+        S.ui.pfYear = null; syncProfile(); saveNow(); render(); toast("삭제했습니다");
+      }); break;
+    case "saveProfile": {
+      const y = v || thisYear();
+      const rec = {name:$("#pf_name").value.trim(), team:$("#pf_team").value.trim(), number:$("#pf_num").value.trim(),
         position:$("#pf_pos").value, bats:$("#pf_bats").value, throws:$("#pf_thr").value};
-      saveNow(); render(); toast("선수 정보를 저장했습니다"); break;
+      S.profiles = S.profiles || {};
+      S.profiles[y] = rec;
+      S.ui.pfYear = y;
+      syncProfile();
+      saveNow(); render(); toast(y + "년 선수 정보를 저장했습니다"); break; }
 
     case "ghSheet": ghSheet(); break;
     case "ghSaveCfg": ghSaveCfg(); break;
@@ -4027,8 +4048,6 @@ document.addEventListener("click", ev=>{
     case "relinkOne": {
       const g0=S.games.find(x=>x.id===gid); const v0=g0&&g0.videos.find(x=>x.id===id);
       if(v0){ missCache=[{g:g0, v:v0}]; relinkVideos(); } break; }
-    case "optPick":   S.settings.pickEach   = !S.settings.pickEach;   saveNow(); render(); break;
-    case "optStamp":  S.settings.stampNames = !S.settings.stampNames; saveNow(); render(); break;
 
     case "wipe":
       ask("전체 기록 삭제","모든 경기·타석·수비·영상 기록이 이 기기에서 완전히 삭제됩니다.<br>먼저 JSON으로 백업하는 것을 권합니다.",
@@ -4220,7 +4239,7 @@ function render(){
   });
   const sb = $("#setBtn");
   if(sb){ sb.classList.toggle("on", t==="settings"); sb.setAttribute("aria-current", t==="settings"? "page":"false"); }
-  const p = S.profile;
+  const p = curProfile();
   $("#subttl").textContent = p.name? [p.name, p.number?"#"+p.number:"", p.team].filter(Boolean).join(" · ") : "기록 · 분석 · 영상";
   if(lastTab!==t){ window.scrollTo(0,0); lastTab=t; }
   envBanner();
