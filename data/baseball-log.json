@@ -248,6 +248,17 @@
      "defId": "mtgl524o10c8c",
      "note": "",
      "createdAt": 1788259529413
+    },
+    {
+     "id": "mtijk8wvmhiw5",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/12skkinWAG4ly2prC96ElymHfs5A2SLO-/view?usp=drivesdk",
+     "title": "수비 5회 · 2루수 호수비",
+     "folder": "",
+     "paId": null,
+     "defId": "mtgl5rq7b3nu1",
+     "note": "",
+     "createdAt": 1788259546436
     }
    ],
    "date": "2026-08-24",
@@ -580,6 +591,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:07:45.226Z",
+ "savedAt": "2026-09-03T07:08:20.235Z",
  "by": "성연제"
 }
