@@ -732,10 +732,14 @@
      "id": "mtl77llwe7hb3",
      "inning": 6,
      "pitcherNo": "14",
-     "pitcher": "",
+     "pitcher": "신예수",
      "result": "2B",
-     "zone": null,
-     "rbi": 0,
+     "zone": {
+      "x": 212,
+      "y": 212.8,
+      "z2": 1
+     },
+     "rbi": 1,
      "runs": 0,
      "sb": 0,
      "cs": 0,
@@ -756,6 +760,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:23:30.481Z",
+ "savedAt": "2026-09-03T07:24:01.714Z",
  "by": "성연제"
 }
