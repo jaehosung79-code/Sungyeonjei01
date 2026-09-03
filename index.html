@@ -388,6 +388,8 @@ video{width:100%;border-radius:var(--r-sm);background:#000;display:block}
   min-height:38px;color:var(--accent-ink);
 }
 .vtitle .tx{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vtitle .vico{flex:none;display:inline-flex;margin-right:7px;opacity:.75}
+.vgame .fico{flex:none;display:inline-flex;color:var(--accent-ink)}
 .vtitle:active{opacity:.7}
 .vgame{
   width:100%;display:flex;align-items:center;gap:10px;background:none;border:0;cursor:pointer;
@@ -404,6 +406,39 @@ video{width:100%;border-radius:var(--r-sm);background:#000;display:block}
 .ratio > *{position:absolute;inset:0;width:100%;height:100%;border:0}
 .hint{font-size:12px;color:var(--text-3);line-height:1.45}
 .note{background:var(--surface-2);border-radius:var(--r-sm);padding:10px 12px;font-size:12.5px;color:var(--text-2);line-height:1.5}
+.pickbox{
+  margin:-4px 0 12px;padding:9px 11px;max-height:200px;overflow:auto;
+  background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-sm);
+}
+.pickbox .pt{font-size:12px;font-weight:650;color:var(--text-2);margin-bottom:4px}
+.pickbox .pt span{font-weight:400;color:var(--text-3)}
+.pickbox .fg{display:flex;gap:5px;align-items:center;margin:8px 0 2px;font-size:11.5px;font-weight:650;color:var(--accent-ink)}
+.pickbox .fg span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pickbox ul{margin:0;padding:0}
+.pickbox li{
+  list-style:none;padding:2px 0 2px 6px;font-size:11.5px;color:var(--text-2);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;
+}
+.pickbox li span{color:var(--text-3)}
+.iorow{display:flex;gap:10px}
+.iobtn{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  padding:14px 8px;min-height:88px;cursor:pointer;
+  background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text-1);
+}
+.iobtn .ic{display:inline-flex;color:var(--accent-ink)}
+.iobtn .lb{font-size:13px;font-weight:700;letter-spacing:.02em}
+.iobtn .sb{font-size:11.5px;color:var(--text-3)}
+.iobtn:active{opacity:.72}
+.mico{display:inline-flex;vertical-align:-5px;margin-right:4px;color:var(--accent-ink)}
+.ioitem{display:flex;align-items:center;gap:12px;text-align:left;margin-bottom:8px;padding:12px 14px;height:auto;min-height:60px}
+.ioitem .no{
+  flex:none;width:26px;height:26px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;
+  background:var(--surface-3);color:var(--text-2);font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;
+}
+.ioitem .tx{display:block;min-width:0}
+.ioitem .tx b{display:block;font-size:13.5px;font-weight:650}
+.ioitem .tx em{display:block;font-style:normal;font-size:11.5px;color:var(--text-3);margin-top:2px;line-height:1.4;white-space:normal}
 .bar{height:7px;border-radius:999px;background:var(--surface-3);overflow:hidden}
 .bar > i{display:block;height:100%;background:var(--s1);border-radius:999px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -578,9 +613,9 @@ const blank = ()=>({
   profile:{ name:"", team:"", number:"", position:"", bats:"우타", throws:"우투" },
   games:[],
   settings:{ level:"elem", inningsBy:{elem:6, mid:7, high:7, univ:9}, autoplay:"sound",
-             exportToFolder:true, pickEach:false, stampNames:false, fullscreen:true, fsAutoAsk:false },
+             pickEach:false, stampNames:false, fullscreen:true },
   backup:{ at:0, sig:"" },
-  ui:{ tab:"home", year:"all", gtype:"all", metric:"avg" }
+  ui:{ tab:"home", year:"all", gtype:"all", metric:"avg", vmode:"folder" }
 });
 let S = blank();
 let saveTimer = null;
@@ -608,7 +643,7 @@ function normalizeGames(list){
   (list||[]).forEach(g=>{
     g.pas=g.pas||[]; g.def=g.def||[]; g.videos=g.videos||[];
     const lv = (g && LEVELS[g.level])? g.level : ((S.settings && LEVELS[S.settings.level])? S.settings.level : "high");
-    g.pas.forEach(p=> migrateZone(p, lv));
+    g.pas.forEach(p=>{ migrateZone(p, lv); if(p.pitcherNo==null) p.pitcherNo=""; });
     if(!GAME_TYPES[g.type]) g.type = "official";
     g.def.forEach(d=>{ if(d.note==null) d.note=""; if(d.result==null) d.result=""; if(d.inning==null) d.inning=0;
       if(d.pit){
@@ -619,6 +654,7 @@ function normalizeGames(list){
       } });
     if(g.pdec==null){ const pd=g.def.find(d=>d.pit && d.pit.dec); g.pdec = pd? pd.pit.dec : ""; }
     g.videos.forEach(v=>{ if(v.defId==null) v.defId=null; if(v.paId==null) v.paId=null;
+      if(v.folder==null) v.folder="";
       if(v.kind==="file" && !v.store) v.store="idb"; });
   });
   return list;
@@ -700,88 +736,32 @@ function idbHas(id){
   })).catch(()=>false);
 }
 
-/* ===================== 저장 폴더 (File System Access) =====================
-   폴더를 한 번 지정해 두면 기록(JSON)과 영상 파일이 그 폴더에 자동으로 저장됩니다.
-   브라우저 데이터(캐시·사이트 데이터)를 지워도 폴더의 파일은 남아 있으므로
-   [폴더 지정] → [폴더에서 불러오기] 두 번의 터치로 영상까지 전부 복원됩니다.
-   지원: PC 크롬·엣지, 안드로이드 크롬(132+).  미지원: 아이폰·아이패드 사파리, 파이어폭스
-   ------------------------------------------------------------------------ */
-const FS_DIR_OK  = (typeof window!=="undefined") && typeof window.showDirectoryPicker === "function";
-const FS_SAVE_OK = (typeof window!=="undefined") && typeof window.showSaveFilePicker  === "function";
-const DATA_FILE  = "baseball-log.json";
-const VID_DIR    = "videos";
+/* ========================= 저장 위치 =========================
+   기록은 이 기기(localStorage)에, 영상 파일은 브라우저 내부(IndexedDB)에 저장합니다.
+   폴더 지정(File System Access) 기능은 쓰지 않으므로 브라우저가
+   "이 사이트에서 파일을 수정하도록 허용하시겠습니까?" 를 묻지 않습니다.
+   기기 밖으로 남기려면 [전체 백업(zip)] 을 쓰세요 — 영상 파일까지 한 파일로 묶입니다.
+   ------------------------------------------------------------- */
+const DATA_FILE = "baseball-log.json";
+const VID_DIR   = "videos";
+let fsErr = "";              // 마지막 오류 (진단용)
+function folderSave(){}
+function flushFolder(){ return Promise.resolve(false); }
 
-let dirHandle = null;       // 지정한 폴더
-let dirName   = "";
-let fsNeedGrant = false;    // 권한 재승인이 필요한 상태(사용자 터치 필요)
-let fsMode = "";            // "rw" 읽기·쓰기 / "ro" 읽기만 (삼성 인터넷 등) / "" 연결 없음
-let roToldOnce = false;
-let fsAutoArmed = false;    // 첫 터치에 권한을 다시 받도록 대기 중
-let fsPersisted = null;     // 앱을 열 때 권한 창 없이 연결됐는지 (null=아직 확인 전)
-let fsAskedOnce = false;    // 이번 실행에서 폴더 권한 창을 띄운 적이 있는지
-let fsDenied = false;       // 이번 실행에서 사용자가 권한을 거절했는지
-let lastFolderSave = 0;
-let fsSaveTimer = null;
-let fsWriting = false;
-let fsErr = "";
+/* 백업(zip) 안에 넣을 파일 이름 — 한글·공백·특수문자는 기기나 클라우드에 따라
+   깨질 수 있어 ASCII로만 만듭니다. 원래 이름은 기록(JSON)에 그대로 남습니다. */
+function safeName(s){
+  const t = String(s||"video");
+  const m = t.match(/\.([A-Za-z0-9]{1,5})$/);
+  const ext = m? "."+m[1].toLowerCase() : ".mp4";
+  let base = (m? t.slice(0, t.length-m[0].length) : t)
+    .replace(/[^A-Za-z0-9._-]+/g,"_").replace(/^[._-]+/,"").replace(/_+/g,"_").replace(/_+$/,"").slice(0,40);
+  if(!base) base = "video";
+  if(!/[A-Za-z]/.test(base)) base = "video_" + base;      // 한글 이름이 통째로 바뀐 경우
+  return base + ext;
+}
+function nfc(s){ try{ return String(s||"").normalize("NFC"); }catch(e){ return String(s||""); } }
 
-/* 폴더·파일 핸들 보관 (IndexedDB) */
-function hSet(k, v){
-  return db().then(d=> new Promise((res,rej)=>{
-    const tx=d.transaction(HSTORE,"readwrite"); tx.objectStore(HSTORE).put(v,k);
-    tx.oncomplete=res; tx.onerror=()=>rej(tx.error); tx.onabort=()=>rej(tx.error);
-  }));
-}
-function hGet(k){
-  return db().then(d=> new Promise((res,rej)=>{
-    const rq=d.transaction(HSTORE,"readonly").objectStore(HSTORE).get(k);
-    rq.onsuccess=()=>res(rq.result||null); rq.onerror=()=>rej(rq.error);
-  }));
-}
-function hDel(k){
-  return db().then(d=> new Promise((res,rej)=>{
-    const tx=d.transaction(HSTORE,"readwrite"); tx.objectStore(HSTORE).delete(k);
-    tx.oncomplete=res; tx.onerror=()=>rej(tx.error);
-  }));
-}
-/* ask=true 일 때만 권한을 새로 요청합니다 (버튼을 누른 그 순간에만 허용됨).
-   queryPermission 을 지원하지 않는 브라우저는 막지 않고 그대로 진행합니다. */
-async function ensurePerm(h, mode, ask){
-  if(!h) return false;
-  if(!h.queryPermission) return true;
-  let st = "granted";
-  try{ st = await h.queryPermission({mode:mode}); }catch(e){ return true; }
-  if(st === "granted") return true;
-  if(!ask) return false;
-  if(!h.requestPermission) return false;
-  if(!userActive()) return false;          // 터치 없이 부르면 SecurityError 만 납니다
-  try{ return (await h.requestPermission({mode:mode})) === "granted"; }
-  catch(e){ fsErr = errText(e); return false; }
-}
-function errText(e){
-  if(!e) return "";
-  if(e.name === "SecurityError" && /user activation/i.test(e.message||""))
-    return "권한 요청은 화면을 터치한 직후에만 가능합니다 — 화면을 한 번 누르면 다시 시도합니다";
-  return (e.name? e.name+": " : "") + (e.message || String(e));
-}
-/* 지금 이 순간 사용자의 터치(클릭)가 살아 있는지 — 없으면 권한 요청이
-   SecurityError 로 막히므로 아예 부르지 않습니다. */
-function userActive(){
-  try{ return !!(navigator.userActivation && navigator.userActivation.isActive); }
-  catch(e){ return true; }   // 이 기능이 없는 브라우저는 막지 않습니다
-}
-/* 폴더 선택이 실패한 이유를 사람이 읽을 수 있게 풀어 줍니다 */
-function pickErrMsg(e){
-  const n = e && e.name;
-  if(n === "SecurityError")
-    return "브라우저가 폴더 접근을 막았습니다 — 파일을 직접 열지 말고 인터넷 주소(https://…)로 접속해 주세요";
-  if(n === "NotAllowedError")
-    return "폴더 권한이 거부되었습니다 — 다시 시도하고 '허용'을 눌러 주세요";
-  if(n === "TypeError" || n === "NotSupportedError")
-    return "이 브라우저는 폴더 지정을 지원하지 않습니다";
-  return "폴더를 열지 못했습니다 (" + errText(e) + ")";
-}
-/* 문제가 생겼을 때 원인을 바로 확인할 수 있는 진단 정보 */
 /* 어떤 글꼴로 그려지고 있는지 확인합니다 */
 function fontStatus(){
   try{
@@ -825,8 +805,6 @@ const INS = {manifest:"확인 중", sw:"확인 중"};
 function envInfo(){
   const inFrame = (()=>{ try{ return window.top !== window.self; }catch(e){ return true; } })();
   return {
-    api: (FS_DIR_OK? "폴더 있음" : "폴더 없음") + " / " + (FS_SAVE_OK? "파일저장 있음" : "파일저장 없음"),
-    mode: fsMode==="rw"? "읽기·쓰기" : fsMode==="ro"? "읽기 전용" : "연결 없음",
     font: fontStatus(),
     full: (document.fullscreenElement? "전체 화면(API)" : displayMode()==="fullscreen"? "전체 화면(설치됨)" : "아님")
         + " · 설정 " + (S.settings.fullscreen===false? "꺼짐":"켜짐"),
@@ -845,20 +823,19 @@ function envInfo(){
     })(),
     proto: location.protocol,
     frame: inFrame? "예" : "아니오",
-    perm: (dirHandle && dirHandle.queryPermission)? "지원" : "미지원",
-    dir: dirName || "-",
+    store: (ENV.storage? "기록 저장 가능" : "기록 저장 불가(시크릿 모드 등)")
+         + " / " + (ENV.idb? "영상 저장 가능" : "영상 저장 불가"),
     err: fsErr || "-",
     ua: navigator.userAgent
   };
 }
 function showEnv(){
   const i = envInfo();
-  openSheet(`<div class="sh"><h3>저장 폴더 진단</h3><div class="spacer" style="flex:1"></div>
+  openSheet(`<div class="sh"><h3>앱 진단</h3><div class="spacer" style="flex:1"></div>
       <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
-    <div class="hint" style="padding:4px 0 10px">폴더 지정이 안 될 때, 아래 내용을 복사해서 알려 주시면 원인을 찾을 수 있습니다.</div>
+    <div class="hint" style="padding:4px 0 10px">문제가 있을 때 아래 내용을 복사해서 알려 주시면 원인을 찾을 수 있습니다.</div>
     <textarea id="env_out" readonly style="min-height:200px;font-size:12px;line-height:1.6">${esc(
-      "폴더 API: " + i.api + "\n" +
-      "연결 상태: " + i.mode + "\n" +
+      "저장 상태: " + i.store + "\n" +
       "글꼴: " + i.font + "\n" +
       "앱 설치: " + i.install + "\n" +
       "매니페스트: " + i.manifest + "\n" +
@@ -867,8 +844,6 @@ function showEnv(){
       "전체 화면: " + i.full + "\n" +
       "보안 연결(secure context): " + i.secure + " (" + i.proto + ")\n" +
       "다른 페이지 안에 끼워짐: " + i.frame + "\n" +
-      "권한 확인 지원: " + i.perm + "\n" +
-      "지정한 폴더: " + i.dir + "\n" +
       "마지막 오류: " + i.err + "\n" +
       "브라우저: " + i.ua)}</textarea>
     <div class="sf"><button class="btn" data-act="close">닫기</button>
@@ -882,170 +857,9 @@ function copyEnv(){
     navigator.clipboard.writeText(ta.value).then(done).catch(()=>{ try{ document.execCommand("copy"); done(); }catch(e){ toast("직접 선택해 복사해 주세요"); } });
   else { try{ document.execCommand("copy"); done(); }catch(e){ toast("직접 선택해 복사해 주세요"); } }
 }
-/* 폴더에 만들 파일 이름 — 한글·공백·특수문자는 저장 장치나 클라우드에 따라
-   깨지거나 거부될 수 있어 ASCII로만 만듭니다. 원래 이름은 기록(JSON)에 그대로 남습니다. */
-function safeName(s){
-  const t = String(s||"video");
-  const m = t.match(/\.([A-Za-z0-9]{1,5})$/);
-  const ext = m? "."+m[1].toLowerCase() : ".mp4";
-  let base = (m? t.slice(0, t.length-m[0].length) : t)
-    .replace(/[^A-Za-z0-9._-]+/g,"_").replace(/^[._-]+/,"").replace(/_+/g,"_").replace(/_+$/,"").slice(0,40);
-  if(!base) base = "video";
-  if(!/[A-Za-z]/.test(base)) base = "video_" + base;      // 한글 이름이 통째로 바뀐 경우
-  return base + ext;
-}
-function nfc(s){ try{ return String(s||"").normalize("NFC"); }catch(e){ return String(s||""); } }
 
-/* 이 폴더에 실제로 쓸 수 있는지 확인합니다.
-   삼성 인터넷처럼 폴더 선택은 되지만 쓰기를 거부하는 브라우저가 있어서,
-   "읽기 전용"으로라도 연결해 두면 기록·영상을 불러오는 데는 쓸 수 있습니다. */
-async function probeFolder(){
-  if(!dirHandle) return "";
-  if(await folderWriteJSON(true, true)) return "rw";
-  try{
-    if(dirHandle.entries){ for await (const x of dirHandle.entries()){ break; } }
-    else if(dirHandle.values){ for await (const x of dirHandle.values()){ break; } }
-    return "ro";
-  }catch(e){ fsErr = errText(e); return ""; }
-}
-/* 쓰기가 막힌 걸 뒤늦게 알게 된 경우 — 한 번만 알려 주고 읽기 전용으로 내려갑니다 */
-function downgradeRO(){
-  if(fsMode === "ro") return;
-  fsMode = "ro";
-  try{ hSet("dirMode","ro"); }catch(e){}
-  if(!roToldOnce){
-    roToldOnce = true;
-    toast("이 브라우저는 폴더에 저장할 수 없습니다 — 불러오기 전용으로 씁니다");
-  }
-}
-/* 폴더 지정 — 반드시 사용자의 터치(클릭) 안에서 호출해야 합니다 */
-async function pickFolder(){
-  if(!FS_DIR_OK){
-    toast("이 브라우저는 폴더 지정을 지원하지 않습니다");
-    return;
-  }
-  if(!window.isSecureContext){
-    fsErr = "보안 연결이 아님 (" + location.protocol + ")"; render();
-    toast("파일을 직접 연 상태에서는 폴더를 쓸 수 없습니다 — 인터넷 주소로 접속해 주세요");
-    return;
-  }
-  let h;
-  try{
-    h = await window.showDirectoryPicker({id:"bbnote", mode:"readwrite", startIn:"documents"});
-  }catch(e){
-    if(e && e.name === "AbortError") return;        // 사용자가 취소
-    fsErr = errText(e); render();
-    toast(pickErrMsg(e));
-    return;
-  }
-  dirHandle = h; dirName = h.name; fsNeedGrant = false; fsDenied = false; fsErr = ""; _vnames = null; fsMode = "";
-  // 여기서 권한을 다시 물으면(requestPermission) 방금 쓴 터치 승인이 이미 소진돼
-  // 브라우저가 거부하는 경우가 있습니다. 실제로 한 번 써 보고 판단합니다.
-  fsMode = await probeFolder();
-  if(fsMode !== "rw"){
-    // 이 클릭의 승인이 아직 살아 있다면 권한 창이 뜹니다
-    if(await ensurePerm(h, "readwrite", true)){
-      if(await folderWriteJSON(true, true)) fsMode = "rw";
-    }
-  }
-  if(!fsMode){
-    dirHandle = null; dirName = ""; render();
-    toast("이 폴더는 읽을 수도 쓸 수도 없습니다 — 다른 폴더를 골라 보세요");
-    return;
-  }
-  try{ await hSet("dir", h); await hSet("dirMode", fsMode); }catch(e){}
-  if(fsMode === "ro"){
-    await ask("읽기 전용으로 연결했습니다",
-      `이 브라우저(삼성 인터넷 등)는 웹에서 폴더에 <b>저장</b>하는 것을 허용하지 않습니다.<br><br>
-       그래도 이 폴더에서 <b>기록을 불러오고, 영상 파일을 그대로 재생</b>할 수 있습니다.
-       저장은 <b>전체 백업(zip)</b>으로 하시고, 그 파일을 이 폴더에 두면 됩니다.<br><br>
-       자동 저장까지 쓰고 싶으면 같은 주소를 <b>크롬</b>으로 열어 주세요.`,
-      [{label:"알겠습니다", style:"pri"}]);
-  }
-  const f = await folderReadJSON();
-  if(f && f.games.length && !S.games.length){
-    await applyFolderData(f, true);
-    toast("폴더에서 " + f.games.length + "경기를 불러왔습니다");
-  } else if(f && f.games.length && S.games.length && f.games.length !== S.games.length && fsMode === "rw"){
-    const k = await ask("폴더에 기록이 있습니다",
-      `폴더의 <b>${f.games.length}경기</b>와 이 기기의 <b>${S.games.length}경기</b> 중 무엇을 쓸까요?`,
-      [{label:"폴더 기록 불러오기", style:"pri"},{label:"이 기기 기록으로 덮어쓰기", style:"dan"},{label:"나중에"}]);
-    if(k===0) await applyFolderData(f, true);
-    else if(k===1) await folderWriteJSON(true);
-  } else if(fsMode === "rw"){
-    await folderWriteJSON(true);
-  }
-  await relinkAll();
-  render();
-  toast("저장 폴더: " + dirName + (fsMode==="ro"? " (불러오기 전용)" : ""));
-}
-async function forgetFolder(){
-  dirHandle=null; dirName=""; fsNeedGrant=false; _vnames=null; fsMode="";
-  try{ await hDel("dir"); await hDel("dirMode"); }catch(e){}
-  render(); toast("폴더 연결을 해제했습니다 (폴더의 파일은 그대로 있습니다)");
-}
-/* 브라우저를 새로 열면 폴더 권한이 잠깁니다(크롬 정책). 권한 요청은 반드시
-   사용자의 터치 안에서만 가능하므로, 따로 버튼을 누르게 하지 않고
-   화면의 "첫 터치"에 슬쩍 얹어 자동으로 다시 연결합니다.
-   권한 창에서 [방문할 때마다 허용]을 고르면 그 다음부터는 아예 묻지 않습니다. */
-function armAutoGrant(){
-  if(!dirHandle || !fsNeedGrant || fsAutoArmed || fsDenied) return;
-  if(S.settings.fsAutoAsk !== true) return;   // 기본값: 창을 띄우지 않고 배너의 [폴더 연결]로만
-  if(fsAskedOnce) return;                      // 한 실행에서 권한 창은 한 번만
-
-  if(!dirHandle.requestPermission){ fsNeedGrant = false; return; }
-  /* 안드로이드 크롬은 손가락을 뗄 때(touchend·pointerup·click)에만 "사용자 승인"이
-     생깁니다. 예전에는 touchstart/pointerdown 에서 요청해 SecurityError 가 났습니다. */
-  const EVTS = ["click", "pointerup", "touchend", "keyup"];
-  const go = async ()=>{
-    fsAutoArmed = false;
-    if(!dirHandle || !fsNeedGrant) return;
-    let ok = false, secErr = false;
-    fsAskedOnce = true;
-    try{ ok = (await dirHandle.requestPermission({mode:"readwrite"})) === "granted"; }
-    catch(e){ fsErr = errText(e); secErr = (e && e.name === "SecurityError"); ok = false; }
-    if(ok){
-      fsNeedGrant = false; fsDenied = false; fsErr = "";
-      await afterFolderReady(); render();
-      toast("저장 폴더를 연결했습니다 · " + dirName);
-    } else if(secErr){
-      arm();                    // 승인 없이 불린 경우 — 거절이 아니므로 다음 터치에 다시
-      render();
-    } else {
-      fsDenied = true; render();
-    }
-  };
-  const once = ()=>{
-    EVTS.forEach(t=> document.removeEventListener(t, once, true));
-    go();                       // 터치 승인이 살아 있는 그 자리에서 바로 요청
-  };
-  function arm(){
-    fsAutoArmed = true;
-    EVTS.forEach(t=> document.addEventListener(t, once, true));
-  }
-  arm();
-}
-/* 크롬이 권한을 기억하고 있는 경우(방문할 때마다 허용 / 설치된 앱)에는
-   터치 없이도 조용히 다시 열립니다. 실패해도 아무 표시를 하지 않고,
-   첫 터치 방식으로 넘어갑니다. */
-async function trySilentGrant(h){
-  if(!h) return false;
-  /* 크롬이 이미 권한을 기억하고 있으면 queryPermission 만으로 granted 가 나옵니다.
-     기억하고 있지 않은데 그냥 requestPermission 을 부르면 터치가 없어서
-     SecurityError 가 나므로(진단의 "마지막 오류"), 터치가 살아 있을 때만 요청합니다. */
-  try{
-    if(h.queryPermission && (await h.queryPermission({mode:"readwrite"})) === "granted") return true;
-  }catch(e){ return true; }   // queryPermission 미지원 브라우저는 그대로 진행
-  if(!h.requestPermission) return false;
-  /* 크롬이 권한을 "잠자기(dormant)" 상태로 갖고 있으면 이 호출만으로 창 없이 되살아납니다.
-     기억하고 있지 않으면 터치가 없으므로 SecurityError 가 나는데, 이건 정상적인 흐름이라
-     진단의 "마지막 오류"에는 남기지 않습니다. */
-  try{ return (await h.requestPermission({mode:"readwrite"})) === "granted"; }
-  catch(e){ return false; }
-}
 /* ------------------------------ 앱 설치 ------------------------------
-   홈 화면에 추가(앱 설치)하면 크롬이 저장 폴더 권한을 계속 기억합니다.
-   그러면 앱을 다시 열어도 권한 창이 뜨지 않습니다. */
+   홈 화면에 추가(앱 설치)하면 주소창 없이 앱처럼 열립니다. */
 async function installApp(){
   const e = window.__installEvt;
   if(!e){
@@ -1146,272 +960,24 @@ function isInstalledApp(){
     return false;
   }catch(e){ return false; }
 }
-/* 새로고침 뒤 권한이 잠겼을 때 — 배너의 [연결하기] 터치로 호출 */
-async function grantFolder(){
-  if(!dirHandle) return;
-  const ok = await ensurePerm(dirHandle, "readwrite", true);
-  if(ok){
-    fsNeedGrant = false; fsDenied = false;
-    await afterFolderReady(); render(); toast("저장 폴더를 다시 연결했습니다");
-  } else {
-    fsDenied = true; render();
-    toast("권한이 허용되지 않았습니다 — [폴더 바꾸기]로 폴더를 다시 골라 주세요");
-  }
-}
-
-async function videosDir(create){
-  if(!dirHandle) return null;
-  try{ return await dirHandle.getDirectoryHandle(VID_DIR, {create:!!create}); }
-  catch(e){ return null; }
-}
-async function folderWriteJSON(force, probing){
-  if(!dirHandle) return false;
-  if(fsMode === "ro" && !probing) return false;
-  if(fsWriting && !force) return false;
-  fsWriting = true;
-  try{
-    const out = JSON.parse(JSON.stringify(S));
-    out.savedAt = new Date().toISOString();
-    out.games.forEach(g=>(g.videos||[]).forEach(v=>{
-      if(v.kind==="file" && !v.file) v.file = v.id+"__"+safeName(v.name);
-    }));
-    const fh = await dirHandle.getFileHandle(DATA_FILE, {create:true});
-    const w  = await fh.createWritable();
-    await w.write(new Blob([JSON.stringify(out)], {type:"application/json"}));
-    await w.close();
-    lastFolderSave = Date.now(); fsErr = ""; fsNeedGrant = false;
-    return true;
-  }catch(e){
-    fsErr = errText(e);
-    // 쓰기 자체를 허용하지 않는 브라우저 — 권한 문제가 아니라 기능 미지원입니다
-    if(e && e.name === "NotAllowedError" && !(dirHandle && dirHandle.queryPermission)){
-      if(!probing) downgradeRO();
-    } else if(e && (e.name === "NotAllowedError" || e.name === "SecurityError")){
-      fsNeedGrant = true; armAutoGrant();
-    }
-    console.warn("폴더 저장 실패", e);
-    return false;
-  }finally{ fsWriting = false; }
-}
-function folderSave(){
-  if(!dirHandle || fsNeedGrant || fsMode !== "rw") return;
-  clearTimeout(fsSaveTimer);
-  fsSaveTimer = setTimeout(()=>{ folderWriteJSON(); }, 1200);
-}
-/* 영상 추가·삭제처럼 되돌리기 어려운 변화는 기다리지 않고 바로 폴더에 씁니다 */
-function flushFolder(){
-  if(!dirHandle || fsNeedGrant || fsMode !== "rw") return Promise.resolve(false);
-  clearTimeout(fsSaveTimer);
-  return folderWriteJSON(true);
-}
-async function folderReadJSON(){
-  if(!dirHandle) return null;
-  try{
-    const fh = await dirHandle.getFileHandle(DATA_FILE);
-    const t  = await (await fh.getFile()).text();
-    const o  = JSON.parse(t);
-    return (o && Array.isArray(o.games))? o : null;
-  }catch(e){ return null; }
-}
-/* 폴더의 기록으로 앱 상태를 교체 */
-async function applyFolderData(o, silent){
-  normalizeGames(o.games);
-  S.games = o.games;
-  if(o.profile)  S.profile  = Object.assign(blank().profile, o.profile);
-  if(o.settings) S.settings = Object.assign(blank().settings, o.settings);
-  S.ui.year="all"; S.ui.gameId=null;
-  saveNow();
-  await relinkAll();
-  render();
-  if(!silent) toast(o.games.length + "경기를 폴더에서 불러왔습니다");
-}
-async function restoreFolder(){
-  if(!dirHandle){ toast("먼저 폴더를 지정해 주세요"); return; }
-  const o = await folderReadJSON();
-  if(!o){ toast("폴더에 " + DATA_FILE + " 파일이 없습니다"); return; }
-  const k = await ask("폴더에서 불러오기",
-    `폴더에 <b>${o.games.length}경기</b>가 들어 있습니다.<br>이 기기에는 ${S.games.length}경기가 있습니다.`,
-    [{label:"폴더 기록으로 교체", style:"pri"},{label:"현재 기록에 합치기"},{label:"취소"}]);
-  if(k===0) await applyFolderData(o);
-  else if(k===1){
-    normalizeGames(o.games);
-    const have=new Set(S.games.map(g=>g.id)); let add=0;
-    o.games.forEach(g=>{ if(!have.has(g.id)){ S.games.push(g); add++; }
-      else { const cur=S.games.find(x=>x.id===g.id);
-        g.videos.forEach(p=>{ if(!cur.videos.some(x=>x.id===p.id)) cur.videos.push(p); }); } });
-    saveNow(); await relinkAll(); render(); toast(add + "경기를 추가했습니다");
-  }
-}
-
-/* ---------------------- 영상 파일 저장소 (폴더 / 기기) ---------------------- */
-/* 폴더가 연결돼 있으면 폴더의 videos/ 안에 실제 파일로,
-   아니면 지금처럼 브라우저 내부(IndexedDB)에 저장합니다. */
+/* ---------------------- 영상 파일 저장소 (이 기기) ---------------------- */
+/* 영상 파일은 브라우저 내부 저장소(IndexedDB)에 그대로 담깁니다.
+   인터넷으로 올라가지 않으며, 기기 밖으로 옮기려면 [전체 백업(zip)]을 쓰세요. */
 async function mediaPut(v, blob){
-  if(dirHandle && !fsNeedGrant && fsMode === "rw"){
-    try{
-      const vd = await videosDir(true);
-      const nm = v.file || (v.id+"__"+safeName(v.name));
-      const fh = await vd.getFileHandle(nm, {create:true});
-      const w  = await fh.createWritable();
-      await w.write(blob); await w.close();
-      v.store="fs"; v.file=nm; _vnames=null;
-      return "fs";
-    }catch(e){
-      fsErr = errText(e);
-      if(e && e.name === "NotAllowedError" && !(dirHandle && dirHandle.queryPermission)) downgradeRO();
-      else if(e && (e.name === "NotAllowedError" || e.name === "SecurityError")){ fsNeedGrant = true; armAutoGrant(); }
-      console.warn("폴더 영상 저장 실패 — 기기에 저장합니다", e);
-    }
-  }
   await idbPut(v.id, blob);
-  v.store="idb";
+  v.store = "idb";
   if(!v.file) v.file = v.id+"__"+safeName(v.name);
   return "idb";
 }
-let _vnames = null;                 // 폴더 안 파일 이름 캐시
-/* videos/ 를 먼저 훑고, 폴더 안의 다른 파일과 한 단계 아래 하위 폴더까지 함께 봅니다.
-   그래서 영상 원본을 폴더에 그냥 넣어 두어도 앱이 찾아 재생할 수 있습니다. */
-async function fsNames(fresh){
-  if(!dirHandle) return null;
-  if(_vnames && !fresh) return _vnames;
-  const m = new Map();
-  const add = (name, h)=>{ if(h && h.kind==="file" && !m.has(name)) m.set(name, h); };
-  async function walk(dir, depth){
-    if(!dir || m.size > 4000) return;
-    try{
-      const it = dir.entries? dir.entries() : null;
-      if(!it) return;
-      for await (const ent of it){
-        if(m.size > 4000) return;
-        const h = ent[1];
-        if(h && h.kind === "file") add(ent[0], h);
-        else if(h && depth < 2) await walk(h, depth+1);
-      }
-    }catch(e){}
-  }
-  const vd = await videosDir(false);
-  if(vd) await walk(vd, 2);
-  await walk(dirHandle, 1);
-  _vnames = m; return m;
-}
-async function fsFind(v){
-  const m = await fsNames();
-  if(!m || !m.size) return null;
-  if(v.file && m.has(v.file)) return m.get(v.file);
-  for(const k of m.keys()){ if(k.indexOf(v.id+"__")===0 || k===v.id) return m.get(k); }
-  const want = nfc(v.file||""), wantN = nfc(v.name||"");
-  let loose = null;
-  for(const k of m.keys()){
-    const n = nfc(k);
-    if(want && n === want) return m.get(k);
-    if(wantN && n === wantN){
-      const h = m.get(k);
-      if(!v.size) return h;
-      try{ const f = await h.getFile(); if(f.size === v.size) return h; }catch(e){}
-      if(!loose) loose = h;                      // 이름은 같고 크기가 다른 경우 (마지막 후보)
-    }
-  }
-  return loose;
-}
-/* 폴더에 있는 영상 파일을 기록과 맞춰 연결합니다 — 복사하지 않고 그 자리에서 재생합니다 */
-async function scanFolderVideos(){
-  if(!dirHandle){ toast("먼저 폴더를 지정해 주세요"); return; }
-  const list = allVideos();
-  if(!list.length){ toast("등록된 영상 기록이 없습니다"); return; }
-  busy("폴더에서 영상을 찾는 중");
-  _vnames = null;
-  await fsNames(true);
-  let ok = 0;
-  for(let i=0;i<list.length;i++){
-    busyUp(i/list.length, (i+1) + " / " + list.length);
-    const v = list[i].v;
-    try{
-      const h = await fsFind(v);
-      if(h){ v.store = "fs"; v.file = h.name; ok++; }
-    }catch(e){}
-  }
-  busyEnd(); saveNow(); render();
-  toast(ok? ("폴더에서 영상 " + ok + "개를 연결했습니다")
-          : "폴더에서 맞는 영상 파일을 찾지 못했습니다 — 파일 이름이 기록과 같아야 합니다");
-}
 async function mediaGet(v){
-  if(dirHandle){
-    try{ const h = await fsFind(v); if(h) return await h.getFile(); }catch(e){}
-  }
   try{ const b = await idbGet(v.id); if(b) return b; }catch(e){}
   return null;
 }
 async function mediaHas(v){
-  if(dirHandle){
-    try{ if(await fsFind(v)) return true; }catch(e){}
-  }
   try{ return await idbHas(v.id); }catch(e){ return false; }
 }
 async function mediaDel(v){
   try{ await idbDel(v.id); }catch(e){}
-  if(dirHandle){
-    try{
-      const vd = await videosDir(false);
-      const h  = await fsFind(v);
-      if(vd && h) await vd.removeEntry(h.name);
-      _vnames = null;
-    }catch(e){}
-  }
-}
-/* 기기(IndexedDB)에 있던 영상을 폴더로 옮깁니다 */
-async function moveToFolder(){
-  if(!dirHandle){ toast("먼저 폴더를 지정해 주세요"); return; }
-  if(fsMode !== "rw"){ toast("이 브라우저는 폴더에 저장할 수 없습니다"); return; }
-  const list=[];
-  for(const it of allVideos()){
-    let has=false; try{ has = await idbHas(it.v.id); }catch(e){}
-    if(has) list.push(it.v);
-  }
-  if(!list.length){ toast("옮길 영상이 없습니다"); return; }
-  busy("영상을 폴더로 옮기는 중");
-  let ok=0;
-  for(let i=0;i<list.length;i++){
-    const v=list[i];
-    busyUp(i/list.length, (i+1) + " / " + list.length + " · " + (v.name||""));
-    try{
-      const b = await idbGet(v.id);
-      if(b){ const r = await mediaPut(v, b); if(r==="fs"){ await idbDel(v.id); ok++; } }
-    }catch(e){ console.warn(e); }
-  }
-  _vnames=null; busyEnd(); saveNow(); render();
-  toast("영상 " + ok + "개를 폴더로 옮겼습니다");
-}
-
-/* ------------------------ 앱 시작 시 폴더 다시 연결 ------------------------ */
-async function initFS(){
-  if(!FS_DIR_OK) return;
-  let h=null;
-  try{ h = await hGet("dir"); }catch(e){}
-  if(!h) return;
-  dirHandle = h; dirName = h.name || "";
-  try{ fsMode = (await hGet("dirMode")) || "rw"; }catch(e){ fsMode = "rw"; }
-  let p = "granted";
-  try{ if(h.queryPermission) p = await h.queryPermission({mode:"readwrite"}); }catch(e){ p = "granted"; }
-  const wasGranted = (p === "granted");
-  if(p !== "granted" && await trySilentGrant(h)) p = "granted";
-  if(p === "granted"){
-    fsPersisted = true;                 // 창 없이 연결됨 = 권한이 유지되고 있음
-    fsNeedGrant=false; await afterFolderReady();
-  }
-  else { fsPersisted = false; fsNeedGrant = true; armAutoGrant(); }
-  void wasGranted;
-  render();
-}
-async function afterFolderReady(){
-  const o = await folderReadJSON();
-  if(o && o.games.length && !S.games.length){
-    await applyFolderData(o, true);
-    toast("저장 폴더에서 " + o.games.length + "경기를 복원했습니다");
-  } else if(fsMode === "rw"){
-    await folderWriteJSON();
-  }
-  _vnames = null;
-  await relinkAll();
 }
 
 /* ============================== ZIP (영상 포함 백업) ==============================
@@ -1593,7 +1159,7 @@ async function restoreBundle(file){
     if(!hit){ fail++; continue; }
     try{ await mediaPut(hit.v, e.blob); ok++; }catch(err){ fail++; console.warn(err); }
   }
-  _vnames=null; busyEnd(); saveNow(); await relinkAll(); await flushFolder(); render();
+  busyEnd(); saveNow(); await relinkAll(); render();
   toast("복원 완료 · " + S.games.length + "경기, 영상 " + ok + "개" + (fail? " (연결 실패 "+fail+")" : ""));
 }
 
@@ -1610,7 +1176,6 @@ let missCache = [];
 /* 파일을 찾을 수 없는 영상 목록을 갱신하고 안내 배너를 그립니다 */
 async function fillMissing(){
   const els = $$("#missvid"); if(!els.length) return;
-  _vnames = null;
   const list = [];
   for(const it of allVideos()){
     let ok=false;
@@ -1624,20 +1189,14 @@ async function fillMissing(){
          기기에 있는 <b>원본 영상 파일을 여러 개 한 번에</b> 골라 주면 이름·크기를 맞춰 자동으로 다시 연결합니다.
          <div class="btnrow" style="margin-top:8px">
            <button class="btn pri sm nb" data-act="relinkVideos">영상 파일 다시 연결</button>
-           ${dirHandle? `<button class="btn sm nb" data-act="scanFolderVideos">폴더에서 찾기</button>`:""}
          </div></div>`
     : "";
   els.forEach(e=> e.innerHTML = html);
 }
-/* 폴더·기기 어디에 있는지 다시 확인해 v.store를 맞춰 둡니다 */
+/* 기기 안에 파일이 실제로 있는지 다시 확인해 v.store를 맞춰 둡니다 */
 async function relinkAll(){
-  _vnames = null;
   for(const it of allVideos()){
-    const v = it.v;
-    if(dirHandle){
-      try{ const h = await fsFind(v); if(h){ v.store="fs"; v.file=h.name; continue; } }catch(e){}
-    }
-    try{ if(await idbHas(v.id)) v.store="idb"; }catch(e){}
+    try{ if(await idbHas(it.v.id)) it.v.store = "idb"; }catch(e){}
   }
   save();
 }
@@ -1664,7 +1223,7 @@ function relinkVideos(){
       const it = pool.splice(idx,1)[0];
       try{ await mediaPut(it.v, f); it.v.size = f.size; ok++; }catch(e){ skip++; console.warn(e); }
     }
-    _vnames=null; busyEnd(); saveNow(); await flushFolder(); render();
+    busyEnd(); saveNow(); render();
     toast("영상 " + ok + "개를 다시 연결했습니다" + (skip? " · " + skip + "개는 맞는 기록을 찾지 못했습니다" : ""));
   });
   inp.click();
@@ -2334,6 +1893,8 @@ function vsPitcherTable(teams){
 /* ============================== 화면 ============================== */
 const METRICS = {avg:{ko:"타율",k:"AVG"}, obp:{ko:"출루율",k:"OBP"}, slg:{ko:"장타율",k:"SLG"}, ops:{ko:"OPS",k:"OPS"}};
 const ICON_EDIT = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+const ICON_SAVE = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.8v9.4"/><path d="M8.1 9.5 12 13.4l3.9-3.9"/><path d="M4.4 15.6v2.2A2.2 2.2 0 0 0 6.6 20h10.8a2.2 2.2 0 0 0 2.2-2.2v-2.2"/></svg>';
+const ICON_OPEN = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 13.6V4.2"/><path d="M8.1 8.1 12 4.2l3.9 3.9"/><path d="M4.4 15.6v2.2A2.2 2.2 0 0 0 6.6 20h10.8a2.2 2.2 0 0 0 2.2-2.2v-2.2"/></svg>';
 const ICON_MINUS = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path d="M8 12h8" stroke-linecap="round"/></svg>';
 function delBtn(act, attrs, label){
   return `<button class="iconbtn del" data-act="${act}" ${attrs} title="${esc(label)}" aria-label="${esc(label)}">${ICON_MINUS}</button>`;
@@ -2361,6 +1922,18 @@ function resTag(res){
 function tile(lb, v, sub){
   return `<div class="tile"><div class="lb">${esc(lb)}</div><div class="v">${v}${sub?`<small>${sub}</small>`:""}</div></div>`;
 }
+/* 상대 투수 표기 — 배번과 이름을 함께 보여 줍니다 */
+function pitcherLabel(p){
+  const no = String((p && p.pitcherNo) || "").trim();
+  const nm = String((p && p.pitcher) || "").trim();
+  if(no && nm) return "#" + no + " " + nm;
+  return no? "#" + no : nm;
+}
+function pitcherKey(p){
+  const no = String((p && p.pitcherNo) || "").trim();
+  const nm = String((p && p.pitcher) || "").trim().replace(/\s+/g,"").toLowerCase();
+  return nm + "\u00A7" + no;
+}
 function paBadge(code){
   const r=RMAP[code]; if(!r) return "";
   return `<span class="badge ${GBADGE[r.g]}">${r.ko}</span>`;
@@ -2374,7 +1947,7 @@ function paLine(p){
   if(num(p.runs,0)) bits.push("득점");
   if(num(p.sb,0)) bits.push("도루 "+num(p.sb,0));
   if(num(p.cs,0)) bits.push("도루실패 "+num(p.cs,0));
-  if(p.pitcher) bits.push("vs "+p.pitcher);
+  { const pl = pitcherLabel(p); if(pl) bits.push("vs "+pl); }
   return bits.join(" · ");
 }
 
@@ -2586,12 +2159,13 @@ function viewStats(){
   const nkey = v => String(v||"").replace(/\s+/g,"").toLowerCase();
   const byTeam = {};
   pas.forEach(p=>{
-    const pit = (p.pitcher||"").trim(); if(!pit) return;
+    const label = pitcherLabel(p); if(!label) return;
     const team = ((p._g && p._g.opponent)||"").trim() || "상대 미입력";
     const yr   = ((p._g && p._g.date)||"").slice(0,4) || "연도 미상";
     const T = byTeam[yr+"\u00A7"+nkey(team)] = byTeam[yr+"\u00A7"+nkey(team)] || {year:yr, name:team, all:[], byP:{}};
     T.all.push(p);
-    const P = T.byP[nkey(pit)] = T.byP[nkey(pit)] || {name:pit, list:[]};
+    const k = pitcherKey(p);
+    const P = T.byP[k] = T.byP[k] || {name:label, list:[]};
     P.list.push(p);
   });
   const gcount = list => new Set(list.map(x=>x._g && x._g.id)).size;
@@ -2667,7 +2241,7 @@ function viewStats(){
       colChart(months, {aria:"월별 타율", fmt:avg3}),
       tableHTML(["월","타수","안타","타점","타율","OPS"], months.map(d=>[d.label, d._t.AB, d._t.H, d._t.RBI, avg3(d._t.AVG), avg3(d._t.OPS)]))) : "")
   + (pTeams.length? `<div class="card"><div class="hd"><div style="flex:1"><h3>상대 투수별 성적</h3>
-      <div class="cap">시즌 · 상대팀(학교)별로 묶었습니다 — 같은 해 같은 학교의 같은 이름은 한 명으로 합산 · ${pYears}개 시즌 ${pTeams.length}개 팀 · 투수 ${pitcherN}명 · 투수 이름을 입력한 타석만 집계됩니다</div></div></div>
+      <div class="cap">시즌 · 상대팀(학교)별로 묶었습니다 — 같은 해 같은 학교의 같은 배번·이름은 한 명으로 합산 · ${pYears}개 시즌 ${pTeams.length}개 팀 · 투수 ${pitcherN}명 · 투수 배번이나 이름을 입력한 타석만 집계됩니다</div></div></div>
       ${vsPitcherTable(pTeams)}</div>` : "")
   + pitchingSection(gs, defs)
   + (defDist.length? chartCard("수비 결과 분포", `결과를 입력한 수비 기록 ${defPlays.length}건`,
@@ -2788,16 +2362,28 @@ function pitchingSection(gs, defs){
 }
 
 /* ------------------------------- 영상 ------------------------------- */
-function videoCard(v, g, lite){
+const ICON_FOLDER = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6.8A1.8 1.8 0 0 1 5.3 5h3.4l1.8 2.2h8.2a1.8 1.8 0 0 1 1.8 1.8v8.2A1.8 1.8 0 0 1 18.7 19H5.3a1.8 1.8 0 0 1-1.8-1.8z"/></svg>';
+const ICON_LINKF  = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a3.5 3.5 0 0 0 5 0l2.5-2.5a3.5 3.5 0 0 0-5-5L11 7.5"/><path d="M14 10.5a3.5 3.5 0 0 0-5 0L6.5 13a3.5 3.5 0 0 0 5 5L13 16.5"/></svg>';
+const ICON_PLAY   = '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8.5 6.4 17 12l-8.5 5.6z"/></svg>';
+
+/* nameFirst=true 면 제목 대신 "파일명"을 앞에 보여 줍니다 (탐색기 화면) */
+function videoCard(v, g, lite, nameFirst){
   const sub = [];
-  if(v.kind==="file") sub.push(lite? bytes(v.size) : bytes(v.size)+(v.store==="fs"? " · 저장 폴더" : " · 이 기기에 저장"));
+  if(v.kind==="file") sub.push(bytes(v.size));
   else sub.push("링크");
+  if(nameFirst && v.title && v.title !== v.name) sub.push(v.title);
+  if(!nameFirst && v.kind==="file"){
+    if(v.folder) sub.push(v.folder);
+    if(v.name && v.name !== v.title) sub.push(v.name);
+  }
+  if(nameFirst) sub.push(fmtDate(g.date) + " vs " + (g.opponent||"-"));
   const lt = videoLinkText(v, g);
   if(lt) sub.push(lt);
+  const head = nameFirst? (v.name || v.title || "영상") : (v.title || v.name || "영상");
   return `<div class="vidcard" data-vid="${v.id}">
     <div class="vh">
       <button class="vtitle" data-act="playVideo" data-gid="${g.id}" data-id="${v.id}">
-        <span class="tx">${esc(v.title||v.name||"영상")}</span>
+        <span class="vico" aria-hidden="true">${ICON_PLAY}</span><span class="tx">${esc(head)}</span>
       </button>
       ${v.kind==="link"?`<button class="iconbtn sm" data-act="openVideo" data-gid="${g.id}" data-id="${v.id}" title="새 창에서 열기" aria-label="새 창에서 열기">↗</button>`:""}
       ${lite? "" : `<button class="iconbtn sm" data-act="editVideo" data-gid="${g.id}" data-id="${v.id}" title="영상 정보 수정" aria-label="영상 정보 수정">${ICON_EDIT}</button>
@@ -2807,16 +2393,66 @@ function videoCard(v, g, lite){
     <div class="player" style="margin-top:8px"></div>
   </div>`;
 }
+const NOFOLDER   = "기타 (폴더 없음)";
+const LINKFOLDER = "링크 영상";
+function folderKey(v){
+  if(v.kind === "link") return LINKFOLDER;
+  return (v.folder && String(v.folder).trim()) || NOFOLDER;
+}
+/* 폴더명 > 파일명 트리 — 파일명을 누르면 그 자리에서 재생됩니다 */
+function videoExplorer(gs){
+  const map = new Map();
+  gs.forEach(g=>(g.videos||[]).forEach(v=>{
+    const k = folderKey(v);
+    if(!map.has(k)) map.set(k, []);
+    map.get(k).push({g:g, v:v});
+  }));
+  if(!map.size){
+    return `<div class="empty"><span class="big">▶</span>등록된 영상이 없습니다<br>
+      <span class="hint">위의 <b>+ 영상 추가</b>에서 파일 여러 개 또는 폴더를 통째로 올릴 수 있습니다</span></div>`;
+  }
+  const rank = k => k===NOFOLDER? 1 : k===LINKFOLDER? 2 : 0;
+  const keys = Array.from(map.keys()).sort((a,b)=>
+    rank(a)!==rank(b)? rank(a)-rank(b) : a.localeCompare(b, "ko"));
+  return keys.map(k=>{
+    const items = map.get(k).slice().sort((a,b)=>
+      String(a.v.name||a.v.title||"").localeCompare(String(b.v.name||b.v.title||""), "ko", {numeric:true}));
+    const open = openVF.has(k);
+    const sz = items.reduce((a,x)=>a+(x.v.size||0),0);
+    return `<div class="card">
+      <button class="vgame" data-act="toggleVF" data-k="${esc(k)}" aria-expanded="${open}">
+        <span class="fico" aria-hidden="true">${k===LINKFOLDER? ICON_LINKF : ICON_FOLDER}</span>
+        <div class="gt">
+          <div class="t">${esc(k)}</div>
+          <div class="s">파일 ${items.length}개${sz?" · "+bytes(sz):""}</div>
+        </div>
+        <span class="chev" aria-hidden="true">▼</span>
+      </button>
+      <div class="vlist" ${open?"":"hidden"}>
+        ${items.map(x=>videoCard(x.v, x.g, false, true)).join("")}
+      </div>
+    </div>`;
+  }).join("");
+}
 function viewVideos(){
   const gs = scopedGames().slice().reverse();
   const withV = gs.filter(g=>g.videos.length);
   const total = withV.reduce((a,g)=>a+g.videos.reduce((x,v)=>x+(v.size||0),0),0);
   const cnt = withV.reduce((a,g)=>a+g.videos.length,0);
+  const mode = S.ui.vmode==="game"? "game" : "folder";
+  const last = S.games.length? S.games[S.games.length-1].id : "";
   return filterRow()
   + `<div class="card"><div class="hd"><div style="flex:1"><h3>영상 보관함</h3>
-      <div class="cap">${cnt}개 · 기기 저장 용량 ${bytes(total)}</div></div></div>
-      <div id="quota" class="hint">저장 공간 확인 중…</div><div id="missvid"></div></div>`
-  + (withV.length? withV.map(g=>{
+      <div class="cap">${cnt}개 · 기기 저장 용량 ${bytes(total)}</div></div>
+      ${last? `<button class="btn sm pri nb" data-act="newVideo" data-gid="${last}">+ 영상 추가</button>` : ""}</div>
+      <div class="filters" style="margin:10px 0 0"><div class="seg" role="group" aria-label="보기 방식">
+        <button data-act="vmode" data-v="folder" aria-pressed="${mode==="folder"}">폴더별 (탐색기)</button>
+        <button data-act="vmode" data-v="game" aria-pressed="${mode==="game"}">경기별</button>
+      </div></div>
+      <div id="quota" class="hint" style="margin-top:10px">저장 공간 확인 중…</div><div id="missvid"></div></div>`
+  + (mode==="folder"
+    ? videoExplorer(gs)
+    : (withV.length? withV.map(g=>{
       const open = openVG.has(g.id);
       return `<div class="card">
         <button class="vgame" data-act="toggleVG" data-id="${g.id}" aria-expanded="${open}">
@@ -2836,7 +2472,7 @@ function viewVideos(){
       </div>`;
     }).join("")
     : `<div class="empty"><span class="big">▶</span>등록된 영상이 없습니다<br>
-       <span class="hint">경기 상세 화면에서 영상을 추가할 수 있습니다</span></div>`);
+       <span class="hint">경기 상세 화면에서 영상을 추가할 수 있습니다</span></div>`));
 }
 
 /* ------------------------------- 설정 ------------------------------- */
@@ -2866,12 +2502,9 @@ function screenCard(){
 function installCard(){
   const st = installState();
   return `<div class="card"><div class="hd"><div style="flex:1"><h3>앱으로 설치</h3>
-      <div class="cap">홈 화면 아이콘으로 실행하면 주소창 없이 열리고, <b>저장 폴더 권한이 유지되어 권한 창이 뜨지 않습니다.</b></div></div></div>`
+      <div class="cap">홈 화면 아이콘으로 실행하면 주소창 없이 앱처럼 열립니다.</div></div></div>`
    + (st === "installed"
-      ? `<div class="hint" style="color:var(--good);font-weight:650">설치된 앱으로 실행 중입니다.</div>
-         <div class="hint" style="margin-top:8px">이 상태에서는 크롬이 폴더 권한을 기억하므로,
-           앱을 껐다 켜도 권한 창이 뜨지 않습니다. 그래도 뜬다면 권한 창에서
-           <b>방문할 때마다 허용</b>을 골라 주세요.</div>`
+      ? `<div class="hint" style="color:var(--good);font-weight:650">설치된 앱으로 실행 중입니다.</div>`
       : st === "ready"
       ? `<div class="btnrow"><button class="btn pri" data-act="installApp">지금 앱으로 설치</button></div>
          <div class="hint" style="margin-top:10px">설치한 뒤에는 <b>홈 화면 아이콘</b>으로 여세요.
@@ -2884,57 +2517,6 @@ function installCard(){
            </div></div>`)
    + `</div>`;
 }
-function folderCard(){
-  const on = !!dirHandle;
-  return `<div class="card"><div class="hd"><div style="flex:1"><h3>저장 폴더 (자동 저장 위치)</h3>
-      <div class="cap">폴더를 지정하면 기록과 영상이 그 폴더에 자동으로 저장됩니다. 브라우저 데이터를 지워도 폴더의 파일은 남습니다.</div></div></div>`
-   + (FS_DIR_OK
-     ? `<div class="hint" style="margin-bottom:10px">${on
-          ? `현재 폴더: <b>${esc(dirName)}</b>`
-            + (fsMode==="ro"? ` <span style="color:var(--warn);font-weight:650">· 불러오기 전용</span>` : ` · 자동 저장 켜짐`)
-            + (fsNeedGrant
-              ? (fsDenied
-                  ? ` — <span style="color:var(--crit);font-weight:650">연결하지 못했습니다</span>`
-                  : ` — <span style="color:var(--warn);font-weight:650">연결 대기 중 · [폴더 연결]을 누르면 이어집니다</span>`)
-              : `<br>마지막 폴더 저장: ${lastFolderSave? new Date(lastFolderSave).toLocaleTimeString("ko-KR") : "아직 없음"}`)
-            + (fsErr? `<br><span style="color:var(--crit)">최근 오류: ${esc(fsErr)}</span>` : "")
-          : "아직 지정하지 않았습니다."}</div>
-        ${on? `<div class="hint" style="margin:-4px 0 10px">권한 유지: ${
-            fsPersisted===true? `<b style="color:var(--good)">예 — 앱을 열 때 권한 창 없이 연결됩니다</b>`
-          : fsPersisted===false? `<b style="color:var(--warn)">아니요 — 앱을 열 때마다 권한 창이 뜹니다</b>
-              <br>권한 창에서 <b>“방문할 때마다 허용”</b>(Allow on every visit)을 고르면 그 뒤로는 묻지 않습니다.
-              크롬 설정 → <b>사이트 설정 → 파일 편집</b>에서 이 사이트를 <b>허용</b>으로 바꿔도 됩니다.`
-          : "확인 중"}</div>` : ""}
-        <div class="btnrow">
-          ${fsNeedGrant? `<button class="btn pri" data-act="grantFolder">폴더 다시 연결</button>`:""}
-          <button class="btn ${on?"":"pri"}" data-act="pickFolder">${on?"폴더 바꾸기":"폴더 지정"}</button>
-          ${on? `${fsMode==="rw"? `<button class="btn" data-act="folderSaveNow">지금 폴더에 저장</button>`:""}
-                 <button class="btn" data-act="restoreFolder">폴더에서 불러오기</button>
-                 <button class="btn" data-act="scanFolderVideos">폴더에서 영상 찾기</button>
-                 ${fsMode==="rw"? `<button class="btn" data-act="moveToFolder">기기 영상을 폴더로</button>`:""}
-                 <button class="btn" data-act="forgetFolder">연결 해제</button>` : ""}
-          <button class="btn sm" data-act="showEnv">진단</button>
-        </div>
-        <div class="hint" style="margin-top:10px">${fsMode==="ro"
-          ? `· 이 브라우저는 웹에서 폴더에 <b>저장</b>하는 것을 허용하지 않습니다(삼성 인터넷 등). 저장은 <b>전체 백업(zip)</b>으로 하세요.<br>
-             · 대신 이 폴더에서 <b>기록 불러오기</b>와 <b>영상 재생</b>은 됩니다 — 영상 원본을 폴더(또는 그 안 <b>videos</b> 폴더)에 넣고
-               <b>[폴더에서 영상 찾기]</b>를 누르면 복사 없이 그 자리에서 재생됩니다. 브라우저 데이터를 지워도 영상은 폴더에 남습니다.<br>
-             · 자동 저장까지 쓰려면 같은 주소를 <b>크롬</b>으로 열어 주세요.`
-          : `· 폴더를 <b>구글 드라이브·원드라이브·아이클라우드 동기화 폴더</b>로 잡아 두면 다른 기기와도 이어집니다.<br>
-             · 브라우저 데이터를 지우면 <b>폴더 연결만</b> 풀립니다 — 다시 <b>폴더 지정</b>을 누르면 기록과 영상이 그대로 돌아옵니다.<br>
-             · 새 영상은 폴더의 <b>videos</b> 안에 원본 파일로 저장됩니다.<br>
-             · 앱을 다시 열면 크롬이 폴더 권한을 한 번 확인합니다. 권한 창에서 <b>방문할 때마다 허용</b>을 고르면
-               그 뒤로는 묻지 않습니다.${isInstalledApp()? "" : ` <b>홈 화면에 추가</b>(크롬 메뉴 → 앱 설치)해 두면 더 확실합니다.`}`}</div>`
-     : `<div class="hint">이 브라우저에서는 폴더 지정을 쓸 수 없습니다.
-          <b>PC 크롬·엣지</b>, <b>안드로이드 크롬</b>, <b>삼성 인터넷 29 이상</b>에서 지원됩니다
-          (아이폰·아이패드 사파리와 파이어폭스는 지원하지 않습니다).<br>
-          ${window.isSecureContext? "" : `<b style="color:var(--warn)">지금 페이지가 보안 연결(https)이 아닙니다 — 파일을 직접 여는 대신 인터넷 주소로 접속하면 쓸 수 있습니다.</b><br>`}
-          대신 아래 <b>전체 백업(zip)</b>을 쓰면 기록과 영상을 한 파일로 묶어 <b>내 파일·구글 드라이브·아이클라우드</b> 등
-          원하는 위치에 저장하고, 그대로 되돌릴 수 있습니다. 안드로이드에서는 <b>다운로드 폴더</b>에 저장되므로
-          브라우저 데이터를 지워도 파일은 남습니다.
-          <div class="btnrow" style="margin-top:10px"><button class="btn sm" data-act="showEnv">진단</button></div></div>`)
-   + `</div>`;
-}
 function bundleHint(){
   const n = S.games.reduce((a,g)=>a+g.videos.filter(v=>v.kind==="file").length,0);
   const sz = S.games.reduce((a,g)=>a+g.videos.filter(v=>v.kind==="file").reduce((x,v)=>x+(v.size||0),0),0);
@@ -2944,14 +2526,11 @@ function bundleHint(){
     + (stale? ` <span style="color:var(--warn);font-weight:650">— 백업 이후 바뀐 기록이 있습니다</span>` : "");
 }
 function exportHint(){
-  if(dirHandle && S.settings.exportToFolder!==false && !S.settings.pickEach)
-    return `내보낸 파일은 <b>${esc(dirName)}</b> 폴더에 같은 이름으로 <b>덮어쓰기</b> 저장됩니다.`;
-  if(FS_SAVE_OK && !S.settings.pickEach)
-    return `처음 한 번 저장 위치를 고르면, 다음부터는 <b>같은 파일에 덮어쓰기</b> 됩니다. 위치를 바꾸려면 아래 버튼으로 초기화하세요.`;
-  if(FS_SAVE_OK)
-    return `내보낼 때마다 저장 위치를 물어봅니다.`;
-  return `아이폰·아이패드에서는 <b>공유 시트</b>가 열립니다 — <b>파일에 저장</b>을 골라 아이클라우드나 원하는 폴더에 넣으세요.
-    같은 이름으로 저장하면 <b>바꾸기(덮어쓰기)</b>를 선택할 수 있습니다. 그러려면 <b>파일 이름에 날짜 넣기</b>는 꺼 두는 편이 좋습니다.`;
+  if(S.settings.pickEach)
+    return `저장할 때 <b>공유 시트</b>가 열립니다 — 휴대폰에서는 <b>파일에 저장</b>을 골라
+      아이클라우드·내 파일 등 원하는 폴더에 넣을 수 있습니다. (공유 시트를 지원하지 않는 기기에서는 그냥 다운로드됩니다)`;
+  return `내보낸 파일은 이 기기의 <b>다운로드 폴더</b>에 저장됩니다.
+    저장 위치를 직접 고르고 싶으면 위의 <b>저장할 때 위치 고르기</b>를 켜 주세요.`;
 }
 function viewSettings(){
   const p = S.profile;
@@ -3015,40 +2594,18 @@ function viewSettings(){
         유튜브 링크는 공개 범위가 <b>일부 공개(미등록)</b>여야 앱 안에서 재생됩니다. <b>비공개</b>는 유튜브 정책상 임베드가 차단됩니다.</div>
     </div>
 
-    ${folderCard()}
-
     <div class="card"><div class="hd"><div style="flex:1"><h3>백업 / 복원</h3>
-      <div class="cap">전체 백업(zip)에는 <b>영상 파일까지</b> 들어갑니다. 되돌리면 영상도 자동으로 다시 연결됩니다.</div></div></div>
-      <div class="btnrow">
-        <button class="btn pri" data-act="exportBundle">전체 백업 (영상 포함 · zip)</button>
-        <button class="btn pri" data-act="importAny">백업 불러오기 (zip · json)</button>
+      <div class="cap">모든 기록은 이 기기 안에만 있습니다 — 정기적으로 저장해 두세요.</div></div></div>
+      <div class="iorow">
+        <button class="iobtn" data-act="saveMenu"><span class="ic">${ICON_SAVE}</span><span class="lb">Save</span><span class="sb">저장</span></button>
+        <button class="iobtn" data-act="openMenu"><span class="ic">${ICON_OPEN}</span><span class="lb">Open</span><span class="sb">불러오기</span></button>
       </div>
-      <div class="hint" style="margin-top:8px">${bundleHint()}</div>
+      <div class="hint" style="margin-top:10px">${bundleHint()}</div>
       <div id="missvid"></div>
-      <div class="btnrow" style="margin-top:14px">
-        <button class="btn" data-act="exportJSON">기록만 (JSON)</button>
-        <button class="btn" data-act="exportCSV">타석 CSV</button>
-        <button class="btn" data-act="exportDefCSV">수비 CSV</button>
-        <button class="btn" data-act="exportPitCSV">투수 CSV</button>
-        <button class="btn" data-act="exportPitchCSV">투구 CSV</button>
+      <div class="btnrow" style="margin-top:12px">
+        ${togBtn("optPick",  !!S.settings.pickEach,   "저장할 때 위치 고르기")}
+        ${togBtn("optStamp", !!S.settings.stampNames, "파일 이름에 날짜 넣기")}
       </div>
-      <div class="btnrow" style="margin-top:8px">
-        <button class="btn sm" data-act="showJSON">JSON 화면에 표시 · 복사</button>
-        <button class="btn sm" data-act="pasteJSON">붙여넣기로 불러오기</button>
-      </div>
-      <div class="hint" style="margin-top:10px">불러오기는 <b>현재 기록에 합치기</b> 또는 <b>전체 교체</b>를 고를 수 있습니다.
-        JSON만 담긴 파일에는 영상 <i>파일</i>이 들어 있지 않지만, 불러온 뒤 <b>영상 파일 다시 연결</b>로 되살릴 수 있습니다.</div>
-    </div>
-
-    <div class="card"><div class="hd"><div style="flex:1"><h3>내보내기 저장 방식</h3>
-      <div class="cap">파일을 어디에, 어떤 이름으로 저장할지 정합니다.</div></div></div>
-      <div class="btnrow">
-        ${FS_DIR_OK?  togBtn("optFolder", S.settings.exportToFolder!==false, "저장 폴더에 바로 저장") : ""}
-        ${FS_DIR_OK?  togBtn("optAutoAsk", S.settings.fsAutoAsk===true, "앱 열 때 권한 창 띄우기") : ""}
-        ${FS_SAVE_OK? togBtn("optPick",   !!S.settings.pickEach,             "저장할 때마다 위치 묻기") : ""}
-        ${togBtn("optStamp",  !!S.settings.stampNames,           "파일 이름에 날짜 넣기")}
-      </div>
-      ${FS_SAVE_OK? `<div class="btnrow" style="margin-top:8px"><button class="btn sm" data-act="resetTargets">기억해 둔 저장 위치 지우기</button></div>`:""}
       <div class="hint" style="margin-top:10px">${exportHint()}</div>
     </div>
 
@@ -3064,7 +2621,7 @@ function viewSettings(){
         · <b>홈 화면에 추가</b>하면 앱처럼 전체 화면으로 쓸 수 있습니다 (아이폰: 공유 → 홈 화면에 추가 / 안드로이드: 메뉴 → 앱 설치).<br>
         · 인터넷 연결 없이도 동작합니다. 파일을 열어둔 브라우저에 기록이 저장됩니다.<br>
         · 브라우저 데이터(쿠키·사이트 데이터)를 지우면 브라우저 안의 기록은 삭제됩니다 —
-          <b>저장 폴더</b>를 지정해 두거나 <b>전체 백업(zip)</b>을 받아 두면 영상까지 그대로 되살릴 수 있습니다.<br>
+          <b>전체 백업(zip)</b>을 받아 두면 영상까지 그대로 되살릴 수 있습니다.<br>
         · 타석을 기록할 때 야구장 그림을 누르면 타구 위치가 저장되고 스프레이 차트가 만들어집니다.
       </div></div>
 
@@ -3074,6 +2631,31 @@ function viewSettings(){
         <span class="hint">전체 기록 삭제</span>
       </div>
       <div class="hint" style="margin-top:8px">삭제 전에 <b>JSON 내보내기</b>로 백업해 두세요. 삭제하면 되돌릴 수 없습니다.</div></div>`;
+}
+
+/* ---------------------- 저장(Save) / 불러오기(Open) ---------------------- */
+function ioItem(act, no, title, desc){
+  return `<button class="btn block nb ioitem" data-act="${act}">
+      <span class="no">${no}</span><span class="tx"><b>${title}</b><em>${desc}</em></span></button>`;
+}
+function saveMenu(){
+  openSheet(`<div class="sh"><h3><span class="mico">${ICON_SAVE}</span> 저장 (Save)</h3>
+      <div class="spacer" style="flex:1"></div>
+      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+    <div class="hint" style="padding:2px 0 12px">${bundleHint()}</div>
+    ${ioItem("exportBundle", "01", "전체 백업", "기록 + 영상 파일까지 하나의 zip 으로 저장합니다")}
+    ${ioItem("exportJSON",   "02", "기록 (JSON)", "기록만 저장합니다 — 가볍고 빠릅니다 (영상 파일 제외)")}
+    ${ioItem("exportAllCSV", "03", "기록 (CSV)", "경기·타석·수비·투수·투구 전체 기록을 CSV 로 만들어 zip 으로 저장합니다")}
+    <div class="sf"><button class="btn" data-act="close">닫기</button></div>`);
+}
+function openMenu(){
+  openSheet(`<div class="sh"><h3><span class="mico">${ICON_OPEN}</span> 불러오기 (Open)</h3>
+      <div class="spacer" style="flex:1"></div>
+      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+    <div class="hint" style="padding:2px 0 12px">불러올 때 <b>현재 기록에 합치기</b> 또는 <b>전체 교체</b>를 고를 수 있습니다.</div>
+    ${ioItem("importBundle", "01", "전체 백업 (zip)", "기록과 영상 파일을 함께 되돌립니다")}
+    ${ioItem("importJSON",   "02", "기록 (JSON)", "기록만 되돌립니다 — 영상은 [영상 파일 다시 연결]로 이어 붙일 수 있습니다")}
+    <div class="sf"><button class="btn" data-act="close">닫기</button></div>`);
 }
 
 /* ============================ 시트 / 모달 ============================ */
@@ -3160,8 +2742,10 @@ function paSheet(gid, pid){
   const g = S.games.find(x=>x.id===gid); if(!g) return;
   const p = pid? g.pas.find(x=>x.id===pid) : null;
   draft = p? JSON.parse(JSON.stringify(p)) : {id:null, inning:(g.pas.length?num(g.pas[g.pas.length-1].inning,1)+1:1),
-    pitcher:"", result:"", zone:null, rbi:0, runs:0, sb:0, cs:0, note:""};
+    pitcherNo:"", pitcher:"", result:"", zone:null, rbi:0, runs:0, sb:0, cs:0, note:""};
+  if(draft.pitcherNo==null) draft.pitcherNo = "";
   const pitchers = Array.from(new Set(S.games.flatMap(x=>x.pas.map(y=>y.pitcher)).filter(Boolean)));
+  const pitNos   = Array.from(new Set(S.games.flatMap(x=>x.pas.map(y=>y.pitcherNo)).filter(Boolean)));
   const LV = gameLevel(g);
   const groups = ["hit","onbase","out"].map(gk=>`
     <div class="chipgroup"><div class="gl">${GLABEL[gk]}</div><div class="chips">
@@ -3175,7 +2759,11 @@ function paSheet(gid, pid){
       <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
     <div class="f2">
       <label class="f"><span>이닝 <span style="color:var(--text-3);font-weight:400">/ 정규 ${regInnings(LV)}이닝</span></span>${stepper("pa_inn", clamp(num(draft.inning,1),1,regInnings(LV)+3), 1, regInnings(LV)+3)}</label>
-      <label class="f"><span>상대 투수</span><input id="pa_pit" value="${esc(draft.pitcher)}" list="dl_pit" placeholder="이름 (선택)">
+    </div>
+    <div class="f2">
+      <label class="f"><span>상대 투수 배번</span><input id="pa_pitno" value="${esc(draft.pitcherNo||"")}" inputmode="numeric" list="dl_pitno" placeholder="예: 11">
+        <datalist id="dl_pitno">${pitNos.map(o=>`<option value="${esc(o)}">`).join("")}</datalist></label>
+      <label class="f"><span>상대 투수 이름</span><input id="pa_pit" value="${esc(draft.pitcher)}" list="dl_pit" placeholder="예: 홍길동">
         <datalist id="dl_pit">${pitchers.map(o=>`<option value="${esc(o)}">`).join("")}</datalist></label>
     </div>
     <div style="margin-bottom:6px"><span style="display:block;font-size:12.5px;color:var(--text-2);margin-bottom:6px;font-weight:550">결과</span>${groups}</div>
@@ -3423,23 +3011,37 @@ function videoLinkText(v, g){
   }
   return "";
 }
+function gameOptions(sel){
+  return S.games.slice().reverse().map(g=>
+    `<option value="${g.id}" ${sel===g.id?"selected":""}>${esc(fmtDate(g.date))} vs ${esc(g.opponent||"-")}</option>`).join("");
+}
 function videoSheet(gid, vid){
-  const g = S.games.find(x=>x.id===gid); if(!g) return;
+  let g = S.games.find(x=>x.id===gid) || S.games[S.games.length-1];
+  if(!g){ toast("먼저 경기를 추가해 주세요 — 영상은 경기에 붙여서 보관합니다"); return; }
   const V = vid? g.videos.find(x=>x.id===vid) : null;
   const linkKind = V? (V.defId? "def" : V.paId? "pa" : "") : "";
+  const folders = Array.from(new Set(S.games.flatMap(x=>(x.videos||[]).map(y=>y.folder)).filter(Boolean)));
   openSheet(`
     <div class="sh"><h3>${V?"영상 수정":"영상 추가"}</h3><div class="spacer" style="flex:1"></div>
       <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
     ${V? `<div class="hint" style="margin:0 0 12px">${V.kind==="file"?`파일: <b>${esc(V.name||"")}</b> (${bytes(V.size)}) — 파일 자체는 바꿀 수 없습니다. 다른 파일을 넣으려면 삭제 후 다시 추가해 주세요.`:"링크 영상"}</div>`
       : `<div class="filters"><div class="seg" role="group" aria-label="영상 종류">
-      <button data-act="vkind" data-v="file" aria-pressed="true">파일 업로드</button>
+      <button data-act="vkind" data-v="file" aria-pressed="true">파일 선택</button>
+      <button data-act="vkind" data-v="folder" aria-pressed="false">폴더 선택</button>
       <button data-act="vkind" data-v="link" aria-pressed="false">링크 등록</button>
-    </div></div>`}
+    </div></div>
+    <label class="f"><span>어느 경기의 영상인가요</span><select id="v_game">${gameOptions(g.id)}</select></label>`}
     <div id="v_file" ${V?"hidden":""}>
-      <label class="f"><span>동영상 파일</span><input id="v_input" type="file" accept="video/*"></label>
+      <label class="f"><span>동영상 파일 <span style="color:var(--text-3);font-weight:400">— 여러 개 한 번에 고를 수 있습니다</span></span>
+        <input id="v_input" type="file" accept="video/*" multiple></label>
       <div class="hint" style="margin:-6px 0 12px">이 기기의 브라우저 안에만 저장됩니다. 인터넷 업로드가 아니므로 안전하지만,
-        기기 저장 공간을 사용하니 <b>하이라이트 클립(수십 MB)</b> 위주로 넣는 것을 권합니다.</div>
-      <div id="v_prog" hidden><div class="bar"><i style="width:0%"></i></div><div class="hint" style="margin-top:6px">저장 중…</div></div>
+        기기 저장 공간을 쓰니 <b>하이라이트 클립(수십 MB)</b> 위주로 넣는 것을 권합니다.</div>
+    </div>
+    <div id="v_dirwrap" hidden>
+      <label class="f"><span>폴더 통째로 선택</span>
+        <input id="v_dir" type="file" webkitdirectory directory multiple></label>
+      <div class="hint" style="margin:-6px 0 12px">폴더 안의 <b>동영상 파일만</b> 골라 저장합니다.
+        <b>폴더명이 그대로 남아</b> 영상 탐색기에 <b>폴더명 › 파일명</b> 으로 표시되고, 파일명을 누르면 바로 재생됩니다.</div>
     </div>
     <div id="v_link" ${(V && V.kind==="link")? "" : "hidden"}>
       <label class="f"><span>영상 주소</span><input id="v_url" inputmode="url" value="${V&&V.kind==="link"?esc(V.url):""}" placeholder="https://youtu.be/... 또는 mp4 주소"></label>
@@ -3447,7 +3049,15 @@ function videoSheet(gid, vid){
         유튜브는 공개 범위를 <b>일부 공개(미등록)</b>로 올려 주세요 — <b>비공개</b> 영상은 유튜브 정책상 어떤 앱·사이트에서도 재생되지 않습니다.
         일부 공개는 검색에 노출되지 않으니 비공개와 사실상 같습니다.</div>
     </div>
-    <label class="f"><span>제목</span><input id="v_title" value="${V?esc(V.title||""):""}" placeholder="예: 3회 좌중간 2루타"></label>
+    <div id="v_pick" class="pickbox" hidden></div>
+    <div class="f2">
+      <label class="f"><span>폴더명 <span style="color:var(--text-3);font-weight:400">— 탐색기 분류</span></span>
+        <input id="v_folder" value="${V?esc(V.folder||""):""}" list="dl_vfold" placeholder="예: 2026 봄리그 하이라이트">
+        <datalist id="dl_vfold">${folders.map(o=>`<option value="${esc(o)}">`).join("")}</datalist></label>
+      <label class="f"><span>제목 <span style="color:var(--text-3);font-weight:400">— 비우면 파일명</span></span>
+        <input id="v_title" value="${V?esc(V.title||""):""}" placeholder="예: 3회 좌중간 2루타"></label>
+    </div>
+    <div class="hint" id="v_fhint" style="margin:-6px 0 12px">폴더명은 <b>영상 탐색기</b>에서 묶어 보는 이름입니다 — 비우면 <b>기타</b>로 분류됩니다.</div>
     <div class="f2">
       <label class="f"><span>연결할 장면</span><select id="v_target">
         <option value="" ${linkKind===""?"selected":""}>연결 안 함</option>
@@ -3468,6 +3078,53 @@ function videoSheet(gid, vid){
       sheet.querySelector("#v_def_wrap").hidden = sel.value!=="def";
     };
     sel.addEventListener("change", sync); sync();
+
+    /* 고른 파일의 폴더명·파일명을 그대로 보여 줍니다 */
+    const box = sheet.querySelector("#v_pick");
+    const showPick = (list, isDir)=>{
+      if(!box) return;
+      const all = Array.from(list||[]);
+      const files = isDir? all.filter(isVideoFile) : all;
+      const skip = all.length - files.length;
+      if(!files.length){
+        box.hidden = false;
+        box.innerHTML = all.length
+          ? `<div class="pt">고른 폴더 안에 동영상 파일이 없습니다 <span>(파일 ${all.length}개 확인)</span></div>`
+          : "";
+        if(!all.length){ box.hidden = true; box.innerHTML = ""; }
+        return;
+      }
+      const total = files.reduce((a,f)=>a+(f.size||0),0);
+      const groups = new Map();
+      files.forEach(f=>{
+        const rel = f.webkitRelativePath || "";
+        const dir = rel.indexOf("/")>=0? rel.slice(0, rel.lastIndexOf("/")) : "";
+        if(!groups.has(dir)) groups.set(dir, []);
+        groups.get(dir).push(f);
+      });
+      let h = `<div class="pt">선택한 동영상 <b>${files.length}개</b> <span>· ${bytes(total)}`
+            + (skip? ` · 동영상이 아닌 파일 ${skip}개는 제외` : "") + `</span></div>`;
+      const keys = Array.from(groups.keys()).sort((a,b)=>a.localeCompare(b,"ko"));
+      keys.forEach(k=>{
+        const arr = groups.get(k).slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),"ko",{numeric:true}));
+        if(k) h += `<div class="fg">${ICON_FOLDER}<span>${esc(k)}</span></div>`;
+        h += `<ul>` + arr.slice(0,60).map(f=>
+              `<li>${esc(f.name)} <span>· ${bytes(f.size)}</span></li>`).join("")
+           + (arr.length>60? `<li>… 외 ${arr.length-60}개</li>` : "") + `</ul>`;
+      });
+      box.innerHTML = h; box.hidden = false;
+    };
+    const fi = sheet.querySelector("#v_input"), di = sheet.querySelector("#v_dir");
+    if(fi) fi.addEventListener("change", ()=> showPick(fi.files, false));
+    if(di) di.addEventListener("change", ()=> showPick(di.files, true));
+    // 경기를 바꾸면 연결할 장면 목록도 다시 만듭니다
+    const gs = sheet.querySelector("#v_game");
+    if(gs) gs.addEventListener("change", ()=>{
+      const ng = S.games.find(x=>x.id===gs.value); if(!ng) return;
+      const pa = sheet.querySelector("#v_pa"), df = sheet.querySelector("#v_def");
+      pa.innerHTML = ng.pas.length? paOptions(ng, null) : `<option value="">기록된 타석 없음</option>`;
+      df.innerHTML = ng.def.length? defOptions(ng, null) : `<option value="">기록된 수비 없음</option>`;
+    });
   });
 }
 function ytId(u){ const m=String(u).match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/|live\/|\/v\/)([A-Za-z0-9_-]{11})/); return m?m[1]:null; }
@@ -3549,7 +3206,7 @@ function playVideo(gid, vid){
     return;
   }
 
-  // 저장 폴더 또는 이 기기에 저장한 파일
+  // 이 기기에 저장한 파일
   if(blobURLs[v.id]){ mountVideo(blobURLs[v.id], "file"); return; }
   host.innerHTML = `<div class="hint">불러오는 중…</div>`;
   mediaGet(v).then(blob=>{
@@ -3606,48 +3263,14 @@ async function shareFile(name, blob){
 function fname(base, ext){
   return base + (S.settings.stampNames? "_"+stamp() : "") + "." + ext;
 }
-/* key 는 내보내기 종류(json/batting/…) — 한 번 고른 파일을 기억해 두고 다음부터 덮어씁니다 */
+/* 파일 저장 — 폴더 권한 없이, 브라우저의 일반 다운로드(또는 공유 시트)로만 저장합니다 */
 async function download(name, blob, key){
-  // 1) 저장 폴더가 연결돼 있으면 그 폴더에 바로 덮어쓰기
-  if(dirHandle && !fsNeedGrant && fsMode === "rw" && S.settings.exportToFolder!==false && !S.settings.pickEach){
-    try{
-      const fh = await dirHandle.getFileHandle(name, {create:true});
-      const w  = await fh.createWritable();
-      await w.write(blob); await w.close();
-      toast("저장 폴더에 저장했습니다 · " + name);
-      return;
-    }catch(e){ fsErr = errText(e); console.warn(e); }
-  }
-  // 2) 기억해 둔 파일에 덮어쓰기 (PC 크롬·엣지, 안드로이드 크롬)
-  if(FS_SAVE_OK && key){
-    try{
-      let h = null;
-      if(!S.settings.pickEach){
-        try{ h = await hGet("exp:"+key); }catch(e){ h=null; }
-        if(h && !(await ensurePerm(h,"readwrite",true))) h = null;
-      }
-      if(!h){
-        h = await window.showSaveFilePicker({
-          suggestedName: name,
-          startIn: dirHandle || "downloads",
-          types: [{description:"내보내기 파일", accept: mimeOf(name)}]
-        });
-        try{ await hSet("exp:"+key, h); }catch(e){}
-      }
-      const w = await h.createWritable();
-      await w.write(blob); await w.close();
-      toast("저장했습니다 · " + (h.name||name));
-      return;
-    }catch(e){
-      if(e && e.name === "AbortError") return;               // 사용자가 취소
-      console.warn("파일 저장 실패", e);
-    }
-  }
-  // 3) 모바일 공유 시트 — 저장 위치를 직접 고를 수 있습니다
-  if(S.settings.pickEach || !FS_SAVE_OK){
+  void key;
+  // 1) 저장 위치를 직접 고르는 설정이면 공유 시트를 먼저 띄웁니다 (휴대폰)
+  if(S.settings.pickEach){
     if(await shareFile(name, blob)) return;
   }
-  // 4) 앱 내장 다운로드 경로
+  // 2) 앱 내장 다운로드 경로
   const ns = await dlNs();
   if(ns){
     try{ await ns.save({filename:name, data:blob}); toast("파일을 저장했습니다"); return; }
@@ -3661,15 +3284,9 @@ async function download(name, blob, key){
       if(code === "too_large"){ toast("파일이 너무 커서 저장할 수 없습니다"); return; }
     }
   }
-  // 5) 마지막 수단 — 일반 다운로드
+  // 3) 일반 다운로드 (다운로드 폴더)
   anchorDownload(name, blob);
-  toast("파일을 내보냈습니다");
-}
-async function resetTargets(){
-  for(const k of ["json","batting","fielding","pitching","pitches","bundle"]){
-    try{ await hDel("exp:"+k); }catch(e){}
-  }
-  toast("기억해 둔 저장 위치를 지웠습니다 — 다음 내보내기에서 다시 물어봅니다");
+  toast("파일을 내보냈습니다 · " + name);
 }
 function stamp(){ const d=new Date(); return `${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}`; }
 function exportJSON(){
@@ -3686,26 +3303,24 @@ function csv(rows){
   }).join(",")).join("\r\n");
   return new Blob(["﻿"+body], {type:"text/csv;charset=utf-8"});
 }
-function exportCSV(){
-  const rows = [["날짜","상대","경기종류","구장","홈원정","경기장규격","이닝","상대투수","결과","결과코드","타구방향","타구깊이","추정거리(m)","타점","득점","도루성공","도루실패","메모"]];
+function rowsBatting(){
+  const rows = [["날짜","상대","경기종류","구장","홈원정","경기장규격","이닝","상대투수배번","상대투수","결과","결과코드","타구방향","타구깊이","추정거리(m)","타점","득점","도루성공","도루실패","메모"]];
   scopedGames().forEach(g=> g.pas.forEach(p=>{
     const z = p.zone? zoneOf(p.zone, gameLevel(g)) : null; const r = RMAP[p.result];
-    rows.push([g.date, g.opponent, GAME_TYPES[gameType(g)].ko, g.venue, g.homeAway, LEVELS[gameLevel(g)].ko, p.inning, p.pitcher, r?r.ko:"", p.result,
+    rows.push([g.date, g.opponent, GAME_TYPES[gameType(g)].ko, g.venue, g.homeAway, LEVELS[gameLevel(g)].ko, p.inning, p.pitcherNo||"", p.pitcher, r?r.ko:"", p.result,
       z?z.label:"", z?z.depth:"", z?Math.round(z.m):"", num(p.rbi,0), num(p.runs,0), num(p.sb,0), num(p.cs,0), p.note||""]);
   }));
-  if(rows.length===1){ toast("내보낼 타석 기록이 없습니다"); return; }
-  download(fname("baseball-batting","csv"), csv(rows), "batting");
+  return rows;
 }
-function exportDefCSV(){
+function rowsFielding(){
   const rows = [["날짜","상대","경기종류","이닝","포지션","결과","결과코드","수비이닝","자살","보살","실책","병살","메모"]];
   scopedGames().forEach(g=> g.def.forEach(d=>{
     rows.push([g.date, g.opponent, GAME_TYPES[gameType(g)].ko, num(d.inning,0)||"", PMAP[d.pos]||d.pos,
       dko(d.result), d.result||"", d.innings, num(d.po,0), num(d.a,0), num(d.e,0), num(d.dp,0), d.note||""]);
   }));
-  if(rows.length===1){ toast("내보낼 수비 기록이 없습니다"); return; }
-  download(fname("baseball-fielding","csv"), csv(rows), "fielding");
+  return rows;
 }
-function exportPitCSV(){
+function rowsPitching(){
   const rows = [["날짜","상대","경기종류","구분","이닝","아웃","상대타자","피안타","피홈런","볼넷","사구","삼진","실점","자책","투구수","스트라이크","ERA","WHIP","승패","메모"]];
   scopedGames().forEach(g=>{
     const recs = gamePitRecs(g);
@@ -3722,10 +3337,9 @@ function exportPitCSV(){
     rows.push([g.date, g.opponent, gt, "경기합계", fmtInn(t.outs), t.outs, t.TBF, t.H, t.HR, t.BB, t.HBP, t.SO, t.R, t.ER,
       t.NP, t.ST, t.ERA!=null?t.ERA.toFixed(2):"", t.WHIP!=null?t.WHIP.toFixed(2):"", decKo(gameDecision(g).dec), ""]);
   });
-  if(rows.length===1){ toast("내보낼 투수 기록이 없습니다"); return; }
-  download(fname("baseball-pitching","csv"), csv(rows), "pitching");
+  return rows;
 }
-function exportPitchCSV(){
+function rowsPitches(){
   const rows = [["날짜","상대","이닝","순번","구종","결과","스트라이크여부","코스","존안팎","구속(km/h)","x","y"]];
   scopedGames().forEach(g=> g.def.forEach(d=>{
     if(!d.pit || !(d.pit.pitches||[]).length) return;
@@ -3736,12 +3350,38 @@ function exportPitchCSV(){
         num(q.v,0)||"", num(q.x,0), num(q.y,0)]);
     });
   }));
-  if(rows.length===1){ toast("내보낼 투구 마커가 없습니다"); return; }
-  download(fname("baseball-pitches","csv"), csv(rows), "pitches");
+  return rows;
 }
-function importAny(){
+function rowsGames(){
+  const rows = [["날짜","상대","경기종류","구장","홈원정","경기장규격","우리점수","상대점수","승패","타석","타수","안타","타점","타율","OPS","메모"]];
+  scopedGames().forEach(g=>{
+    const t = battingOf(g.pas);
+    rows.push([g.date, g.opponent, GAME_TYPES[gameType(g)].ko, g.venue, g.homeAway, LEVELS[gameLevel(g)].ko,
+      g.myScore, g.oppScore, gameResult(g)||"", t.PA, t.AB, t.H, t.RBI, avg3(t.AVG), avg3(t.OPS), g.note||""]);
+  });
+  return rows;
+}
+/* 전체 기록을 CSV로 — 경기·타석·수비·투수·투구 표를 한 zip에 담습니다 */
+async function exportAllCSV(){
+  const set = [
+    ["01_경기기록.csv",  rowsGames()],
+    ["02_타석기록.csv",  rowsBatting()],
+    ["03_수비기록.csv",  rowsFielding()],
+    ["04_투수기록.csv",  rowsPitching()],
+    ["05_투구기록.csv",  rowsPitches()]
+  ].filter(x=> x[1].length > 1);
+  if(!set.length){ toast("내보낼 기록이 없습니다"); return; }
+  busy("CSV 파일을 만드는 중");
+  try{
+    const files = set.map(x=>({name:x[0], blob:csv(x[1])}));
+    const zip = await zipMake(files, (pr,n)=> busyUp(pr, n||"마무리 중"));
+    busyEnd();
+    await download(fname("baseball-csv","zip"), zip, "csv");
+  }catch(e){ busyEnd(); console.error(e); toast("CSV 저장 실패: "+(e.message||e)); }
+}
+function importAny(accept){
   const inp = document.createElement("input");
-  inp.type="file"; inp.accept=".zip,application/zip,application/json,.json";
+  inp.type="file"; inp.accept = accept || ".zip,application/zip,application/json,.json";
   inp.addEventListener("change", ()=>{
     const f = inp.files && inp.files[0]; if(!f) return;
     if(/\.zip$/i.test(f.name) || f.type==="application/zip"){ restoreBundle(f); return; }
@@ -3749,7 +3389,8 @@ function importAny(){
   });
   inp.click();
 }
-function importJSON(){ importAny(); }
+function importBundle(){ importAny(".zip,application/zip"); }
+function importJSON(){ importAny(".json,application/json"); }
 function importJSONFile(f){
   {
     const rd = new FileReader();
@@ -3780,48 +3421,6 @@ function importJSONFile(f){
 }
 
 
-/* 다운로드가 막힌 환경(앱 내 뷰어 등)을 위한 대체 경로 */
-function showJSON(){
-  const txt = JSON.stringify(S);
-  openSheet(`<div class="sh"><h3>기록 JSON</h3><div class="spacer" style="flex:1"></div>
-      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
-    <div class="hint" style="padding:4px 0 10px">아래 내용을 전체 선택해 복사하고, 메모 앱이나 파일로 저장해 두세요.
-      다른 기기에서 <b>붙여넣기로 불러오기</b>에 넣으면 그대로 복원됩니다.</div>
-    <textarea id="j_out" readonly style="min-height:220px;font-size:12px;line-height:1.45">${esc(txt)}</textarea>
-    <div class="sf"><button class="btn" data-act="close">닫기</button>
-      <button class="btn pri" data-act="copyJSON">클립보드 복사</button></div>`);
-}
-function copyJSON(){
-  const ta = $("#j_out"); if(!ta) return;
-  ta.select(); ta.setSelectionRange(0, ta.value.length);
-  const done = ()=> toast("복사했습니다");
-  if(navigator.clipboard && navigator.clipboard.writeText)
-    navigator.clipboard.writeText(ta.value).then(done).catch(()=>{ try{ document.execCommand("copy"); done(); }catch(e){ toast("복사에 실패했습니다. 직접 선택해 복사해 주세요"); } });
-  else { try{ document.execCommand("copy"); done(); }catch(e){ toast("직접 선택해 복사해 주세요"); } }
-}
-function pasteJSON(){
-  openSheet(`<div class="sh"><h3>붙여넣기로 불러오기</h3><div class="spacer" style="flex:1"></div>
-      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
-    <div class="hint" style="padding:4px 0 10px">백업해 둔 JSON 내용을 그대로 붙여넣으세요.</div>
-    <textarea id="j_in" placeholder='{"version":1,"games":[...]}' style="min-height:200px;font-size:12px;line-height:1.45"></textarea>
-    <div class="sf"><button class="btn" data-act="close">취소</button>
-      <button class="btn pri" data-act="applyPaste">불러오기</button></div>`);
-}
-function applyPaste(){
-  let o; try{ o = JSON.parse($("#j_in").value); }catch(e){ toast("JSON 형식이 아닙니다"); return; }
-  if(!o || !Array.isArray(o.games)){ toast("야구 기록 데이터가 아닙니다"); return; }
-  normalizeGames(o.games);
-  closeSheet();
-  ask("불러오기 방법", `붙여넣은 데이터에 <b>${o.games.length}경기</b>가 있습니다.`,
-    [{label:"현재 기록에 합치기",style:"pri"},{label:"전체 교체",style:"dan"},{label:"취소"}]).then(k=>{
-    if(k===0){ const have=new Set(S.games.map(g=>g.id)); let add=0;
-      o.games.forEach(g=>{ if(!have.has(g.id)){ S.games.push(g); add++; } });
-      saveNow(); render(); toast(add+"경기를 추가했습니다"); }
-    else if(k===1){ S.games=o.games; if(o.profile) S.profile=Object.assign(blank().profile,o.profile);
-      S.ui.year="all"; S.ui.gameId=null; saveNow(); render(); toast("교체했습니다"); }
-  });
-}
-
 /* ------------------------------ 샘플 데이터 ------------------------------ */
 function sampleData(){
   const rnd = (a)=> a[Math.floor(Math.random()*a.length)];
@@ -3848,7 +3447,8 @@ function sampleData(){
         const dist = c==="HR"? maxR*0.96 : (Math.random()<0.42? gm.baseU*(0.5+Math.random()*0.9) : gm.inU + Math.random()*(maxR-gm.inU)*0.95);
         zone = clampFair(FIELD.hx + Math.sin(ang)*dist, FIELD.hy - Math.cos(ang)*dist, curLevel());
       }
-      g.pas.push({id:uid(), inning:1+j*2+Math.floor(Math.random()*2), pitcher:rnd(pits), result:c, zone,
+      g.pas.push({id:uid(), inning:1+j*2+Math.floor(Math.random()*2),
+        pitcherNo:String(1+Math.floor(Math.random()*40)), pitcher:rnd(pits), result:c, zone,
         rbi: c==="HR"? 1+Math.floor(Math.random()*3) : (r.h||c==="SF")? Math.floor(Math.random()*2):0,
         runs: c==="HR"?1:(r.h?Math.floor(Math.random()*2):0), sb:(c==="1B"||c==="BB")?Math.floor(Math.random()*2):0,
         cs:(c==="1B"||c==="BB")&&Math.random()<0.18?1:0, note:""});
@@ -3978,7 +3578,8 @@ document.addEventListener("click", ev=>{
     case "savePA": {
       if(!draft.result){ toast("타석 결과를 선택해 주세요"); return; }
       const g = S.games.find(x=>x.id===gid);
-      const rec = {id: id||uid(), inning:num($("#pa_inn").value,1), pitcher:$("#pa_pit").value.trim(),
+      const rec = {id: id||uid(), inning:num($("#pa_inn").value,1),
+        pitcherNo:$("#pa_pitno").value.trim(), pitcher:$("#pa_pit").value.trim(),
         result:draft.result, zone: hasBIP(draft.result)? draft.zone : null, rbi:num($("#pa_rbi").value,0), runs:num($("#pa_run").value,0),
         sb:num($("#pa_sb").value,0), cs:num($("#pa_cs").value,0), note:$("#pa_note").value.trim()};
       if(id){ const i=g.pas.findIndex(x=>x.id===id); g.pas[i]=rec; } else g.pas.push(rec);
@@ -4058,9 +3659,17 @@ document.addEventListener("click", ev=>{
     case "newVideo": videoSheet(gid, null); break;
     case "editVideo": videoSheet(gid, id); break;
     case "updateVideo": updateVideo(gid, id); break;
-    case "vkind":
+    case "vkind": {
       $$("#modal .seg [data-act='vkind']").forEach(b=> b.setAttribute("aria-pressed", String(b.dataset.v===v)));
-      $("#v_file").hidden = v!=="file"; $("#v_link").hidden = v!=="link"; break;
+      $("#v_file").hidden = v!=="file";
+      $("#v_dirwrap").hidden = v!=="folder";
+      $("#v_link").hidden = v!=="link";
+      const pk = $("#v_pick"); if(pk){ pk.hidden = true; pk.innerHTML = ""; }
+      const fh = $("#v_fhint");
+      if(fh) fh.innerHTML = v==="folder"
+        ? `폴더를 통째로 고르면 이 칸은 무시하고 <b>실제 폴더명</b>이 그대로 쓰입니다.`
+        : `폴더명은 <b>영상 탐색기</b>에서 묶어 보는 이름입니다 — 비우면 <b>기타</b>로 분류됩니다.`;
+      break; }
     case "saveVideo": saveVideo(gid, el); break;
     case "playVideo": playVideo(gid, id); break;
     case "openVideo": openVideoTab(gid, id); break;
@@ -4070,6 +3679,11 @@ document.addEventListener("click", ev=>{
     case "toggleVG": {
       if(openVG.has(id)) openVG.delete(id); else openVG.add(id);
       render(); break; }
+    case "toggleVF": {
+      const k = el.dataset.k || "";
+      if(openVF.has(k)) openVF.delete(k); else openVF.add(k);
+      render(); break; }
+    case "vmode": S.ui.vmode = v; save(); render(); break;
     case "delVideo":
       ask("영상 삭제","이 영상을 기록에서 삭제합니다. 업로드한 파일도 기기에서 지워집니다.",
         [{label:"삭제",style:"dan"},{label:"취소"}]).then(k=>{
@@ -4079,7 +3693,7 @@ document.addEventListener("click", ev=>{
         if(vv && vv.kind==="file"){ mediaDel(vv).catch(()=>{});
           if(blobURLs[id]){ try{ URL.revokeObjectURL(blobURLs[id]); }catch(e){} delete blobURLs[id]; } }
         g.videos = g.videos.filter(x=>x.id!==id);
-        saveNow(); flushFolder(); render(); toast("영상을 삭제했습니다");
+        saveNow(); render(); toast("영상을 삭제했습니다");
       }); break;
 
     case "step": {
@@ -4094,42 +3708,25 @@ document.addEventListener("click", ev=>{
         position:$("#pf_pos").value, bats:$("#pf_bats").value, throws:$("#pf_thr").value};
       saveNow(); render(); toast("선수 정보를 저장했습니다"); break;
 
-    case "exportJSON": exportJSON(); break;
-    case "importJSON": importAny(); break;
-    case "importAny": importAny(); break;
-    case "exportBundle": exportBundle(); break;
-    case "pickFolder": pickFolder(); break;
-    case "grantFolder": grantFolder(); break;
-    case "forgetFolder": forgetFolder(); break;
-    case "restoreFolder": restoreFolder(); break;
-    case "moveToFolder": moveToFolder(); break;
-    case "folderSaveNow":
-      folderWriteJSON(true).then(ok=>{ render(); toast(ok? "폴더에 저장했습니다" : "폴더에 저장하지 못했습니다"); }); break;
+    case "saveMenu": saveMenu(); break;
+    case "openMenu": openMenu(); break;
+    case "exportJSON": closeSheet(); exportJSON(); break;
+    case "exportAllCSV": closeSheet(); exportAllCSV(); break;
+    case "importBundle": closeSheet(); importBundle(); break;
+    case "importJSON": closeSheet(); importJSON(); break;
+    case "importAny": closeSheet(); importAny(); break;
+    case "exportBundle": closeSheet(); exportBundle(); break;
     case "installApp": installApp(); break;
     case "hideInstall": S.ui.hideInstall = true; saveNow(); render(); break;
     case "showEnv": showEnv(); break;
-    case "scanFolderVideos": scanFolderVideos(); break;
     case "copyEnv": copyEnv(); break;
     case "relinkVideos": relinkVideos(); break;
     case "relinkOne": {
       const g0=S.games.find(x=>x.id===gid); const v0=g0&&g0.videos.find(x=>x.id===id);
       if(v0){ missCache=[{g:g0, v:v0}]; relinkVideos(); } break; }
-    case "resetTargets": resetTargets(); break;
-    case "optFolder": S.settings.exportToFolder = !(S.settings.exportToFolder!==false); saveNow(); render(); break;
-    case "optAutoAsk": S.settings.fsAutoAsk = !(S.settings.fsAutoAsk===true); saveNow(); render();
-      toast(S.settings.fsAutoAsk===true? "앱을 열 때 폴더 권한 창을 띄웁니다"
-                                       : "권한 창을 띄우지 않습니다 — 배너의 [폴더 연결]로 연결하세요");
-      if(S.settings.fsAutoAsk===true) armAutoGrant(); break;
     case "optPick":   S.settings.pickEach   = !S.settings.pickEach;   saveNow(); render(); break;
     case "optStamp":  S.settings.stampNames = !S.settings.stampNames; saveNow(); render(); break;
-    case "showJSON": showJSON(); break;
-    case "copyJSON": copyJSON(); break;
-    case "pasteJSON": pasteJSON(); break;
-    case "applyPaste": applyPaste(); break;
-    case "exportCSV": exportCSV(); break;
-    case "exportDefCSV": exportDefCSV(); break;
-    case "exportPitCSV": exportPitCSV(); break;
-    case "exportPitchCSV": exportPitchCSV(); break;
+
     case "wipe":
       ask("전체 기록 삭제","모든 경기·타석·수비·영상 기록이 이 기기에서 완전히 삭제됩니다.<br>먼저 JSON으로 백업하는 것을 권합니다.",
         [{label:"모두 삭제",style:"dan"},{label:"취소"}]).then(k=>{
@@ -4155,44 +3752,73 @@ function updateVideo(gid, vid){
     if(!url){ toast("영상 주소를 입력해 주세요"); return; }
     v.url = url;
   }
-  v.title = $("#v_title").value.trim() || v.title;
-  v.note  = $("#v_note").value.trim();
-  v.paId  = lk.paId; v.defId = lk.defId;
+  v.title  = $("#v_title").value.trim() || v.title;
+  v.folder = $("#v_folder").value.trim();
+  v.note   = $("#v_note").value.trim();
+  v.paId   = lk.paId; v.defId = lk.defId;
   saveNow(); closeSheet(); render(); toast("영상 정보를 수정했습니다");
 }
+/* 폴더 업로드에서 동영상만 골라냅니다 */
+function isVideoFile(f){
+  if(f.type && f.type.indexOf("video/")===0) return true;
+  return /\.(mp4|m4v|mov|webm|mkv|avi|ogv|ogg|3gp|3g2|mts|m2ts|ts|wmv|flv)$/i.test(f.name||"");
+}
+const VMAX = 800*1024*1024;   // 파일 하나당 최대 크기
+/* 고른 파일들을 차례로 저장합니다 — 폴더에서 고른 경우 폴더명이 그대로 남습니다 */
+async function addVideoFiles(g, files, opt){
+  busy("영상을 저장하는 중");
+  let ok=0, big=0, fail=0;
+  for(let i=0;i<files.length;i++){
+    const f = files[i];
+    busyUp(i/files.length, (i+1) + " / " + files.length + " · " + f.name);
+    if(f.size > VMAX){ big++; continue; }
+    const rel = f.webkitRelativePath || "";
+    const dir = rel.indexOf("/")>=0? rel.slice(0, rel.lastIndexOf("/")) : "";
+    const folder = (dir || opt.folder || "").trim();
+    const rec = {id:uid(), kind:"file", name:f.name, mime:f.type, size:f.size, folder:folder,
+      title: (files.length===1 && opt.title)? opt.title : f.name.replace(/\.[^.]+$/,""),
+      paId:opt.paId, defId:opt.defId, note:opt.note, createdAt:Date.now(), store:"idb"};
+    try{ await mediaPut(rec, f); g.videos.push(rec); openVF.add(folder||NOFOLDER); ok++; }
+    catch(e){ console.warn(e); fail++; }
+  }
+  busyEnd(); saveNow(); render();
+  toast("영상 " + ok + "개를 저장했습니다"
+    + (big? " · " + big + "개는 800MB를 넘어 건너뛰었습니다" : "")
+    + (fail? " · " + fail + "개 실패 (저장 공간 확인)" : ""));
+}
 function saveVideo(gid, btn){
-  const g = S.games.find(x=>x.id===gid); if(!g) return;
+  const gsel = $("#v_game");
+  const g = S.games.find(x=>x.id===(gsel? gsel.value : gid)) || S.games.find(x=>x.id===gid);
+  if(!g) return;
   const kind = ($("#modal [data-act='vkind'][aria-pressed='true']")||{dataset:{v:"file"}}).dataset.v;
-  const title = $("#v_title").value.trim();
+  const title  = $("#v_title").value.trim();
+  const folder = $("#v_folder").value.trim();
   const lk = readVideoLink();
-  const paId = lk.paId, defId = lk.defId;
   const note = $("#v_note").value.trim();
+  const opt = {title:title, folder:folder, paId:lk.paId, defId:lk.defId, note:note};
+
   if(kind==="link"){
     const url = $("#v_url").value.trim();
     if(!url){ toast("영상 주소를 입력해 주세요"); return; }
-    g.videos.push({id:uid(), kind:"link", url, title:title||url.slice(0,60), paId, defId, note, createdAt:Date.now()});
+    g.videos.push({id:uid(), kind:"link", url:url, title:title||url.slice(0,60), folder:folder,
+      paId:lk.paId, defId:lk.defId, note:note, createdAt:Date.now()});
     saveNow(); closeSheet(); render(); toast("영상 링크를 추가했습니다"); return;
   }
-  const f = ($("#v_input").files||[])[0];
-  if(!f){ toast("동영상 파일을 선택해 주세요"); return; }
-  if(f.size > 800*1024*1024){ toast("800MB 이하 파일만 저장할 수 있습니다"); return; }
-  const id = uid();
-  btn.disabled = true; $("#v_prog").hidden = false;
-  $("#v_prog .bar > i").style.width = "40%";
-  const rec = {id, kind:"file", name:f.name, mime:f.type, size:f.size,
-    title:title||f.name.replace(/\.[^.]+$/,""), paId, defId, note, createdAt:Date.now(), store:"idb"};
-  mediaPut(rec, f).then(where=>{
-    $("#v_prog .bar > i").style.width = "100%";
-    g.videos.push(rec);
-    saveNow(); flushFolder(); closeSheet(); render();
-    toast(where==="fs"? "영상을 저장 폴더에 넣었습니다" : "영상을 이 기기에 저장했습니다");
-  }).catch(e=>{
-    btn.disabled = false; $("#v_prog").hidden = true;
-    toast("저장 실패: 공간이 부족할 수 있습니다");
-    console.error(e);
-  });
-}
 
+  let files;
+  if(kind==="folder"){
+    const all = Array.from(($("#v_dir").files)||[]);
+    if(!all.length){ toast("폴더를 선택해 주세요"); return; }
+    files = all.filter(isVideoFile);
+    if(!files.length){ toast("고른 폴더 안에 동영상 파일이 없습니다"); return; }
+  } else {
+    files = Array.from(($("#v_input").files)||[]);
+    if(!files.length){ toast("동영상 파일을 선택해 주세요"); return; }
+  }
+  btn.disabled = true;
+  closeSheet();
+  addVideoFiles(g, files, opt);
+}
 /* --------------------- 뒤로(되돌아가기) 버튼 처리 ---------------------
    한 번 누르면 홈으로, 홈에서 두 번 연속 누르면 앱을 나갑니다.
    (시트가 열려 있으면 먼저 시트를 닫습니다)
@@ -4231,6 +3857,7 @@ function initBackButton(){
 /* ------------------------------ 렌더 / 초기화 ------------------------------ */
 const ENV = {storage:true, idb:true};
 const openVG = new Set();   // 영상 화면에서 펼쳐 둔 경기
+const openVF = new Set();   // 영상 탐색기에서 펼쳐 둔 폴더
 function envBanner(){
   const v=$("#view"); if(!v) return;
   if(document.getElementById("envwarn")) return;
@@ -4242,38 +3869,17 @@ function envBanner(){
     : "이 환경에서는 동영상 <b>파일 저장</b>을 쓸 수 없습니다. 영상은 <b>링크 등록</b>으로 추가하거나, 이 파일을 웹 주소(http/https)로 열어 주세요.";
   v.insertBefore(d, v.firstChild);
 }
-/* 화면 위쪽 알림 — 폴더 연결 잠김 / 백업 권유 */
+/* 화면 위쪽 알림 — 백업 권유 */
 function banners(){
   let h = "";
-  // 폴더를 쓰는데 아직 설치 전이면, 권한 창을 없애는 방법을 한 번 알려 줍니다
-  if(dirHandle && !isInstalledApp() && installState()==="ready" && !S.ui.hideInstall && fsAskedOnce){
-    h += `<div class="note" style="margin-bottom:12px;border:1px solid var(--border)">
-      <b>앱으로 설치</b>하면 앱을 열 때마다 뜨는 폴더 권한 창이 사라집니다.
-      <div class="btnrow" style="margin-top:8px">
-        <button class="btn pri sm nb" data-act="installApp">지금 설치</button>
-        <button class="btn sm nb" data-act="hideInstall">다시 보지 않기</button>
-      </div></div>`;
-  }
-  // 권한 요청을 사용자가 거절했을 때만 안내합니다.
-  // (거절하지 않았다면 화면의 첫 터치에서 자동으로 다시 연결됩니다)
-  if(dirHandle && fsNeedGrant){
-    h += `<div class="note" style="margin-bottom:12px;border:1px solid var(--border)">
-      ${fsDenied
-        ? `저장 폴더 <b>${esc(dirName)}</b>에 연결하지 못했습니다.`
-        : `저장 폴더 <b>${esc(dirName)}</b> 연결 대기 중 — <b>기록은 이 기기에 이미 저장</b>되어 있습니다.
-           폴더에도 남기려면 아래를 한 번 누르세요.`}
-      <div class="btnrow" style="margin-top:8px"><button class="btn pri sm nb" data-act="grantFolder">폴더 연결</button></div>
-      <div class="hint" style="margin-top:8px">권한 창에서 <b>방문할 때마다 허용</b>을 고르면 다음부터는 창 없이 자동으로 연결됩니다.</div></div>`;
-  }
-  if(!dirHandle && S.games.length){
+  if(S.games.length){
     const b = S.backup||{};
     const stale = !b.at || (b.sig !== dataSig() && (Date.now()-b.at) > 3*86400000);
     if(stale){
       h += `<div class="note" style="margin-bottom:12px;border:1px solid var(--border)">
-        기록이 이 브라우저 안에만 있습니다. 데이터를 지우면 함께 사라지니 백업해 두세요.
+        기록이 이 브라우저 안에만 있습니다. 데이터를 지우면 함께 사라지니 <b>zip 백업</b>을 받아 두세요.
         <div class="btnrow" style="margin-top:8px">
-          <button class="btn pri sm nb" data-act="exportBundle">전체 백업 (영상 포함)</button>
-          ${FS_DIR_OK? `<button class="btn sm nb" data-act="pickFolder">저장 폴더 지정</button>`:""}
+          <button class="btn pri sm nb" data-act="exportBundle">전체 백업 (영상 포함 · zip)</button>
         </div></div>`;
     }
   }
@@ -4350,9 +3956,8 @@ function setTheme(v){
   S.ui.gtype = "all";
   render();
   askPersist().then(fillQuota);
-  initFS().catch(e=>console.warn("폴더 연결 실패", e));
   // 설치 가능 신호는 조금 늦게 오기도 합니다
-  window.__onInstallReady = ()=>{ if(S.ui.tab==="settings" || dirHandle) render(); };
+  window.__onInstallReady = ()=>{ if(S.ui.tab==="settings") render(); };
   window.__onInstalled = ()=>{ render(); toast("앱으로 설치했습니다 — 이제 홈 화면 아이콘으로 열어 주세요"); };
   armFullscreen();
   ["fullscreenchange","webkitfullscreenchange"].forEach(ev=>
@@ -4373,7 +3978,6 @@ function setTheme(v){
     if(document.visibilityState==="hidden"){ saveNow(); return; }
     // 앱으로 돌아왔을 때 홈 화면으로. 단 입력 중(시트가 열려 있음)이면 그대로 둡니다.
     if($("#modal").innerHTML) return;
-    if(dirHandle && fsNeedGrant) armAutoGrant();
     armFullscreen();
     if(S.ui.tab!=="home" || S.ui.gameId){ S.ui.tab="home"; S.ui.gameId=null; saveNow(); render(); }
   });
@@ -4381,12 +3985,8 @@ function setTheme(v){
   // 개발용 훅 (자동 검증에 사용)
   window.__bb = {get S(){return S;}, set S(v){S=v;}, render, save:saveNow, battingOf, fieldingOf, pitchingOf, zoneOf, zoneCell, normalizeGames, geom, sampleData, inn2outs, RMAP,
     zipMake, zipRead, exportBundle, restoreBundle, mediaPut, mediaGet, mediaHas, allVideos, dataSig, fname,
-    get dir(){ return dirHandle; }, get mode(){ return fsMode; }, scanFolderVideos, probeFolder};
-  window.__bbSetDir = (h, m)=>{ dirHandle=h; dirName=h? (h.name||"test"):""; fsNeedGrant=false; _vnames=null; fsMode=h? (m||"rw"):""; };
-  window.__bbFolder = ()=>({name:dirName, last:lastFolderSave, err:fsErr, mode:fsMode,
-    need:fsNeedGrant, denied:fsDenied, armed:fsAutoArmed, arm:armAutoGrant,
-    write:()=>folderWriteJSON(true), read:()=>folderReadJSON(), restore:()=>afterFolderReady(), relink:()=>relinkAll()});
-  window.__bbCloseDb = ()=>{ try{ if(_db){ _db.close(); _db=null; } }catch(e){} _vnames=null; return Promise.resolve(); };
+    relinkAll};
+  window.__bbCloseDb = ()=>{ try{ if(_db){ _db.close(); _db=null; } }catch(e){} return Promise.resolve(); };
 })();
 </script>
 </body>
