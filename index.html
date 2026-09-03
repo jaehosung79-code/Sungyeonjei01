@@ -2668,7 +2668,7 @@ function viewSettings(){
 const GH_TOKEN_KEY = "bb_gh_token";
 const GH_STATE_KEY = "bb_gh_state";
 let ghToken = "";
-let ghState = {sha:"", push:0, pull:0, hash:"", err:""};
+let ghState = {sha:"", push:0, pull:0, hash:"", err:"", canWrite:null};   // canWrite: null 모름 / true 쓰기 가능 / false 읽기 전용
 let ghTimer = null;
 let ghBusy  = false;
 
@@ -2681,13 +2681,13 @@ function ghCfg(){
           auto:c.auto!==false, wifi:c.wifi!==false, autoPull:c.autoPull!==false};
 }
 function ghOn(){ return !!ghCfg().repo; }
-function ghCanPush(){ return ghOn() && !!ghToken; }
+function ghCanPush(){ return ghOn() && !!ghToken && ghState.canWrite !== false; }
 function ghLoad(){
   try{ ghToken = localStorage.getItem(GH_TOKEN_KEY) || ""; }catch(e){}
   try{ ghState = Object.assign(ghState, JSON.parse(localStorage.getItem(GH_STATE_KEY) || "{}")); }catch(e){}
 }
 function ghSaveState(){
-  try{ localStorage.setItem(GH_STATE_KEY, JSON.stringify({sha:ghState.sha, push:ghState.push, pull:ghState.pull, hash:ghState.hash})); }catch(e){}
+  try{ localStorage.setItem(GH_STATE_KEY, JSON.stringify({sha:ghState.sha, push:ghState.push, pull:ghState.pull, hash:ghState.hash, canWrite:ghState.canWrite})); }catch(e){}
 }
 /* 키 순서와 상관없이 같은 내용이면 같은 값이 나오도록 */
 function stableStr(v){
@@ -2796,7 +2796,9 @@ async function ghDiag(){
     <div class="sf"><button class="btn" data-act="close">닫기</button>
       <button class="btn pri" data-act="copyEnv">복사</button></div>`);
 }
-/* 저장소에서 기록 읽기 — 토큰이 있으면 API로(비공개 가능), 없으면 공개 주소로 */
+/* 저장소에서 기록 읽기
+   · 토큰이 있으면 API (비공개 저장소도 가능)
+   · 토큰이 없으면 API(공개 저장소) → raw 주소 순으로 시도합니다 */
 async function ghGet(){
   const c = ghCfg();
   if(ghToken){
@@ -2807,11 +2809,34 @@ async function ghGet(){
     let data; try{ data = JSON.parse(b64dec(j.content)); }catch(e){ throw new Error("저장소의 기록 파일을 읽을 수 없습니다"); }
     return {sha:j.sha, data:data};
   }
-  const r = await fetch(ghRawUrl()+"?t="+Date.now(), {cache:"no-store"});
-  if(r.status===404) return {missing:true};
-  if(!r.ok) throw new Error("기록을 받지 못했습니다 (" + r.status + ") — 저장소가 비공개면 토큰이 필요합니다");
-  let data; try{ data = await r.json(); }catch(e){ throw new Error("저장소의 기록 파일을 읽을 수 없습니다"); }
-  return {sha:"", data:data};
+  let api404 = false;
+  try{
+    const r = await fetch(ghApiUrl()+"?ref="+encodeURIComponent(c.branch)+"&t="+Date.now(), {headers:ghHeaders(), cache:"no-store"});
+    if(r.ok){
+      const j = await r.json();
+      let data; try{ data = JSON.parse(b64dec(j.content)); }catch(e){ throw new Error("저장소의 기록 파일을 읽을 수 없습니다"); }
+      return {sha:j.sha, data:data};
+    }
+    if(r.status === 404) api404 = true;
+    else if(r.status === 403) throw new Error(await ghErrText(r));
+  }catch(e){ if(!api404 && e && e.message && /403|한도/.test(e.message)) throw e; }
+  try{
+    const r2 = await fetch(ghRawUrl()+"?t="+Date.now(), {cache:"no-store"});
+    if(r2.ok){
+      let data; try{ data = await r2.json(); }catch(e){ throw new Error("저장소의 기록 파일을 읽을 수 없습니다"); }
+      return {sha:"", data:data};
+    }
+  }catch(e){}
+  /* 여기까지 왔으면 파일이 없거나, 저장소가 비공개라 토큰 없이는 볼 수 없는 경우입니다.
+     저장소 자체가 보이는지 확인해 둘을 구분합니다. */
+  let repoPublic = false;
+  try{
+    const r3 = await fetch("https://api.github.com/repos/" + c.repo, {headers:ghHeaders(), cache:"no-store"});
+    repoPublic = r3.ok;
+  }catch(e){}
+  if(repoPublic && api404) return {missing:true};
+  throw new Error("토큰 없이 기록을 받지 못했습니다 — 저장소가 <비공개>이거나 주소·경로가 다릅니다. "
+    + "저장소를 공개로 바꾸거나, 설정에서 <읽기 전용 토큰>을 넣어 주세요");
 }
 async function ghPut(text, sha, msg){
   const c = ghCfg();
@@ -2823,6 +2848,19 @@ async function ghPut(text, sha, msg){
   if(!r.ok) throw new Error(await ghErrText(r));
   const j = await r.json();
   return {sha:(j.content && j.content.sha) || ""};
+}
+/* 이 토큰으로 저장소에 쓸 수 있는지 확인합니다 (읽기 전용 토큰이면 보기 모드가 유지됩니다) */
+async function ghCheckWrite(){
+  if(!ghOn()){ ghState.canWrite = null; return null; }
+  if(!ghToken){ ghState.canWrite = false; ghSaveState(); return false; }
+  try{
+    const r = await fetch("https://api.github.com/repos/" + ghCfg().repo, {headers:ghHeaders(), cache:"no-store"});
+    if(!r.ok){ ghState.canWrite = false; ghSaveState(); return false; }
+    const j = await r.json();
+    ghState.canWrite = !!(j.permissions && j.permissions.push);
+    ghSaveState();
+    return ghState.canWrite;
+  }catch(e){ return ghState.canWrite; }
 }
 /* 와이파이에서만 올리기 (알 수 없는 기기는 막지 않습니다) */
 function ghNetOk(){
@@ -2881,6 +2919,18 @@ async function ghPush(manual){
   try{
     let got = await ghGet();
     let sha = got.missing? "" : got.sha;
+    /* 이 기기에서 아직 한 번도 맞춰 본 적이 없다면, 저장소 기록을 먼저 가져와 합칩니다.
+       (그러지 않으면 새 기기의 빈 기록이 저장소를 덮어써 버립니다) */
+    if(!ghState.hash && !got.missing && got.data && Array.isArray(got.data.games)){
+      const n = got.data.games.length;
+      ghApply(got.data, S.games.length? "merge" : "replace");
+      await relinkAll(); render();
+      if(n) toast("저장소의 " + n + "경기를 먼저 받았습니다");
+      if(!ghDirty()){
+        ghState.sha = sha; ghState.hash = ghHash(); ghState.pull = Date.now(); ghSaveState();
+        return true;
+      }
+    }
     const who = (S.profile && S.profile.name)? S.profile.name : "기록";
     const mk = ()=> JSON.stringify(Object.assign(ghPayload(), {savedAt:new Date().toISOString(), by:who}), null, 1);
     const msg = who + " · " + S.games.length + "경기 · " + new Date().toLocaleString("ko-KR");
@@ -2939,7 +2989,7 @@ async function ghPull(manual){
   }catch(e){
     ghState.err = e.message || String(e);
     if(manual) toast("받기 실패: " + ghState.err);
-    if(S.ui.tab==="settings") render();
+    ghBusy = false; render();
     return false;
   }finally{ ghBusy = false; }
 }
@@ -2956,6 +3006,7 @@ function ghTry(){
 }
 function ghInit(){
   ghLoad();
+  if(ghOn()) ghCheckWrite().then(()=>{ if(S.ui.tab==="settings") render(); }).catch(()=>{});
   // 앱을 켤 때 한 번, 인터넷이 연결될 때마다, 그리고 1분마다 (실패했거나 오프라인이었던 경우 대비)
   setTimeout(ghTry, 1500);
   window.addEventListener("online", ()=> setTimeout(ghTry, 1200));
@@ -2978,7 +3029,10 @@ function ghSheet(){
     <label class="f"><span>토큰 <span style="color:var(--text-3);font-weight:400">— 올리는 기기에만 입력</span></span>
       <input id="gh_token" type="password" value="${esc(ghToken)}" placeholder="github_pat_..." autocapitalize="off" autocorrect="off" spellcheck="false"></label>
     <div class="hint" style="margin:-6px 0 12px">
-      · 토큰을 <b>비우면 받기 전용</b>입니다 (공개 저장소의 기록을 받아 보기만 합니다).<br>
+      · <b>토큰을 비우면 받기 전용</b>입니다. 단, 이때는 저장소가 <b>공개(Public)</b>여야 기록을 받을 수 있습니다.<br>
+      · 저장소가 <b>비공개(Private)</b>라면 보기 전용 기기에도 토큰이 필요합니다 —
+        <b>Contents: Read-only</b> 로 발급한 토큰을 넣어 주세요.
+        읽기 전용 토큰을 넣으면 <b>보기 모드가 그대로 유지</b>됩니다.<br>
       · 토큰은 GitHub → Settings → Developer settings → Personal access tokens →
         <b>Fine-grained tokens</b> → Generate new token 에서 만듭니다.<br>
       &nbsp;&nbsp;① <b>Repository access</b> → Only select repositories → <b>이 저장소 선택</b><br>
@@ -3003,6 +3057,7 @@ async function ghSaveCfg(){
   saveNow(); closeSheet(); render();
   busy("저장소를 확인하는 중");
   try{
+    await ghCheckWrite();
     const got = await ghGet();
     busyEnd();
     if(got.missing){
@@ -3115,7 +3170,11 @@ function lockSettings(){
 /* ============================== 보기 모드 ==============================
    기록을 바꾸지 못하게 잠급니다. GitHub 토큰을 넣지 않은 기기(= 받기 전용)는
    자동으로 보기 모드가 되고, 설정에서 끌 수 없습니다. */
-function roForced(){ return ghOn() && !ghToken; }
+function roForced(){
+  if(!ghOn()) return false;
+  if(!ghToken) return true;                 // 토큰 없음 = 받기 전용
+  return ghState.canWrite === false;        // 읽기 전용 토큰
+}
 function readOnly(){ return roForced() || S.settings.viewOnly === true; }
 function roMsg(){
   return roForced()
@@ -3141,9 +3200,10 @@ function viewCard(){
         <button data-act="viewOnly" data-v="on"  aria-pressed="${on}"  ${forced?"disabled":""}>보기 모드</button>
       </div></div>
       <div class="hint">${forced
-        ? `<b style="color:var(--warn)">GitHub 토큰을 넣지 않아 자동으로 보기 모드입니다.</b><br>
+        ? `<b style="color:var(--warn)">${ghToken? "이 토큰은 읽기 전용이라" : "GitHub 토큰을 넣지 않아"} 자동으로 보기 모드입니다.</b><br>
            이 기기는 저장소의 기록을 <b>받아서 보기만</b> 합니다.
-           수정하려면 위의 <b>GitHub 기록 공유 → 연결 정보 수정</b>에서 토큰을 넣어 주세요.`
+           수정하려면 위의 <b>GitHub 기록 공유 → 연결 정보 수정</b>에서
+           <b>쓰기 권한이 있는 토큰</b>을 넣어 주세요. GitHub를 쓰지 않을 기기라면 <b>연결 해제</b>를 누르세요.`
         : on
         ? `지금은 <b>보기 모드</b>입니다 — 경기·타석·수비·영상의 추가·수정·삭제와 불러오기가 잠겨 있습니다.
            백업 저장(Save)과 GitHub 받기는 그대로 됩니다.`
@@ -3515,6 +3575,25 @@ function defOptions(g, sel){
   return g.def.slice().sort((a,b)=>num(a.inning,0)-num(b.inning,0))
     .map(d=>`<option value="${d.id}" ${sel===d.id?"selected":""}>${num(d.inning,0)?num(d.inning,0)+"회 · ":""}${esc(PMAP[d.pos]||d.pos||"-")}${d.result?" · "+dko(d.result):""}</option>`).join("");
 }
+/* 제목을 비웠을 때 쓸 이름 — 연결한 장면(타석·수비)에서 만듭니다 */
+function sceneTitle(g, paId, defId){
+  if(!g) return "";
+  if(paId){
+    const i = g.pas.findIndex(x=>x.id===paId);
+    const p = i>=0? g.pas[i] : null;
+    if(p) return (i+1) + "번째 타석"
+      + (p.inning? " · " + p.inning + "회" : "")
+      + (RMAP[p.result]? " " + RMAP[p.result].ko : "");
+  }
+  if(defId){
+    const d = g.def.find(x=>x.id===defId);
+    if(d) return "수비"
+      + (num(d.inning,0)? " " + num(d.inning,0) + "회" : "")
+      + (PMAP[d.pos]? " · " + PMAP[d.pos] : "")
+      + (d.result? " " + dko(d.result) : "");
+  }
+  return "";
+}
 // 영상에 연결된 장면 설명
 function videoLinkText(v, g){
   if(v.defId){
@@ -3575,7 +3654,7 @@ function videoSheet(gid, vid){
         기기 저장 공간을 쓰지 않고, <b>GitHub 기록 공유</b>에도 주소가 함께 저장돼 다른 사람도 같은 영상을 볼 수 있습니다.</div>
     </div>
     <div id="v_pick" class="pickbox" hidden></div>
-    <label class="f"><span>제목 <span style="color:var(--text-3);font-weight:400">— 비우면 파일명</span></span>
+    <label class="f"><span>제목 <span style="color:var(--text-3);font-weight:400">— 비우면 연결한 장면 이름 (연결 안 하면 파일명)</span></span>
       <input id="v_title" value="${V?esc(V.title||""):""}" placeholder="예: 3회 좌중간 2루타"></label>
     <div class="f2">
       <label class="f"><span>연결할 장면</span><select id="v_target">
@@ -4276,7 +4355,7 @@ function updateVideo(gid, vid){
     if(!url){ toast("영상 주소를 입력해 주세요"); return; }
     v.url = url;
   }
-  v.title = $("#v_title").value.trim() || v.title;
+  v.title = $("#v_title").value.trim() || sceneTitle(g, lk.paId, lk.defId) || v.title;
   v.note  = $("#v_note").value.trim();
   v.paId   = lk.paId; v.defId = lk.defId;
   saveNow(); closeSheet(); render(); toast("영상 정보를 수정했습니다");
@@ -4298,8 +4377,10 @@ async function addVideoFiles(g, files, opt){
     const f = files[i];
     busyUp(i/files.length, (i+1) + " / " + files.length + " · " + f.name);
     if(f.size > VMAX){ big++; continue; }
+    /* 제목 → ① 직접 적은 제목 ② 연결한 장면 이름 ③ 파일명 순으로 씁니다 */
+    const base = (opt.title || opt.scene || "").trim();
     const rec = {id:uid(), kind:"file", name:f.name, mime:f.type, size:f.size,
-      title: (files.length===1 && opt.title)? opt.title : f.name.replace(/\.[^.]+$/,""),
+      title: base? (files.length>1? base + " (" + (i+1) + ")" : base) : f.name.replace(/\.[^.]+$/,""),
       paId:opt.paId, defId:opt.defId, note:opt.note, createdAt:Date.now(), store:"idb"};
     try{ await mediaPut(rec, f); g.videos.push(rec); ok++; }
     catch(e){ console.warn(e); fail++; }
@@ -4316,12 +4397,13 @@ function saveVideo(gid, btn){
   const title  = $("#v_title").value.trim();
   const lk = readVideoLink();
   const note = $("#v_note").value.trim();
-  const opt = {title:title, paId:lk.paId, defId:lk.defId, note:note};
+  const scene = sceneTitle(g, lk.paId, lk.defId);
+  const opt = {title:title, scene:scene, paId:lk.paId, defId:lk.defId, note:note};
 
   if(kind==="link"){
     const url = $("#v_url").value.trim();
     if(!url){ toast("영상 주소를 입력해 주세요"); return; }
-    g.videos.push({id:uid(), kind:"link", url:url, title:title||url.slice(0,60),
+    g.videos.push({id:uid(), kind:"link", url:url, title:title || scene || url.slice(0,60),
       paId:lk.paId, defId:lk.defId, note:note, createdAt:Date.now()});
     saveNow(); closeSheet(); render(); toast("영상 링크를 추가했습니다"); return;
   }
@@ -4416,6 +4498,14 @@ function banners(){
       ${roForced()? "이 기기는 GitHub 저장소의 기록을 받아서 보기만 합니다."
                   : "설정 &gt; 보기 모드에서 <b>수정 가능</b>으로 바꾸면 다시 기록할 수 있습니다."}
       </div>`;
+  }
+  if(ghOn() && !ghCanPush() && ghState.err){
+    h += `<div class="note" style="margin-bottom:12px;border:1px solid var(--crit)">
+      GitHub에서 기록을 받지 못했습니다.<br>
+      <span class="hint" style="color:var(--crit)">${esc(ghState.err)}</span>
+      <div class="btnrow" style="margin-top:8px">
+        <button class="btn pri sm nb" data-act="ghPullNow">다시 받기</button>
+      </div></div>`;
   }
   if(!readOnly() && S.games.length){
     const b = S.backup||{};
