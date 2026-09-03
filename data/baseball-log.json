@@ -237,7 +237,19 @@
      "dp": 0
     }
    ],
-   "videos": [],
+   "videos": [
+    {
+     "id": "mtijjvs0et18q",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/1O9pzQ7ldYxau7s4PPHmXPckQl3bcxoRO/view?usp=drivesdk",
+     "title": "수비01",
+     "folder": "",
+     "paId": null,
+     "defId": "mtgl524o10c8c",
+     "note": "",
+     "createdAt": 1788259529413
+    }
+   ],
    "date": "2026-08-24",
    "opponent": "봉천초",
    "venue": "구의구장",
@@ -568,6 +580,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:07:36.826Z",
+ "savedAt": "2026-09-03T07:07:45.226Z",
  "by": "성연제"
 }
