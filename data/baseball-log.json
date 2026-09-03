@@ -117,6 +117,17 @@
      "defId": null,
      "note": "",
      "createdAt": 1788259137080
+    },
+    {
+     "id": "mtijbtmv4ptwj",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/1y5peyYFDveBmW1NcN5jj9cSoEmfT-Cxp/view?usp=drivesdk",
+     "title": "2번째 타석 · 4회 안타",
+     "folder": "",
+     "paId": "mtgjtq0ppaod8",
+     "defId": null,
+     "note": "",
+     "createdAt": 1788259154204
     }
    ],
    "date": "2026-06-27",
@@ -681,6 +692,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-03T07:13:32.480Z",
+ "savedAt": "2026-09-03T07:13:45.157Z",
  "by": "성연제"
 }
