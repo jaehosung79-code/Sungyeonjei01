@@ -2436,13 +2436,14 @@ const ICON_FOLDER = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none"
 function videoCard(v, g, lite){
   const sub = [];
   if(v.kind==="file") sub.push(lite? bytes(v.size) : bytes(v.size)+" · 이 기기에 저장");
-  else sub.push("링크");
   const lt = videoLinkText(v, g);
   if(lt) sub.push(lt);
+  // 링크 영상은 주소를 보여 주지 않습니다 — 제목(또는 연결한 장면 이름)만 나옵니다
+  const head = v.kind==="file"? (v.title || v.name || "영상") : (v.title || linkName(v.url));
   return `<div class="vidcard" data-vid="${v.id}">
     <div class="vh">
-      <button class="vtitle" data-act="playVideo" data-gid="${g.id}" data-id="${v.id}">
-        <span class="tx">${esc(v.title||v.name||"영상")}</span>
+      <button class="vtitle" data-act="playVideo" data-gid="${g.id}" data-id="${v.id}" title="눌러서 재생">
+        <span class="tx">${esc(head)}</span>
       </button>
       ${v.kind==="link"?`<button class="iconbtn sm" data-act="openVideo" data-gid="${g.id}" data-id="${v.id}" title="새 창에서 열기" aria-label="새 창에서 열기">↗</button>`:""}
       ${lite? "" : `<button class="iconbtn sm" data-act="editVideo" data-gid="${g.id}" data-id="${v.id}" title="영상 정보 수정" aria-label="영상 정보 수정">${ICON_EDIT}</button>
@@ -2925,7 +2926,7 @@ async function ghPush(manual){
       const n = got.data.games.length;
       ghApply(got.data, S.games.length? "merge" : "replace");
       await relinkAll(); render();
-      if(n) toast("저장소의 " + n + "경기를 먼저 받았습니다");
+      if(n && manual) toast("저장소의 " + n + "경기를 먼저 받았습니다");
       if(!ghDirty()){
         ghState.sha = sha; ghState.hash = ghHash(); ghState.pull = Date.now(); ghSaveState();
         return true;
@@ -2984,7 +2985,7 @@ async function ghPull(manual){
     ghApply(o, mode);
     ghState.sha = got.sha; ghState.hash = ghHash(); ghState.pull = Date.now(); ghSaveState();
     await relinkAll(); render();
-    toast("GitHub에서 " + o.games.length + "경기를 받았습니다");
+    if(manual) toast("GitHub에서 " + o.games.length + "경기를 받았습니다");
     return true;
   }catch(e){
     ghState.err = e.message || String(e);
@@ -3705,6 +3706,14 @@ function videoSheet(gid, vid){
     if(fi) fi.addEventListener("change", ()=> showPick(fi.files));
   });
 }
+/* 링크 영상의 이름 — 주소 대신 서비스 이름을 씁니다 */
+function linkName(url){
+  const u = String(url||"");
+  if(/youtu\.be|youtube\.com/i.test(u)) return "유튜브 영상";
+  if(/drive\.google\.com|docs\.google\.com|drive\.usercontent\.google\.com/i.test(u)) return "구글 드라이브 영상";
+  if(/vimeo\.com/i.test(u)) return "Vimeo 영상";
+  return "링크 영상";
+}
 function ytId(u){ const m=String(u).match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/|live\/|\/v\/)([A-Za-z0-9_-]{11})/); return m?m[1]:null; }
 
 /* 링크를 앱 안에서 재생할 수 있는 형태로 바꿔 줍니다. */
@@ -3727,10 +3736,12 @@ function embedFor(url){
 }
 function playHint(v, site){
   if(v.kind !== "link") return "";
-  const yt = site==="youtube"
+  const tip = site==="youtube"
     ? `화면이 비어 있다면 유튜브 <b>비공개</b> 영상입니다 — 공개 범위를 <b>일부 공개(미등록)</b>로 바꾸면 재생됩니다. · `
+    : site==="drive"
+    ? `화면이 비어 있다면 드라이브 공유 설정이 <b>제한됨</b>입니다 — <b>링크가 있는 모든 사용자</b>로 바꿔 주세요. · `
     : "";
-  return `<div class="hint" style="margin-top:6px">${yt}<a href="${esc(v.url)}" target="_blank" rel="noopener">새 창에서 열기 ↗</a></div>`;
+  return `<div class="hint" style="margin-top:6px">${tip}<a href="${esc(v.url)}" target="_blank" rel="noopener">새 창에서 열기 ↗</a></div>`;
 }
 function openVideoTab(gid, vid){
   const g = S.games.find(x=>x.id===gid); if(!g) return;
@@ -3767,7 +3778,18 @@ function playVideo(gid, vid){
     const el = $("video", host);
     if(el){
       if(ap==="muted") el.muted = true;
-      if(ap!=="off"){ const pr = el.play(); if(pr && pr.catch) pr.catch(()=>{}); }
+      if(ap!=="off"){
+        /* 브라우저가 "소리 있는 자동 재생"을 막으면 그냥 멈춰 있습니다.
+           그럴 때는 음소거로 바꿔 바로 이어서 재생합니다. */
+        const pr = el.play();
+        if(pr && pr.catch) pr.catch(()=>{
+          try{
+            el.muted = true;                 // 소리 있는 자동 재생이 막히면 음소거로 이어서 재생
+            const p2 = el.play();
+            if(p2 && p2.catch) p2.catch(()=>{});
+          }catch(e){}
+        });
+      }
       el.addEventListener("error", ()=>{
         host.innerHTML = `<div class="hint">이 형식·주소는 앱 안에서 재생할 수 없습니다.</div>` + tail;
       }, {once:true});
@@ -4403,7 +4425,7 @@ function saveVideo(gid, btn){
   if(kind==="link"){
     const url = $("#v_url").value.trim();
     if(!url){ toast("영상 주소를 입력해 주세요"); return; }
-    g.videos.push({id:uid(), kind:"link", url:url, title:title || scene || url.slice(0,60),
+    g.videos.push({id:uid(), kind:"link", url:url, title:title || scene || linkName(url),
       paId:lk.paId, defId:lk.defId, note:note, createdAt:Date.now()});
     saveNow(); closeSheet(); render(); toast("영상 링크를 추가했습니다"); return;
   }
