@@ -131,17 +131,30 @@ a{color:var(--s1)}
 .topbar h1{font-size:17px}
 .topbar .sub{font-size:12px;color:var(--text-3);margin-top:-2px}
 .spacer{flex:1}
+/* 아이콘 버튼 — 테두리·배경 없이 아이콘만 (누르는 영역은 그대로 유지) */
 .iconbtn{
-  width:38px;height:38px;border-radius:12px;border:1px solid var(--border);
-  background:var(--surface-1); display:grid;place-items:center;cursor:pointer;
-  font-size:16px; line-height:1;
+  width:38px;height:38px;border-radius:12px;border:0;
+  background:none; display:grid;place-items:center;cursor:pointer;
+  font-size:16px; line-height:1; color:var(--text-2); padding:0; flex:0 0 auto;
 }
-.iconbtn:active{background:var(--surface-2)}
+.iconbtn:active{background:none;opacity:.5}
 .iconbtn svg{display:block}
-.iconbtn.del{color:var(--crit);border:0;background:none;flex:0 0 auto}
+.iconbtn.del{color:var(--crit)}
+.iconbtn.add{color:var(--accent-ink)}
 .iconbtn.del:active{background:none;opacity:.55}
 .iconbtn.sm{width:34px;height:34px;border-radius:10px}
-.iconbtn.on{background:var(--btn);border-color:var(--btn-ring);color:var(--btn-ink)}
+.iconbtn.on{color:var(--accent-ink)}
+/* 기호 문자를 SVG로 바꾸면서 필요한 정렬 보정 */
+.btn > svg{display:block;flex:0 0 auto}
+.stepper button{display:grid;place-items:center;padding:0}
+.stepper button svg{display:block}
+.row .r.ch{display:flex;align-items:center;justify-content:flex-end;color:var(--text-3)}
+.row .r.ch svg{display:block}
+.vgame .chev{display:flex;align-items:center}
+.vgame .chev svg{display:block}
+.empty .big svg{display:block;margin:0 auto;color:var(--axis)}
+.pitem button{display:inline-flex;align-items:center;justify-content:center}
+.pitem button svg{display:block}
 
 .wrap{max-width:1080px;margin:0 auto;padding:14px 14px 24px}
 @media(min-width:820px){ .wrap{padding:20px} }
@@ -534,6 +547,31 @@ const KEY = "bb_note_v1";
 const GH_DEFAULT_REPO = "jaehosung79-code/SungyeonjeiBaseball";
 const THEME_KEY = "bb_note_theme";
 
+/* ---------- 공통 아이콘 (선 굵기·모양을 기존 아이콘과 맞춘 SVG) ----------
+   글꼴에 따라 모양이 달라지는 기호 문자(✕ › ▼ − + 등) 대신 씁니다. */
+const IC_PLUS    = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg>';
+const IC_BACK    = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5.6"/><path d="M11.4 5.6 5 12l6.4 6.4"/></svg>';
+const IC_TABLE   = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.2"/><path d="M3.5 9.6h17M3.5 14.6h17M9.6 9.6v9.9"/></svg>';
+const IC_COPY    = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11.2" height="11.2" rx="2.4"/><path d="M15.2 6.6V6a2.2 2.2 0 0 0-2.2-2.2H6A2.2 2.2 0 0 0 3.8 6v7a2.2 2.2 0 0 0 2.2 2.2h.6"/></svg>';
+const IC_UNDO    = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.2 9.2h9.6a5.4 5.4 0 1 1 0 10.8H8.4"/><path d="M7.7 5.7 4.2 9.2l3.5 3.5"/></svg>';
+const IC_ERASE   = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.8 20.4H20.2"/><path d="M14.4 4.8 5 14.2a2 2 0 0 0 0 2.83l2.4 2.4a2 2 0 0 0 2.83 0l9.4-9.4a2 2 0 0 0 0-2.83l-2.4-2.4a2 2 0 0 0-2.83 0z"/><path d="m9.5 9.7 5.6 5.6"/></svg>';
+const IC_XCIRC   = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.4"/><path d="m9.5 9.5 5 5m0-5-5 5"/></svg>';
+const IC_LOCK    = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.6" y="10.4" width="14.8" height="9.4" rx="2.4"/><path d="M8.1 10.4V7.9a3.9 3.9 0 0 1 7.8 0v2.5"/></svg>';
+const IC_REFRESH = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.8a8 8 0 1 1-2.5-5.6"/><path d="M20 4.2v4.7h-4.7"/></svg>';
+const IC_CHECK   = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5.2 12.4 4.6 4.6L18.9 7"/></svg>';
+const IC_X       = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6.6 6.6 10.8 10.8m0-10.8L6.6 17.4"/></svg>';
+const IC_X_SM    = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6.6 6.6 10.8 10.8m0-10.8L6.6 17.4"/></svg>';
+const IC_CHEV_R  = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.6 5.6 16 12l-6.4 6.4"/></svg>';
+const IC_CHEV_D  = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.6 9.6 12 16l6.4-6.4"/></svg>';
+const IC_MINUS_B = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 12h12"/></svg>';
+const IC_PLUS_B  = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg>';
+/* 빈 화면 그림 */
+const IC_EMPTY_BALL  = '<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path d="M7.1 5.5C8.7 7.3 9.7 9.5 9.7 12s-1 4.7-2.6 6.5"/><path d="M16.9 5.5c-1.6 1.8-2.6 4-2.6 6.5s1 4.7 2.6 6.5"/></svg>';
+const IC_EMPTY_LIST  = '<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.4" y="4.4" width="17.2" height="15.2" rx="2.4"/><path d="M3.4 9.5h17.2M3.4 14.5h17.2"/></svg>';
+const IC_EMPTY_CHART = '<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.8 19.6h16.4"/><path d="M7.6 19.6v-6.4M12 19.6V6.8M16.4 19.6v-4.2"/></svg>';
+const IC_EMPTY_PLAY  = '<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="3.2"/><path d="M10.4 9.6 15.6 12l-5.2 2.4z"/></svg>';
+
+
 // 타석 결과 정의 (ab: 타수, h: 안타, tb: 총루타, bb: 볼넷, hbp: 사구, so: 삼진,
 //                 sf: 희생플라이, sh: 희생번트, bip: 인플레이 타구)
 const RESULTS = [
@@ -922,7 +960,7 @@ function envInfo(){
 function showEnv(){
   const i = envInfo();
   openSheet(`<div class="sh"><h3>앱 진단</h3><div class="spacer" style="flex:1"></div>
-      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+      <button class="iconbtn" data-act="close" title="닫기" aria-label="닫기">${IC_X}</button></div>
     <div class="hint" style="padding:4px 0 10px">문제가 있을 때 아래 내용을 복사해 전달</div>
     <textarea id="env_out" readonly style="min-height:200px;font-size:12px;line-height:1.6">${esc(
       "저장 상태: " + i.store + "\n" +
@@ -937,7 +975,7 @@ function showEnv(){
       "마지막 오류: " + i.err + "\n" +
       "브라우저: " + i.ua)}</textarea>
     <div class="sf"><button class="btn" data-act="close">닫기</button>
-      <button class="btn pri" data-act="copyEnv">복사</button></div>`);
+      <button class="btn pri" data-act="copyEnv">${IC_COPY}복사</button></div>`);
 }
 function copyEnv(){
   const ta = $("#env_out"); if(!ta) return;
@@ -1952,7 +1990,7 @@ function chartCard(title, cap, chartHTML, tableHTML){
   const id="tv"+(++cardSeq);
   return `<div class="card">
     <div class="hd"><div style="flex:1"><h3>${esc(title)}</h3>${cap?`<div class="cap">${cap}</div>`:""}</div>
-    ${tableHTML?`<button class="btn sm" data-toggle="${id}" aria-expanded="false">표</button>`:""}</div>
+    ${tableHTML?`<button class="iconbtn sm" data-toggle="${id}" aria-expanded="false" title="표로 보기" aria-label="표로 보기">${IC_TABLE}</button>`:""}</div>
     ${chartHTML}
     ${tableHTML?`<div class="tv" id="${id}" hidden>${tableHTML}</div>`:""}
   </div>`;
@@ -1993,6 +2031,10 @@ const ICON_OPEN = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" s
 const ICON_MINUS = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path d="M8 12h8" stroke-linecap="round"/></svg>';
 function delBtn(act, attrs, label){
   return `<button class="iconbtn del" data-act="${act}" ${attrs} title="${esc(label)}" aria-label="${esc(label)}">${ICON_MINUS}</button>`;
+}
+/* 추가 버튼 — 카드 제목이 무엇을 추가하는지 말해 주므로 글씨 없이 + 아이콘만 씁니다 */
+function addBtn(act, attrs, label){
+  return `<button class="iconbtn sm add" data-act="${act}" ${attrs} title="${esc(label)}" aria-label="${esc(label)}">${IC_PLUS}</button>`;
 }
 
 function filterRow(){
@@ -2056,7 +2098,7 @@ function viewHome(){
   const m = S.ui.metric, mk = METRICS[m].k;
 
   if(!S.games.length){
-    return `<div class="empty"><span class="big">⚾</span>
+    return `<div class="empty"><span class="big" aria-hidden="true">${IC_EMPTY_BALL}</span>
       아직 기록 없음<br>첫 경기를 추가해 타석 기록 시작
       <div style="margin-top:12px" class="hint">아래 <b>경기</b> 탭에서 첫 경기 추가</div></div>`;
   }
@@ -2126,7 +2168,7 @@ function viewGames(){
   return `<button class="btn pri block nb" data-act="newGame" style="margin-bottom:12px">+ 새 경기 기록</button>`
   + filterRow()
   + (gs.length? `<div class="list">${gs.map(gameRow).join("")}</div>`
-              : `<div class="empty"><span class="big">▤</span>이 시즌에 기록된 경기 없음</div>`);
+              : `<div class="empty"><span class="big" aria-hidden="true">${IC_EMPTY_LIST}</span>이 시즌에 기록된 경기 없음</div>`);
 }
 
 /* ------------------------------ 경기 상세 ------------------------------ */
@@ -2143,7 +2185,7 @@ function viewGame(id){
     <div class="row" data-act="editPA" data-gid="${g.id}" data-id="${p.id}">
       <div style="width:26px;text-align:center;color:var(--text-3);font-size:12px;font-variant-numeric:tabular-nums">${i+1}</div>
       <div class="main"><div class="t">${paBadge(p.result)}</div><div class="s">${esc(paLine(p))||"&nbsp;"}</div></div>
-      <div class="r" style="color:var(--text-3)">›</div>
+      <div class="r ch">${IC_CHEV_R}</div>
     </div>`).join("") : `<div class="hint">타석 기록 없음 · 아래 버튼으로 추가</div>`;
 
   const defSorted = g.def.slice().sort((a,b)=> num(a.inning,0)-num(b.inning,0));
@@ -2153,14 +2195,14 @@ function viewGame(id){
       <div style="width:34px;text-align:center;color:var(--text-3);font-size:12px;font-variant-numeric:tabular-nums">${num(d.inning,0)? num(d.inning,0)+"회" : "-"}</div>
       <div class="main"><div class="t">${r?`<span class="badge ${DGBADGE[r.g]}">${dko(d.result)}</span> `:""}<span style="font-weight:500;color:var(--text-2);font-size:13px">${esc(PMAP[d.pos]||d.pos||"-")}</span></div>
         <div class="s">${esc(defLine(d))||"&nbsp;"}</div></div>
-      <div class="r" style="color:var(--text-3)">›</div>
+      <div class="r ch">${IC_CHEV_R}</div>
     </div>`;}).join("") : `<div class="hint">수비 기록 없음 · 아래 버튼으로 추가</div>`;
 
   const vidList = g.videos.length? g.videos.map(v=>videoCard(v,g)).join("") : `<div class="hint">등록된 영상 없음</div>`;
 
   return `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
-      <button class="btn sm" data-act="nav" data-v="games">‹ 경기 목록</button><div class="spacer" style="flex:1"></div>
-      <button class="btn sm" data-act="editGame" data-id="${g.id}">경기 정보 수정</button>
+      <button class="iconbtn sm" data-act="nav" data-v="games" title="경기 목록" aria-label="경기 목록으로 돌아가기">${IC_BACK}</button><div class="spacer" style="flex:1"></div>
+      <button class="iconbtn sm" data-act="editGame" data-id="${g.id}" title="경기 정보 수정" aria-label="경기 정보 수정">${ICON_EDIT}</button>
       ${delBtn("delGame", `data-id="${g.id}"`, "이 경기 기록 삭제")}
     </div>
     <div class="card">
@@ -2175,7 +2217,7 @@ function viewGame(id){
     </div>
     <div class="card">
       <div class="hd"><div style="flex:1"><h3>타석 기록</h3><div class="cap">${g.pas.length}타석</div></div>
-        <button class="btn sm pri nb" data-act="newPA" data-gid="${g.id}">+ 타석</button></div>
+        ${addBtn("newPA", `data-gid="${g.id}"`, "타석 기록 추가")}</div>
       <div class="list">${paList}</div>
     </div>
     ${pas.some(p=>p.zone && hasBIP(p.result))? chartCard("이 경기 타구 방향", `${esc(LEVELS[gameLevel(g)].ko)} 규격 (${esc(LEVELS[gameLevel(g)].note)}) · 실제 크기 비율 · 점을 누르면 상세 표시`,
@@ -2184,13 +2226,13 @@ function viewGame(id){
           return [o.i+1, esc(RMAP[o.p.result].ko), esc(z.label), Math.round(z.m)+"m"];}))) : ""}
     <div class="card">
       <div class="hd"><div style="flex:1"><h3>수비 기록</h3><div class="cap">${f.INN? fmtInn(f.outs)+"이닝 · 수비율 "+avg3(f.FPCT) : "미기록"}</div></div>
-        <button class="btn sm pri nb" data-act="newDef" data-gid="${g.id}">+ 수비</button></div>
+        ${addBtn("newDef", `data-gid="${g.id}"`, "수비 기록 추가")}</div>
       <div class="list">${defList}</div>
     </div>
     ${gp.APP? `<div class="card">
       <div class="hd"><div style="flex:1"><h3>투수 기록 ${gdec.dec? `<span class="badge ${gdec.dec==="W"?"w":gdec.dec==="L"?"l":"ob"}">${decKo(gdec.dec)}</span>`:""}</h3>
         <div class="cap">${fmtInn(gp.outs)}이닝 · ERA ${fx2(gp.ERA)} · WHIP ${fx2(gp.WHIP)} · ${esc(gdec.why||"")}${gdec.auto&&gdec.dec?" (자동 판정)":""}</div></div>
-        <button class="btn sm" data-act="editGame" data-id="${g.id}">승패 수정</button></div>
+        <button class="iconbtn sm" data-act="editGame" data-id="${g.id}" title="승패 수정" aria-label="승패 수정">${ICON_EDIT}</button></div>
       <div class="tiles">${tile("이닝", fmtInn(gp.outs))+tile("피안타", gp.H)+tile("삼진", gp.SO)+tile("볼넷", gp.BB)+tile("실점", gp.R)+tile("자책", gp.ER)}</div>
       <div class="tiles" style="margin-top:8px">${tile("ERA", fx2(gp.ERA))+tile("WHIP", fx2(gp.WHIP))+tile("FIP", fx2(gp.FIP))+tile("K/9", fx2(gp.K9))+tile("투구수", gp.NP||"-")+tile("스트라이크%", pct1(gp.STP))}</div>
       <div style="margin-top:12px">${tableHTML(["이닝","아웃","타자","피안타","볼넷","삼진","실점","자책","투구"],
@@ -2203,7 +2245,7 @@ function viewGame(id){
     </div>` : ""}
     <div class="card">
       <div class="hd"><div style="flex:1"><h3>경기 영상</h3><div class="cap">${g.videos.length}개</div></div>
-        <button class="btn sm pri nb" data-act="newVideo" data-gid="${g.id}">+ 영상</button></div>
+        ${addBtn("newVideo", `data-gid="${g.id}"`, "영상 추가")}</div>
       ${vidList}
     </div>
 `;
@@ -2213,7 +2255,7 @@ function viewGame(id){
 function viewStats(){
   const gs = scopedGames(), pas = allPAs(gs), b = battingOf(pas), defs = allDef(gs);
   if(!pas.length && !defs.length)
-    return filterRow()+`<div class="empty"><span class="big">▮</span>분석할 기록 없음<br><span class="hint">경기·타석을 기록하면 차트 자동 생성</span></div>`;
+    return filterRow()+`<div class="empty"><span class="big" aria-hidden="true">${IC_EMPTY_CHART}</span>분석할 기록 없음<br><span class="hint">경기·타석을 기록하면 차트 자동 생성</span></div>`;
 
   // 결과 분포
   const dist = RESULTS.map(r=>({label:r.ko, value:pas.filter(p=>p.result===r.c).length,
@@ -2493,24 +2535,24 @@ function viewVideos(){
             <div class="t">${esc(fmtDate(g.date))} vs ${esc(g.opponent||"-")}</div>
             <div class="s">영상 ${g.videos.length}개${g.venue?" · "+esc(g.venue):""}</div>
           </div>
-          <span class="chev" aria-hidden="true">▼</span>
+          <span class="chev" aria-hidden="true">${IC_CHEV_D}</span>
         </button>
         <div class="vlist" ${open?"":"hidden"}>
           ${g.videos.map(v=>videoCard(v,g,true)).join("")}
           <div class="btnrow" style="margin-top:4px">
             <button class="btn sm" data-act="openGame" data-id="${g.id}">경기 기록 보기</button>
-            <button class="btn sm pri nb" data-act="newVideo" data-gid="${g.id}">+ 영상 추가</button>
+            ${addBtn("newVideo", `data-gid="${g.id}"`, "영상 추가")}
           </div>
         </div>
       </div>`;
     }).join("")
-    : `<div class="empty"><span class="big">▶</span>등록된 영상 없음<br>
+    : `<div class="empty"><span class="big" aria-hidden="true">${IC_EMPTY_PLAY}</span>등록된 영상 없음<br>
        <span class="hint">경기 상세 화면에서 영상 추가</span></div>`);
 }
 
 /* ------------------------------- 설정 ------------------------------- */
 function togBtn(act, on, label){
-  return `<button class="btn sm" data-act="${act}" aria-pressed="${on}">${on?"✓ ":""}${label}</button>`;
+  return `<button class="btn sm" data-act="${act}" aria-pressed="${on}">${on?IC_CHECK:""}${label}</button>`;
 }
 function screenCard(){
   return `<div class="card"><div class="hd"><div style="flex:1"><h3>전체 화면</h3>
@@ -2569,7 +2611,7 @@ function viewSettings(){
       <div class="filters" style="margin-bottom:10px"><div class="seg" role="group" aria-label="연도 선택">
         ${pfYears.map(y=>`<button data-act="pfYear" data-v="${y}" aria-pressed="${pfY===y}">${y}</button>`).join("")}
       </div>
-      <button class="btn sm" data-act="pfAddYear">+ 연도</button></div>
+      ${addBtn("pfAddYear", "", "연도 추가")}</div>
       <div class="hint" style="margin:-4px 0 10px"><b>${esc(pfY)}년</b>${pfSaved? "" : " · 이전 연도 정보 자동 채움"}</div>
     <div class="f2">
       <label class="f"><span>이름</span><input id="pf_name" value="${esc(p.name)}" placeholder="홍길동"></label>
@@ -2647,7 +2689,7 @@ function viewSettings(){
 
     <div class="card"><div class="hd"><div style="flex:1"><h3>설정 잠금</h3>
       <div class="cap">설정을 닫고 다시 잠금</div></div></div>
-      <div class="btnrow"><button class="btn" data-act="lockSettings">설정 잠그기</button></div></div>
+      <div class="btnrow"><button class="iconbtn" data-act="lockSettings" title="설정 잠그기" aria-label="설정 잠그기">${IC_LOCK}</button></div></div>
 
     <div class="card"><div class="hd"><div style="flex:1"><h3>데이터 관리</h3></div></div>
       <div class="btnrow" style="align-items:center">
@@ -2790,12 +2832,12 @@ async function ghDiag(){
   }catch(e){ line("네트워크 오류", e.message || String(e)); }
   busyEnd();
   openSheet(`<div class="sh"><h3>GitHub 연결 진단</h3><div class="spacer" style="flex:1"></div>
-      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+      <button class="iconbtn" data-act="close" title="닫기" aria-label="닫기">${IC_X}</button></div>
     <textarea id="env_out" readonly style="min-height:200px;font-size:12px;line-height:1.6">${esc(out.join("\n"))}</textarea>
     <div class="hint" style="margin-top:10px">403이면 토큰의 <b>Repository access</b>에 이 저장소가 있는지,
       <b>Contents</b>가 <b>Read and write</b>인지, 만료 여부를 확인.</div>
     <div class="sf"><button class="btn" data-act="close">닫기</button>
-      <button class="btn pri" data-act="copyEnv">복사</button></div>`);
+      <button class="btn pri" data-act="copyEnv">${IC_COPY}복사</button></div>`);
 }
 /* 저장소에서 기록 읽기
    · 토큰이 있으면 API (비공개 저장소도 가능)
@@ -3023,7 +3065,7 @@ function ghInit(){
 function ghSheet(){
   const c = ghCfg();
   openSheet(`<div class="sh"><h3>GitHub 연결</h3><div class="spacer" style="flex:1"></div>
-      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+      <button class="iconbtn" data-act="close" title="닫기" aria-label="닫기">${IC_X}</button></div>
     <div class="hint" style="padding:2px 0 12px">기록만 저장 · 동영상 파일 제외</div>
     <label class="f"><span>저장소 <span style="color:var(--text-3);font-weight:400">— 아이디/저장소이름</span></span>
       <input id="gh_repo" value="${esc(c.repo || GH_DEFAULT_REPO)}" placeholder="${esc(GH_DEFAULT_REPO)}" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
@@ -3094,7 +3136,7 @@ function ghCard(){
        <div class="btnrow">
          ${ghCanPush()? `<button class="btn pri" data-act="ghPushNow">지금 저장</button>`:""}
          <button class="btn ${ghCanPush()?"":"pri"}" data-act="ghPullNow">지금 받기</button>
-         <button class="btn" data-act="ghSheet">연결 정보 수정</button>
+         <button class="iconbtn" data-act="ghSheet" title="연결 정보 수정" aria-label="연결 정보 수정">${ICON_EDIT}</button>
          <button class="btn sm" data-act="ghDiag">연결 진단</button>
          <button class="btn" data-act="ghForget">연결 해제</button>
        </div>
@@ -3113,7 +3155,7 @@ function ghCard(){
 
 function pfAddYearSheet(){
   openSheet(`<div class="sh"><h3>연도 추가</h3><div class="spacer" style="flex:1"></div>
-      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+      <button class="iconbtn" data-act="close" title="닫기" aria-label="닫기">${IC_X}</button></div>
     <div class="hint" style="padding:2px 0 12px">이전 연도 정보 자동 채움</div>
     <label class="f"><span>연도</span>
       <input id="pf_y" type="number" inputmode="numeric" value="${esc(thisYear())}" min="1900" max="2199"></label>
@@ -3128,7 +3170,7 @@ const SET_PW = "1231";
 let setUnlocked = false;
 function pwSheet(){
   openSheet(`<div class="sh"><h3>설정 잠금</h3><div class="spacer" style="flex:1"></div>
-      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+      <button class="iconbtn" data-act="close" title="닫기" aria-label="닫기">${IC_X}</button></div>
     <div class="hint" style="padding:2px 0 12px">설정을 열려면 비밀번호 입력</div>
     <label class="f"><span>비밀번호</span>
       <input id="pw_in" type="password" inputmode="numeric" autocomplete="off" placeholder="••••"></label>
@@ -3209,7 +3251,7 @@ function ioItem(act, no, title, desc){
 function saveMenu(){
   openSheet(`<div class="sh"><h3><span class="mico">${ICON_SAVE}</span> 저장 (Save)</h3>
       <div class="spacer" style="flex:1"></div>
-      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+      <button class="iconbtn" data-act="close" title="닫기" aria-label="닫기">${IC_X}</button></div>
     <div class="hint" style="padding:2px 0 12px">${bundleHint()}</div>
     ${ioItem("exportBundle", "01", "전체 백업", "기록 + 영상 파일을 하나의 zip 으로")}
     ${ioItem("exportJSON",   "02", "기록 (JSON)", "기록만 · 가볍고 빠름 (영상 제외)")}
@@ -3219,7 +3261,7 @@ function saveMenu(){
 function openMenu(){
   openSheet(`<div class="sh"><h3><span class="mico">${ICON_OPEN}</span> 불러오기 (Open)</h3>
       <div class="spacer" style="flex:1"></div>
-      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+      <button class="iconbtn" data-act="close" title="닫기" aria-label="닫기">${IC_X}</button></div>
     <div class="hint" style="padding:2px 0 12px">합치기 또는 전체 교체 선택</div>
     ${ioItem("importBundle", "01", "전체 백업 (zip)", "기록과 영상 파일을 함께 복원")}
     ${ioItem("importJSON",   "02", "기록 (JSON)", "기록만 복원 — 영상은 [영상 파일 다시 연결]로 연결")}
@@ -3253,9 +3295,9 @@ function ask(title, msg, opts){
 }
 function stepper(id, val, min, max){
   return `<div class="stepper">
-    <button type="button" class="stepbtn" data-act="step" data-t="${id}" data-d="-1" aria-label="감소">−</button>
+    <button type="button" class="stepbtn" data-act="step" data-t="${id}" data-d="-1" title="감소" aria-label="감소">${IC_MINUS_B}</button>
     <input id="${id}" type="number" inputmode="numeric" value="${val}" min="${min==null?0:min}" ${max!=null?`max="${max}"`:""}>
-    <button type="button" class="stepbtn" data-act="step" data-t="${id}" data-d="1" aria-label="증가">+</button></div>`;
+    <button type="button" class="stepbtn" data-act="step" data-t="${id}" data-d="1" title="증가" aria-label="증가">${IC_PLUS_B}</button></div>`;
 }
 
 /* ---------------------------- 경기 정보 시트 ---------------------------- */
@@ -3269,7 +3311,7 @@ function gameSheet(id){
   const opps = Array.from(new Set(S.games.map(x=>x.opponent).filter(Boolean)));
   openSheet(`
     <div class="sh"><h3>${g?"경기 정보 수정":"새 경기"}</h3><div class="spacer" style="flex:1"></div>
-      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+      <button class="iconbtn" data-act="close" title="닫기" aria-label="닫기">${IC_X}</button></div>
     <div class="f" style="margin-bottom:12px">
       <span style="display:block;font-size:12.5px;color:var(--text-2);margin-bottom:5px;font-weight:550">경기 종류</span>
       <div class="seg" role="group" aria-label="경기 종류" style="width:100%">
@@ -3324,7 +3366,7 @@ function paSheet(gid, pid){
   openSheet(`
     <div class="sh"><h3>${p?"타석 수정":"타석 기록"}</h3>
       <div class="spacer" style="flex:1"></div>
-      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+      <button class="iconbtn" data-act="close" title="닫기" aria-label="닫기">${IC_X}</button></div>
     <div class="f2">
       <label class="f"><span>이닝 <span style="color:var(--text-3);font-weight:400">/ 정규 ${regInnings(LV)}이닝</span></span>${stepper("pa_inn", clamp(num(draft.inning,1),1,regInnings(LV)+3), 1, regInnings(LV)+3)}</label>
     </div>
@@ -3340,7 +3382,7 @@ function paSheet(gid, pid){
       <div id="pa_field">${fieldSVG(`<g id="zmark"></g>`, {id:"pafield", aria:"타구 위치 선택", maxw:340, level:LV, fit:true, ruler:true})}</div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
         <div id="pa_zlabel" class="hint" style="flex:1">${draft.zone? esc(zoneOf(draft.zone, LV).label)+" 방향" : "선택 안 됨"} <span style="opacity:.7">— ${esc(LEVELS[LV].ko)} 규격</span></div>
-        <button type="button" class="btn sm" data-act="clearZone">위치 지우기</button>
+        <button type="button" class="iconbtn sm" data-act="clearZone" title="타구 위치 지우기" aria-label="타구 위치 지우기">${IC_XCIRC}</button>
       </div>
     </div>
     <div class="f2">
@@ -3412,7 +3454,7 @@ function defSheet(gid, did){
 
   openSheet(`
     <div class="sh"><h3>${d?"수비 기록 수정":"수비 기록"}</h3><div class="spacer" style="flex:1"></div>
-      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+      <button class="iconbtn" data-act="close" title="닫기" aria-label="닫기">${IC_X}</button></div>
     <div class="f2">
       <label class="f"><span>포지션</span><select id="d_pos"><option value="">선택</option>
         ${POS.map(x=>`<option value="${x.c}" ${v.pos===x.c?"selected":""}>${x.ko}</option>`).join("")}</select></label>
@@ -3456,8 +3498,8 @@ function defSheet(gid, did){
         <div id="p_zone">${zoneSVG(`<g id="pzmark"></g>`, {id:"pzfield", aria:"투구 코스 선택", maxw:290})}</div>
         <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap">
           <div id="p_zlabel" class="hint" style="flex:1;min-width:120px">존을 눌러 투구 기록</div>
-          <button type="button" class="btn sm" data-act="undoPitch">마지막 취소</button>
-          <button type="button" class="btn sm" data-act="clearPitch">전체 지우기</button>
+          <button type="button" class="iconbtn sm" data-act="undoPitch" title="마지막 투구 취소" aria-label="마지막 투구 취소">${IC_UNDO}</button>
+          <button type="button" class="iconbtn sm" data-act="clearPitch" title="투구 마커 전체 지우기" aria-label="투구 마커 전체 지우기">${IC_ERASE}</button>
         </div>
         <div id="p_list" class="plist"></div>
       </div>
@@ -3529,7 +3571,7 @@ function paintPitchDraft(sheet){
     + `<i style="background:${PRCOLOR[prGroup(x.r)]}"></i>`
     + `${esc(PTMAP[x.t]||"구종")} · ${esc(prKo(x.r))}${num(x.v,0)?" · "+Math.round(num(x.v,0)):""}`
     + ` <span style="color:var(--text-3)">${esc(zoneCellKo(zoneCell(x)))}</span>`
-    + `<button type="button" data-act="delPitch" data-i="${i}" aria-label="${i+1}번째 투구 삭제">✕</button></span>`).join("");
+    + `<button type="button" data-act="delPitch" data-i="${i}" title="이 투구 삭제" aria-label="${i+1}번째 투구 삭제">${IC_X_SM}</button></span>`).join("");
 }
 // 수비 기록 한 줄 설명
 function defLine(d){
@@ -3591,7 +3633,7 @@ function videoSheet(gid, vid){
   const linkKind = V? (V.defId? "def" : V.paId? "pa" : "") : "";
   openSheet(`
     <div class="sh"><h3>${V?"영상 수정":"영상 추가"}</h3><div class="spacer" style="flex:1"></div>
-      <button class="iconbtn" data-act="close" aria-label="닫기">✕</button></div>
+      <button class="iconbtn" data-act="close" title="닫기" aria-label="닫기">${IC_X}</button></div>
     ${V? `<div class="hint" style="margin:0 0 12px">${V.kind==="file"?`파일: <b>${esc(V.name||"")}</b> (${bytes(V.size)}) — 파일은 변경 불가 · 다른 파일은 삭제 후 다시 추가`:"링크 영상"}</div>` : ""}
     <div id="v_file" ${V?"hidden":""}>
       <span style="display:block;font-size:12.5px;color:var(--text-2);margin-bottom:6px;font-weight:550">동영상 파일
@@ -4433,7 +4475,7 @@ function banners(){
       GitHub 받기 실패<br>
       <span class="hint" style="color:var(--crit)">${esc(ghState.err)}</span>
       <div class="btnrow" style="margin-top:8px">
-        <button class="btn pri sm nb" data-act="ghPullNow">다시 받기</button>
+        <button class="btn pri sm nb" data-act="ghPullNow">${IC_REFRESH}다시 받기</button>
       </div></div>`;
   }
   if(!readOnly() && S.games.length){
