@@ -493,6 +493,33 @@ video{
   max-height:min(62vh, 520px);object-fit:contain;
   border-radius:var(--r-sm);background:#000;
 }
+/* 링크 영상(유튜브·드라이브·Vimeo)을 앱 안에서 여는 상자.
+   16:9 를 지키면서 화면 높이의 62%(최대 520px)를 넘지 않게 폭을 제한합니다. */
+.lvbox{
+  position:relative;width:100%;max-width:calc(min(62vh, 520px) * 16 / 9);
+  aspect-ratio:16 / 9;margin:0 auto;background:#000;
+  border-radius:var(--r-sm);overflow:hidden;
+}
+.lvbox iframe,.lvbox video{position:absolute;inset:0;width:100%;height:100%;max-height:none;border:0;display:block;border-radius:0}
+/* 전체 화면일 때는 화면을 가득 채웁니다 */
+.lvbox:fullscreen,.lvbox:-webkit-full-screen{
+  width:100vw;height:100vh;max-width:none;aspect-ratio:auto;border-radius:0;
+}
+/* 영상 위에 얹는 작은 조작 단추 — 유튜브 자체 조작줄(아래쪽)을 가리지 않게 오른쪽 위에 둡니다 */
+.lvbar{
+  position:absolute;top:0;right:0;z-index:2;display:flex;gap:6px;
+  padding:8px;padding-top:max(8px, env(safe-area-inset-top));
+}
+.lvbar button{
+  width:34px;height:34px;flex:none;display:inline-flex;align-items:center;justify-content:center;
+  border:0;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+}
+.lvbar button:active{opacity:.65}
+.lvbox .lvhint{
+  position:absolute;left:0;right:0;bottom:0;z-index:1;padding:8px 10px;
+  background:rgba(0,0,0,.55);color:#fff;font-size:11.5px;line-height:1.4;
+}
 .vidcard{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px;margin-bottom:8px}
 .vidcard .vh{display:flex;gap:8px;align-items:center;margin-bottom:8px}
 .vtitle{
@@ -772,7 +799,7 @@ const blank = ()=>({
   profiles:{},          // 연도별 선수 정보 { "2026": {name, team, number, position, bats, throws}, ... }
   games:[],
   settings:{ level:"elem", inningsBy:{elem:6, mid:7, high:7, univ:9}, autoplay:"sound",
-             fullscreen:true, viewOnly:false,
+             fullscreen:true, viewOnly:false, autoLandscape:true,
              gh:{repo:GH_DEFAULT_REPO, branch:"main", path:"data/baseball-log.json", auto:true, wifi:true, autoPull:true, off:false} },
   backup:{ at:0, sig:"" },
   ui:{ tab:"home", year:"all", gtype:"all", metric:"avg", bmode:"classic", pmode:"classic" }
@@ -2734,6 +2761,8 @@ function pitchingSection(gs, defs){
 }
 
 /* ------------------------------- 영상 ------------------------------- */
+const IC_EXPAND = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4H4v5M15 4h5v5M15 20h5v-5M9 20H4v-5"/></svg>';
+const IC_NEWWIN = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M19 14.5V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V6.5A1.5 1.5 0 0 1 5 5h4.5"/></svg>';
 const ICON_LINK = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.6a3.4 3.4 0 0 0 4.8 0l2.4-2.4a3.4 3.4 0 0 0-4.8-4.8l-1.4 1.4"/><path d="M14 10.4a3.4 3.4 0 0 0-4.8 0L6.8 12.8a3.4 3.4 0 0 0 4.8 4.8l1.4-1.4"/></svg>';
 const ICON_FOLDER_L = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.4 6.7A1.9 1.9 0 0 1 5.3 4.8h3.5l1.9 2.3h8.1a1.9 1.9 0 0 1 1.9 1.9v8.3a1.9 1.9 0 0 1-1.9 1.9H5.3a1.9 1.9 0 0 1-1.9-1.9z"/></svg>';
 const ICON_GALLERY  = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.4" y="5" width="17.2" height="14" rx="2.4"/><circle cx="9" cy="10" r="1.6"/><path d="M4.2 16.6 9 12.4l3.2 2.8 3.1-2.6 4.4 3.8"/></svg>';
@@ -2762,7 +2791,7 @@ function videoCard(v, g, lite){
   const head = v.kind==="file"? (v.title || v.name || "영상") : (v.title || linkName(v.url));
   return `<div class="vidcard" data-vid="${v.id}">
     <div class="vh">
-      <button class="vtitle" data-act="playVideo" data-gid="${g.id}" data-id="${v.id}" title="${v.kind==="link"? "눌러서 새 창에서 열기" : "눌러서 재생"}">
+      <button class="vtitle" data-act="playVideo" data-gid="${g.id}" data-id="${v.id}" title="${v.kind==="link"? "눌러서 가로 전체 화면으로 재생" : "눌러서 재생"}">
         ${v.kind==="link"? `<span class="lico" aria-hidden="true">${ICON_LINK}</span>` : ""}
         <span class="tx">${esc(head)}</span>
       </button>
@@ -2920,7 +2949,11 @@ function viewSettings(){
       <div class="filters" style="margin-bottom:8px"><div class="seg" role="group" aria-label="자동 재생 방식">
         ${Object.keys(AUTOPLAY).map(k=>`<button data-act="autoplay" data-v="${k}" aria-pressed="${apMode()===k}">${AUTOPLAY[k]}</button>`).join("")}
       </div></div>
-      <div class="hint">파일 영상에만 적용 · 주소 영상은 새 창에서 열림</div>
+      <div class="hint">자동 재생 설정은 파일 영상과 링크 영상에 함께 적용</div>
+      <div class="btnrow" style="margin-top:10px">${togBtn("autoLand", autoLand(), "링크 영상 자동 가로 전체 화면")}</div>
+      <div class="hint" style="margin-top:8px">유튜브 · 구글 드라이브 · Vimeo 링크는 앱 안에서 바로 재생 ·
+        그 밖의 주소는 새 창에서 열림<br>화면 방향 고정은 안드로이드 크롬에서만 동작 —
+        아이폰은 전체 화면까지만 되고 기기를 돌려야 가로로 바뀜</div>
     </div>
 
     <div class="card"><div class="hd"><div style="flex:1"><h3>백업 / 복원</h3>
@@ -3982,6 +4015,104 @@ function linkName(url){
   return "링크 영상";
 }
 
+/* ---- 링크 주소에서 영상 번호를 뽑아 앱 안에서 열 수 있는 주소로 바꿉니다 ---- */
+function ytId(u){
+  const m = String(u||"").match(
+    /(?:youtube\.com\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/|live\/|v\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/i);
+  return m? m[1] : "";
+}
+/* 주소 끝의 시작 시간(t=90 · t=1h2m3s)을 초로 바꿉니다 */
+function ytStart(u){
+  const m = String(u||"").match(/[?&#](?:t|start)=([0-9hms]+)/i);
+  if(!m) return 0;
+  const v = m[1];
+  if(/^\d+$/.test(v)) return +v;
+  let sec = 0, x;
+  if((x = v.match(/(\d+)h/i))) sec += +x[1]*3600;
+  if((x = v.match(/(\d+)m/i))) sec += +x[1]*60;
+  if((x = v.match(/(\d+)s/i))) sec += +x[1];
+  return sec;
+}
+function driveId(u){
+  const s = String(u||"");
+  const m = s.match(/\/file\/d\/([A-Za-z0-9_-]{10,})/) || s.match(/[?&]id=([A-Za-z0-9_-]{10,})/);
+  return m? m[1] : "";
+}
+function vimeoId(u){
+  const m = String(u||"").match(/vimeo\.com\/(?:video\/)?(\d{6,})/i);
+  return m? m[1] : "";
+}
+/* 주소가 영상 파일 그 자체인 경우 — <video> 로 바로 재생합니다 */
+function directVideoURL(u){
+  return /^https?:\/\/[^?#]+\.(mp4|m4v|webm|ogv|ogg|mov)(\?|#|$)/i.test(String(u||""));
+}
+/* 앱 안에서 열 수 있는 주소면 iframe 주소를, 아니면 빈 글자를 돌려줍니다 */
+function embedURL(url){
+  const ap = apMode();
+  const auto = ap === "off"? "" : "&autoplay=1" + (ap === "muted"? "&mute=1" : "");
+  const y = ytId(url);
+  if(y){
+    const t = ytStart(url);
+    return "https://www.youtube.com/embed/" + y + "?playsinline=1&rel=0" + auto + (t? "&start="+t : "");
+  }
+  const d = driveId(url);
+  if(d) return "https://drive.google.com/file/d/" + d + "/preview";
+  const vm = vimeoId(url);
+  if(vm) return "https://player.vimeo.com/video/" + vm + "?playsinline=1" + auto.replace("&mute=","&muted=");
+  return "";
+}
+
+/* ---- 영상만 가로 전체 화면으로 ----
+   안드로이드 크롬은 전체 화면 안에서 화면 방향까지 고정됩니다.
+   아이폰 사파리는 방향 고정(Screen Orientation lock)을 지원하지 않아
+   전체 화면만 되고, 방향은 기기를 돌려야 바뀝니다. */
+function autoLand(){ return S.settings.autoLandscape !== false; }
+let orientLocked = false;
+function lockLandscape(){
+  try{
+    const so = window.screen && screen.orientation;
+    if(so && so.lock){
+      const p = so.lock("landscape");
+      if(p && p.then) p.then(()=>{ orientLocked = true; }).catch(()=>{});
+    }
+  }catch(e){}
+}
+function unlockOrient(){
+  if(!orientLocked) return;
+  orientLocked = false;
+  try{ if(window.screen && screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
+}
+function fsElement(){ return document.fullscreenElement || document.webkitFullscreenElement || null; }
+/* 영상 상자 하나를 전체 화면으로 올리고 가로로 고정합니다 */
+function playLandscape(box){
+  if(!box) return false;
+  if(!FULL_OK){ toast("전체 화면 미지원 — 기기를 가로로 돌려 주세요"); return false; }
+  try{
+    const p = box.requestFullscreen? box.requestFullscreen({navigationUI:"hide"})
+            : box.webkitRequestFullscreen? box.webkitRequestFullscreen() : null;
+    if(p && p.then) p.then(lockLandscape).catch(()=>{});
+    else lockLandscape();
+  }catch(e){ return false; }
+  return true;
+}
+/* 전체 화면에서 빠져나오면 방향 고정을 풀고,
+   앱 자체의 전체 화면 설정이 켜져 있으면 다음 터치에 다시 올라가게 예약합니다 */
+["fullscreenchange","webkitfullscreenchange"].forEach(ev=>
+  document.addEventListener(ev, ()=>{
+    if(fsElement()) return;
+    unlockOrient();
+    armFullscreen();
+  }));
+
+/* 영상 위에 얹는 조작 단추 — 닫기 / 가로 전체 화면 / 새 창 */
+function lvBar(gid, id){
+  return `<div class="lvbar">
+    <button data-act="fullLink" data-gid="${gid}" data-id="${id}" title="가로 전체 화면" aria-label="가로 전체 화면">${IC_EXPAND}</button>
+    <button data-act="openLinkOut" data-gid="${gid}" data-id="${id}" title="새 창에서 열기" aria-label="새 창에서 열기">${IC_NEWWIN}</button>
+    <button data-act="closeLink" data-gid="${gid}" data-id="${id}" title="닫기" aria-label="닫기">${IC_X}</button>
+  </div>`;
+}
+
 function playVideo(gid, vid){
   const g = S.games.find(x=>x.id===gid); if(!g) return;
   const v = g.videos.find(x=>x.id===vid); if(!v) return;
@@ -3992,16 +4123,20 @@ function playVideo(gid, vid){
   // 다시 누르면 닫기
   if(host.dataset.on === "1"){
     const cur = $("video", host); if(cur){ try{ cur.pause(); }catch(e){} }
+    if(fsElement() && host.contains(fsElement())) exitFullscreen();
+    unlockOrient();
     host.innerHTML = ""; host.dataset.on = "0";
     return;
   }
   host.dataset.on = "1";
 
   const ap = apMode();
-  const mountVideo = (src) =>{
-    const tail = "";
+  const mountVideo = (src, wrap) =>{
     const attrs = ap==="off"? "" : (ap==="muted"? " autoplay muted" : " autoplay");
-    host.innerHTML = `<video controls playsinline preload="auto"${attrs} src="${src}"></video>` + tail;
+    /* wrap 이 참이면 가로 전체 화면 단추가 붙은 상자에 담습니다 (주소로 받은 영상 파일) */
+    host.innerHTML = wrap
+      ? `<div class="lvbox"><video controls playsinline preload="auto"${attrs} src="${src}"></video>${lvBar(g.id, v.id)}</div>`
+      : `<video controls playsinline preload="auto"${attrs} src="${src}"></video>`;
     const el = $("video", host);
     if(el){
       if(ap==="muted") el.muted = true;
@@ -4023,8 +4158,8 @@ function playVideo(gid, vid){
     }
   };
 
-  /* 링크 영상은 새 창(유튜브·드라이브 앱 등)에서 바로 엽니다 */
-  const playLink = () =>{
+  /* 앱 안에서 열 수 없는 주소는 새 창(유튜브·드라이브 앱 등)으로 넘깁니다 */
+  const openOutside = () =>{
     host.innerHTML = ""; host.dataset.on = "0";
     let w = null;
     /* noopener 를 옵션으로 주면 창이 열려도 null 이 돌아와 "막혔다"고 오해합니다.
@@ -4034,6 +4169,20 @@ function playVideo(gid, vid){
       host.dataset.on = "1";
       host.innerHTML = `<div class="hint">새 창 차단 — 브라우저에서 팝업 허용 필요</div>`;
     }
+  };
+  /* 링크 영상 — 앱 안에서 열고, 설정이 켜져 있으면 바로 가로 전체 화면으로 올립니다 */
+  const playLink = () =>{
+    if(directVideoURL(v.url)){ mountVideo(v.url, true); if(autoLand()) playLandscape($(".lvbox", host)); return; }
+    const em = embedURL(v.url);
+    if(!em){ openOutside(); return; }
+    const ttl = v.title || linkName(v.url);
+    host.innerHTML = `<div class="lvbox">
+        <iframe src="${esc(em)}" title="${esc(ttl)}" loading="eager"
+          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+          referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        ${lvBar(g.id, v.id)}
+      </div>`;
+    if(autoLand()) playLandscape($(".lvbox", host));
   };
   if(v.kind === "link"){ playLink(); return; }
 
@@ -4489,7 +4638,25 @@ document.addEventListener("click", ev=>{
       const fi=$("#v_input"); if(fi){ fi.accept = "video/*"; fi.click(); } break; }
     case "saveVideo": saveVideo(gid, el); break;
     case "playVideo": playVideo(gid, id); break;
+    /* 영상 상자 위의 작은 단추들 — render() 를 부르면 재생 중인 영상이 지워지므로 부르지 않습니다 */
+    case "fullLink": {
+      const box = $(`.vidcard[data-vid="${id}"] .lvbox`);
+      if(box && fsElement() === box){ exitFullscreen(); unlockOrient(); }
+      else playLandscape(box);
+      break; }
+    case "openLinkOut": {
+      const g2 = S.games.find(x=>x.id===gid);
+      const v2 = g2 && g2.videos.find(x=>x.id===id);
+      if(!v2 || !v2.url){ toast("영상 주소 없음"); break; }
+      if(fsElement()){ exitFullscreen(); unlockOrient(); }
+      try{ const w = window.open(v2.url, "_blank"); if(w){ try{ w.opener = null; }catch(e){} }
+           else toast("새 창 차단 — 브라우저에서 팝업 허용 필요"); }catch(e){ toast("새 창 열기 실패"); }
+      break; }
+    case "closeLink": playVideo(gid, id); break;
     case "autoplay": S.settings.autoplay=v; saveNow(); render(); toast("자동 재생 · "+AUTOPLAY[v]); break;
+    case "autoLand":
+      S.settings.autoLandscape = !autoLand(); saveNow(); render();
+      toast(autoLand()? "링크 영상 · 자동 가로 전체 화면 켜짐" : "링크 영상 · 자동 가로 전체 화면 꺼짐"); break;
     case "theme": setTheme(v); break;
     case "fullscreen": toggleFullscreen(); setTimeout(render, 150); break;
     case "toggleVG": {
