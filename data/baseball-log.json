@@ -977,6 +977,17 @@
      "defId": null,
      "note": "",
      "createdAt": 1788503497622
+    },
+    {
+     "id": "mtmku70t27h06",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/1ey8VWLrIJBSuZ8W2sVPLUVPsKPcGNBxh/view?usp=drivesdk",
+     "title": "수비 4회 · 2루수 포구 실책",
+     "folder": "",
+     "paId": null,
+     "defId": "mtmktmpjc3myy",
+     "note": "",
+     "createdAt": 1788503554829
     }
    ],
    "pdec": "",
@@ -991,6 +1002,6 @@
    "note": "5회 타석에서 대타로 교체당함"
   }
  ],
- "savedAt": "2026-09-04T06:33:53.650Z",
+ "savedAt": "2026-09-04T06:34:21.083Z",
  "by": "성연제"
 }
