@@ -1052,7 +1052,32 @@
      "note": ""
     }
    ],
-   "def": [],
+   "def": [
+    {
+     "id": "mtmqkk6ytdp00",
+     "pos": "2B",
+     "inning": 2,
+     "result": "PO",
+     "innings": "",
+     "note": "",
+     "po": 1,
+     "a": 0,
+     "e": 0,
+     "dp": 0
+    },
+    {
+     "id": "mtmqkpr39kpbv",
+     "pos": "2B",
+     "inning": 3,
+     "result": "PO",
+     "innings": "",
+     "note": "",
+     "po": 1,
+     "a": 0,
+     "e": 0,
+     "dp": 0
+    }
+   ],
    "videos": [],
    "pdec": "",
    "date": "2026-03-25",
@@ -1066,6 +1091,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-04T09:12:42.081Z",
+ "savedAt": "2026-09-04T09:13:20.402Z",
  "by": "성연제"
 }
