@@ -380,6 +380,13 @@ button.mhead:active{opacity:.6}
   white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums}
 .grow .l2 .gt{font-weight:700;letter-spacing:-.1px}
 .grow .l2 .gt.off{color:var(--accent-ink)} .grow .l2 .gt.prac{color:var(--s2)}
+/* 경기 목록 전용 간결 행 — 달력 아이콘 없이 승패 글자부터 시작하고,
+   날짜는 둘째 줄 글씨로 들어갑니다. 줄 높이를 좁혀 목록이 덜 길어지게 합니다. */
+.grow.cmp{padding-left:8px}
+.grow.cmp .wl{text-align:left}
+.grow.cmp .l1{line-height:1.05}
+.grow.cmp .l2{margin-top:8px;line-height:1.05}
+.grow.cmp .l2 .dt{color:var(--text-3)}
 .grow .rt{flex:0 0 auto;text-align:right;min-width:74px}
 .grow .rt .v{font-size:19px;font-weight:300;letter-spacing:-.02em;line-height:1.05;font-variant-numeric:tabular-nums}
 .grow .rt .v.hot{color:var(--hi);font-weight:500}
@@ -2357,7 +2364,10 @@ function gamePips(g){
         return `<i class="${c==="out"?"out":""}" style="background:${SPRAY_COLOR[c]}"></i>`; }).join("")
     + `</span>` + (rest>0? `<span>+${rest}</span>` : "");
 }
-function gameRow(g, dayOnly){
+/* 날짜를 "09.04" 처럼 월.일 만 씁니다 (연도는 위쪽 월 머리줄이 알려 줍니다) */
+function mdDate(s){ const p=String(s||"").split("-"); return p.length===3? `${p[1]}.${p[2]}` : "-"; }
+/* compact 가 참이면 왼쪽 달력 아이콘 없이, 날짜를 둘째 줄 글씨로 씁니다 — 경기 목록 전용 */
+function gameRow(g, compact){
   const t = battingOf(g.pas);
   const res = gameResult(g);
   const rc = res==="승"? "w" : res==="패"? "l" : res==="무"? "d" : "";
@@ -2365,14 +2375,15 @@ function gameRow(g, dayOnly){
   const prac = gameType(g)==="practice";
   const hot = hi400(t.AVG);
   const aria = `${esc(fmtDate(g.date))} ${esc(g.opponent||"상대 미입력")} ${res||""} ${sc}`;
-  return `<div class="grow" data-act="openGame" data-id="${g.id}" role="button" tabindex="0" aria-label="${aria}">
-    <span class="dnum">${dateIcon(g.date, dayOnly)}</span>
+  return `<div class="grow${compact?" cmp":""}" data-act="openGame" data-id="${g.id}" role="button" tabindex="0" aria-label="${aria}">
+    ${compact? "" : `<span class="dnum">${dateIcon(g.date)}</span>`}
     <div class="wl ${rc}">${res || "·"}</div>
     <div class="main">
       <div class="l1"><span class="op">${esc(g.opponent||"상대 미입력")}</span>
         ${sc? `<span class="sc">${esc(sc)}</span>` : ""}</div>
       <div class="l2">
         <span class="gt ${prac?"prac":"off"}">${prac?"연습":"정식"}</span>
+        ${compact? `<span class="dt">${esc(mdDate(g.date))}</span>` : ""}
         ${gamePips(g)}
         ${g.videos.length? `<span class="gvid">${IC_PLAY_SM}${g.videos.length}</span>` : ""}
       </div>
