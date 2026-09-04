@@ -951,11 +951,11 @@
    "homeAway": "홈",
    "level": "",
    "type": "official",
-   "myScore": "",
-   "oppScore": "",
-   "note": ""
+   "myScore": "6",
+   "oppScore": "7",
+   "note": "5회 타석에서 대타로 교체당함"
   }
  ],
- "savedAt": "2026-09-04T06:05:50.200Z",
+ "savedAt": "2026-09-04T06:18:09.966Z",
  "by": "성연제"
 }
