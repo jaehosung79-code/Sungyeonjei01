@@ -369,7 +369,7 @@ button.mhead:active{opacity:.6}
 .grow:active{background:var(--surface-2)}
 /* 승·패·무는 테두리·배경 없이 글자색으로만 구분합니다 */
 .grow{gap:8px}
-.grow .dnum{flex:0 0 auto;width:42px;height:42px;color:var(--text-2)}
+.grow .dnum{flex:0 0 auto;width:38px;height:38px;color:var(--text-2)}
 .grow .wl{flex:0 0 auto;width:22px;text-align:center;font-size:15px;font-weight:700;letter-spacing:-.02em;color:var(--text-3)}
 .grow .wl.w{color:var(--good)} .grow .wl.l{color:var(--crit)} .grow .wl.d{color:var(--text-2)}
 .grow .main{flex:1;min-width:0}
@@ -509,7 +509,7 @@ video{
 }
 /* 경기 목록의 승·패·무와 같은 자리 — 여기에는 달력 모양 날짜 아이콘이 들어갑니다.
    달은 위의 월 머리줄이 알려 주므로 아이콘에는 '일'만 씁니다. */
-.vgame .dnum{flex:0 0 auto;width:41px;height:41px;color:var(--text-2)}
+.vgame .dnum{flex:0 0 auto;width:38px;height:38px;color:var(--text-2)}
 .dayic{display:block;width:100%;height:100%}
 .dayic text{font-family:var(--font-ui);font-variant-numeric:tabular-nums;letter-spacing:-.03em}
 .vgame .gt{flex:1;min-width:0}
@@ -2308,7 +2308,7 @@ function viewHome(){
         return [fmtDate(g.date), esc(g.opponent||"-"), t.AB, t.H, t.RBI, avg3(t.AVG)];})))
   + `<div class="card"><div class="hd"><div style="flex:1"><h3>최근 경기</h3></div>
       <button class="btn sm" data-act="nav" data-v="games">전체</button></div>
-      <div class="list">${gs.slice(-5).reverse().map(gameRow).join("")||`<div class="hint">경기 없음</div>`}</div></div>`
+      <div class="list">${gs.slice(-5).reverse().map(g=>gameRow(g)).join("")||`<div class="hint">경기 없음</div>`}</div></div>`
   + (f.INN>0? `<div class="card"><div class="hd"><div style="flex:1"><h3>수비</h3>
       <div class="cap">기록된 수비 이닝 ${fmtInn(f.outs)} · 수비율 ${avg3(f.FPCT)}</div></div></div>
       <div class="tiles">${tile("이닝", fmtInn(f.outs))+tile("자살", f.PO)+tile("보살", f.A)+tile("실책", f.E)+tile("병살", f.DP)+tile("수비율", avg3(f.FPCT))}</div></div>`:"")
@@ -2330,7 +2330,7 @@ function gamePips(g){
         return `<i class="${c==="out"?"out":""}" style="background:${SPRAY_COLOR[c]}"></i>`; }).join("")
     + `</span>` + (rest>0? `<span>+${rest}</span>` : "");
 }
-function gameRow(g){
+function gameRow(g, dayOnly){
   const t = battingOf(g.pas);
   const res = gameResult(g);
   const rc = res==="승"? "w" : res==="패"? "l" : res==="무"? "d" : "";
@@ -2339,7 +2339,7 @@ function gameRow(g){
   const hot = hi400(t.AVG);
   const aria = `${esc(fmtDate(g.date))} ${esc(g.opponent||"상대 미입력")} ${res||""} ${sc}`;
   return `<div class="grow" data-act="openGame" data-id="${g.id}" role="button" tabindex="0" aria-label="${aria}">
-    <span class="dnum">${dateIcon(g.date)}</span>
+    <span class="dnum">${dateIcon(g.date, dayOnly)}</span>
     <div class="wl ${rc}">${res || "·"}</div>
     <div class="main">
       <div class="l1"><span class="op">${esc(g.opponent||"상대 미입력")}</span>
@@ -2393,7 +2393,7 @@ function viewGames(){
     const rec = (w+l+d)? `${w}승 ${l}패${d? " "+d+"무" : ""} · ` : "";
     const open = !closedM.has(gr.m);
     return monthHead("toggleM", gr.m, open, `${gr.list.length}경기 · ${rec}${avg3(t.AVG)}`)
-      + `<div class="list" ${open?"":"hidden"}>${gr.list.map(gameRow).join("")}</div>`;
+      + `<div class="list" ${open?"":"hidden"}>${gr.list.map(g=>gameRow(g, true)).join("")}</div>`;
   }).join("");
 }
 
@@ -2739,10 +2739,14 @@ const ICON_FOLDER_L = '<svg viewBox="0 0 24 24" width="24" height="24" fill="non
 const ICON_GALLERY  = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.4" y="5" width="17.2" height="14" rx="2.4"/><circle cx="9" cy="10" r="1.6"/><path d="M4.2 16.6 9 12.4l3.2 2.8 3.1-2.6 4.4 3.8"/></svg>';
 /* 달력 모양 날짜 아이콘 — 얇은 단색 외곽선 + 위쪽 고리 셋, 안에 '달/날'을 넣습니다.
    색은 currentColor 를 따라가 밝은 화면·어두운 화면에서 자동으로 뒤집힙니다. */
-function dateIcon(dstr){
+function dateIcon(dstr, dayOnly){
   const d = String(dstr||"");
-  const txt = d.length>=10? (+d.slice(5,7)) + "/" + (+d.slice(8,10)) : "·";
-  const fs = 8.4, by = 20.5;   // 자릿수와 무관하게 글씨 크기는 항상 같습니다
+  const txt = d.length>=10
+    ? (dayOnly? String(+d.slice(8,10)) : (+d.slice(5,7)) + "/" + (+d.slice(8,10)))
+    : "·";
+  /* 자릿수가 몇이든 글씨 크기는 형식마다 하나로 고정합니다 */
+  const fs = dayOnly? 12.6 : 8.4;
+  const by = dayOnly? 22 : 20.5;
   return `<svg class="dayic" viewBox="0 0 32 32" aria-hidden="true">`
     + `<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">`
     +   `<path d="M9.4 3.2v3.6M16 3.2v3.6M22.6 3.2v3.6" stroke-width="1.15"/>`
@@ -2788,7 +2792,7 @@ function viewVideos(){
       return `<div class="card">
         <button class="vgame" data-act="toggleVG" data-id="${g.id}" aria-expanded="${open}"
           aria-label="${esc(fmtDate(g.date))} ${esc(g.opponent||"-")} 영상 ${g.videos.length}개">
-          <span class="dnum">${dateIcon(g.date)}</span>
+          <span class="dnum">${dateIcon(g.date, true)}</span>
           <div class="gt">
             <div class="t">${esc(g.opponent||"상대 미입력")}</div>
             <div class="s">영상 ${g.videos.length}개${g.venue?" · "+esc(g.venue):""}</div>
