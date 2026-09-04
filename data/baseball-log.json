@@ -1003,7 +1003,21 @@
   },
   {
    "id": "mtmphekl7jbmw",
-   "pas": [],
+   "pas": [
+    {
+     "id": "mtmphvuokysho",
+     "inning": 1,
+     "pitcherNo": "19",
+     "pitcher": "이용우",
+     "result": "K",
+     "zone": null,
+     "rbi": 0,
+     "runs": 0,
+     "sb": 0,
+     "cs": 0,
+     "note": ""
+    }
+   ],
    "def": [],
    "videos": [],
    "pdec": "",
@@ -1018,6 +1032,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-04T08:42:45.034Z",
+ "savedAt": "2026-09-04T08:43:07.327Z",
  "by": "성연제"
 }
