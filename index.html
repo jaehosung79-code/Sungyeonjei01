@@ -232,6 +232,10 @@ tr.grp td .hi{color:var(--hi);font-weight:700}
 .seg.plain button{padding:6px 0;border-radius:0;font-size:12.5px;color:var(--text-3);font-weight:500}
 .seg.plain button[aria-pressed="true"]{background:none;box-shadow:none;color:var(--accent-ink);font-weight:650}
 .filters .right{margin-left:auto}
+/* 카드 오른쪽 위에 들어가는 작은 전환 버튼 */
+.seg.sm{padding:2px;flex:0 0 auto;margin:-2px 0 0}
+.seg.sm button{padding:5px 11px;font-size:11.5px;min-height:28px;letter-spacing:.01em}
+.seg.sm button[aria-pressed="true"]{font-weight:700}
 
 /* ---------- buttons / forms ---------- */
 .btn{
@@ -756,7 +760,7 @@ const blank = ()=>({
              fullscreen:true, viewOnly:false,
              gh:{repo:GH_DEFAULT_REPO, branch:"main", path:"data/baseball-log.json", auto:true, wifi:true, autoPull:true, off:false} },
   backup:{ at:0, sig:"" },
-  ui:{ tab:"home", year:"all", gtype:"all", metric:"avg" }
+  ui:{ tab:"home", year:"all", gtype:"all", metric:"avg", bmode:"classic", pmode:"classic" }
 });
 let S = blank();
 let saveTimer = null;
@@ -2194,6 +2198,15 @@ function typeBadge(g){
 function resTag(res){
   return res? `<span class="tag ${res==="승"?"w":res==="패"?"l":"d"}">${res}</span>` : "";
 }
+/* 카드 오른쪽 위 전환 버튼 — 지표 표를 한 상자 안에서 갈아 끼웁니다 */
+function modeSeg(act, cur, items, label){
+  return `<div class="seg sm" role="group" aria-label="${esc(label)}">`
+    + items.map(([v,l])=>`<button data-act="${act}" data-v="${v}" aria-pressed="${cur===v}">${esc(l)}</button>`).join("")
+    + `</div>`;
+}
+function bMode(){ return (S.ui.bmode==="saber")? "saber" : "classic"; }
+function pMode(){ return (S.ui.pmode==="saber")? "saber" : "classic"; }
+
 function tile(lb, v, sub){
   return `<div class="tile"><div class="lb">${esc(lb)}</div><div class="v">${v}${sub?`<small>${sub}</small>`:""}</div></div>`;
 }
@@ -2532,13 +2545,16 @@ function viewStats(){
      ["득점생산 RC",fx2(b.RC),"인플레이 전환율",pct1(b.PSO)],
      ["타수/홈런 AB/HR",fx2(b.ABHR),"도루 성공률 SB%",pct1(b.SBP)]], null, "kv");
 
+  const bm = bMode();
   return filterRow()
-  + `<div class="grid g2">
-      <div class="card"><div class="hd"><div style="flex:1"><h3>타격 — 클래식 지표</h3>
-        <div class="cap">${S.ui.year==="all"?"전체 기간":S.ui.year+"시즌"} · ${gtypeLabel()} · ${gs.length}경기 ${b.PA}타석</div></div></div>${bClassic}</div>
-      <div class="card"><div class="hd"><div style="flex:1"><h3>타격 — 세이버메트릭스</h3>
-        <div class="cap">출루·장타 가치로 다시 본 지표</div></div></div>${bSaber}</div>
-    </div>`
+  + `<div class="card">
+      <div class="hd" style="align-items:center;margin-bottom:4px">
+        <h3 style="flex:1">타격 지표</h3>
+        ${modeSeg("bmode", bm, [["classic","Classic"],["saber","Sabermetrics"]], "타격 지표 종류")}
+      </div>
+      <div class="cap" style="margin:0 0 10px">${S.ui.year==="all"?"전체 기간":S.ui.year+"시즌"} · ${gtypeLabel()} · ${gs.length}경기 ${b.PA}타석
+        · ${bm==="saber"? "출루·장타 가치로 다시 본 지표" : "기록지에 그대로 적히는 수치"}</div>
+      ${bm==="saber"? bSaber : bClassic}</div>`
   + ((b.SB+b.CS)? `<div class="card"><div class="hd"><div style="flex:1"><h3>도루</h3>
       <div class="cap">도루 시도 ${b.SB+b.CS}회</div></div></div>
       <div class="tiles">${tile("시도", b.SB+b.CS)+tile("성공", b.SB)+tile("실패", b.CS)+tile("성공률", pct1(b.SBP))
@@ -2642,12 +2658,15 @@ function pitchingSection(gs, defs){
   return `<div class="card" style="background:var(--surface-2);border-color:transparent">
       <div class="hd" style="margin:0"><div style="flex:1"><h3>투수 분석</h3>
       <div class="cap">${pt.G}경기 ${pt.APP}등판 · ${fmtInn(pt.outs)}이닝 · ERA ${fx2(pt.ERA)} · WHIP ${fx2(pt.WHIP)}${pt.NP? " · "+pt.NP+"구":""}</div></div></div></div>`
-  + `<div class="grid g2">
-      <div class="card"><div class="hd"><div style="flex:1"><h3>투수 — 클래식 지표</h3>
-        <div class="cap">이닝은 5.2 = 5이닝 2아웃</div></div></div>${classic}</div>
-      <div class="card"><div class="hd"><div style="flex:1"><h3>투수 — 세이버메트릭스</h3>
-        <div class="cap">운·수비 영향을 덜 받는 지표 (FIP 상수 ${FIP_C.toFixed(2)})</div></div></div>${saber}</div>
-    </div>`
+  + `<div class="card">
+      <div class="hd" style="align-items:center;margin-bottom:4px">
+        <h3 style="flex:1">투수 지표</h3>
+        ${modeSeg("pmode", pMode(), [["classic","Classic"],["saber","Sabermetrics"]], "투수 지표 종류")}
+      </div>
+      <div class="cap" style="margin:0 0 10px">${pMode()==="saber"
+        ? `운·수비 영향을 덜 받는 지표 (FIP 상수 ${FIP_C.toFixed(2)})`
+        : "이닝은 5.2 = 5이닝 2아웃"}</div>
+      ${pMode()==="saber"? saber : classic}</div>`
   /* ERA(0~10대)와 WHIP(0~3대)은 범위가 달라 한 축에 겹치면 WHIP이 바닥에 눌립니다 — 따로 그립니다 */
   + (eraPts.length? `<div class="grid g2">`
       + chartCard("누적 평균자책 (ERA)", "등판을 거치며 수렴하는 흐름 · 마지막 값이 현재 기록",
@@ -4286,6 +4305,8 @@ document.addEventListener("click", ev=>{
       $$("#modal [data-act='pickGType']").forEach(b=> b.setAttribute("aria-pressed", String(b.dataset.v===v)));
       const h=$("#g_type"); if(h) h.value=v; break; }
     case "metric": S.ui.metric=v; save(); render(); break;
+    case "bmode": S.ui.bmode=v; save(); render(); break;
+    case "pmode": S.ui.pmode=v; save(); render(); break;
     case "level": S.settings.level=v; saveNow(); render(); toast(LEVELS[v].ko+" 규격으로 변경"); break;
     case "saveInn": {
       const n = clamp(num($("#set_inn").value, LEVELS[curLevel()].inn), 1, 15);
