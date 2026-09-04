@@ -894,8 +894,24 @@
    "myScore": "4",
    "oppScore": "7",
    "note": ""
+  },
+  {
+   "id": "mtmiol8rajy2d",
+   "pas": [],
+   "def": [],
+   "videos": [],
+   "pdec": "",
+   "date": "2026-09-04",
+   "opponent": "상일초",
+   "venue": "구의구장",
+   "homeAway": "홈",
+   "level": "",
+   "type": "official",
+   "myScore": "",
+   "oppScore": "",
+   "note": ""
   }
  ],
- "savedAt": "2026-09-03T08:58:09.926Z",
+ "savedAt": "2026-09-04T05:32:22.986Z",
  "by": "성연제"
 }
