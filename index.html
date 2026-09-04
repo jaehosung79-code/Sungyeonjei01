@@ -344,17 +344,24 @@ select{outline:none;-webkit-appearance:none;appearance:none;background-image:lin
 .row .s{font-size:11.5px;font-weight:400;color:var(--text-3);margin-top:2px}
 .row .r{text-align:right;font-size:12.5px;font-weight:400;color:var(--text-2);white-space:nowrap;font-variant-numeric:tabular-nums}
 /* ---------- 경기 목록 (두 줄) ---------- */
-.mhead{
+button.mhead{
   position:sticky; top:var(--topbar-h,58px); z-index:20;
-  display:flex;align-items:baseline;gap:8px;
-  padding:9px 3px 5px; margin:14px 0 8px;
+  width:100%; border:0; font:inherit; color:inherit; cursor:pointer; text-align:left;
+  display:flex;align-items:center;gap:6px;
+  padding:9px 3px 6px; margin:14px 0 8px;
   background:color-mix(in srgb, var(--surface-0) 92%, transparent);
   backdrop-filter:saturate(180%) blur(8px);
   border-bottom:1px solid var(--grid);
+  min-height:38px;
 }
-.mhead:first-child{margin-top:0}
+button.mhead:first-child{margin-top:0}
+button.mhead:active{opacity:.6}
 .mhead .m{font-size:12px;font-weight:700;color:var(--text-2);letter-spacing:-.01em}
 .mhead .k{margin-left:auto;font-size:11px;color:var(--text-3);font-variant-numeric:tabular-nums}
+/* 펼침 표시 — 접으면 오른쪽을 가리킵니다 */
+.mhead .ch{display:flex;align-items:center;color:var(--text-3);transition:transform .18s}
+.mhead .ch svg{display:block;width:15px;height:15px}
+.mhead[aria-expanded="false"] .ch{transform:rotate(-90deg)}
 .grow{
   background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r-sm);
   padding:10px 12px;display:flex;gap:10px;align-items:center;cursor:pointer;
@@ -2365,9 +2372,12 @@ function viewGames(){
       ? (showYear? `${gr.m.slice(0,4)}년 ${+gr.m.slice(5,7)}월` : `${+gr.m.slice(5,7)}월`)
       : "날짜 미입력";
     const rec = (w+l+d)? `${w}승 ${l}패${d? " "+d+"무" : ""} · ` : "";
-    return `<div class="mhead"><span class="m">${esc(label)}</span>
-        <span class="k">${gr.list.length}경기 · ${rec}${avg3(t.AVG)}</span></div>
-      <div class="list">${gr.list.map(gameRow).join("")}</div>`;
+    const open = !closedM.has(gr.m);
+    return `<button class="mhead" data-act="toggleM" data-id="${esc(gr.m)}" aria-expanded="${open}">
+        <span class="ch" aria-hidden="true">${IC_CHEV_D}</span>
+        <span class="m">${esc(label)}</span>
+        <span class="k">${gr.list.length}경기 · ${rec}${avg3(t.AVG)}</span></button>
+      <div class="list" ${open?"":"hidden"}>${gr.list.map(gameRow).join("")}</div>`;
   }).join("");
 }
 
@@ -4444,6 +4454,9 @@ document.addEventListener("click", ev=>{
     case "toggleVG": {
       if(openVG.has(id)) openVG.delete(id); else openVG.add(id);
       render(); break; }
+    case "toggleM": {
+      if(closedM.has(id)) closedM.delete(id); else closedM.add(id);
+      render(); break; }
 
     case "delVideo":
       ask("영상 삭제","영상 기록과 저장된 파일 모두 삭제",
@@ -4674,6 +4687,7 @@ function initBackButton(){
 /* ------------------------------ 렌더 / 초기화 ------------------------------ */
 const ENV = {storage:true, idb:true};
 const openVG = new Set();   // 영상 화면에서 펼쳐 둔 경기
+const closedM = new Set();  // 경기 목록에서 접어 둔 달 (기본은 모두 펼침)
 function envBanner(){
   const v=$("#view"); if(!v) return;
   if(document.getElementById("envwarn")) return;
