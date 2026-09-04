@@ -2539,7 +2539,7 @@ function viewStats(){
   defs.forEach(d=>{ (byPos[d.pos]=byPos[d.pos]||[]).push(d); });
   const posRows = Object.keys(byPos).map(k=>({pos:k, f:fieldingOf(byPos[k])})).sort((a,c)=>c.f.outs-a.f.outs);
 
-  // 타격 — 클래식 지표 (기록지에 그대로 적히는 수치)
+  // 타격 — 클래식 지표 (기록지 수치)
   const bClassic = tableHTML(["항목","값","항목","값"],
     [["경기",gs.length,"타율 AVG",avg3(b.AVG)],["타석 PA",b.PA,"출루율 OBP",avg3(b.OBP)],
      ["타수 AB",b.AB,"장타율 SLG",avg3(b.SLG)],["안타 H",b.H,"총루타 TB",b.TB],
@@ -2570,7 +2570,7 @@ function viewStats(){
       <div class="cap">도루 시도 ${b.SB+b.CS}회</div></div></div>
       <div class="tiles">${tile("시도", b.SB+b.CS)+tile("성공", b.SB)+tile("실패", b.CS)+tile("성공률", pct1(b.SBP))
         +tile("경기당 시도", fx2(gs.length? (b.SB+b.CS)/gs.length : null))+tile("추가 진루", b.SB-b.CS)}</div></div>` : "")
-  + chartCard("타구 방향 (스프레이 차트)", `타구 위치가 기록된 인플레이 타구 ${bip.length}개 · 그림은 ${esc(LEVELS[curLevel()].ko)} 규격 (${esc(LEVELS[curLevel()].note)}) · 모든 규격 같은 배율 · 거리 비교 가능`,
+  + chartCard("타구 방향 (스프레이 차트)", `타구 위치가 기록된 인플레이 타구 ${bip.length}개 · 그림은 ${esc(LEVELS[curLevel()].ko)} 규격 (${esc(LEVELS[curLevel()].note)})`,
       sprayChart(pas, curLevel(), {ruler:true}),
       bip.length? tableHTML(["날짜","이닝","결과","위치","추정 거리"], bip.map(p=>{const z=zoneOf(p.zone, gameLevel(p._g));
         return [fmtDate(p._g.date), (p.inning||"-")+"회", esc(RMAP[p.result].ko), esc(z.label), Math.round(z.m)+"m"];})) : "")
