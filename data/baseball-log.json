@@ -901,7 +901,7 @@
     {
      "id": "mtmiplmgxy4xo",
      "inning": 2,
-     "pitcherNo": "38",
+     "pitcherNo": "21",
      "pitcher": "문태양",
      "result": "BB",
      "zone": null,
@@ -956,6 +956,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-04T06:05:30.336Z",
+ "savedAt": "2026-09-04T06:05:50.200Z",
  "by": "성연제"
 }
