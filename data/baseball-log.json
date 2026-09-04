@@ -1000,8 +1000,24 @@
    "myScore": "6",
    "oppScore": "7",
    "note": "5회 타석에서 대타로 교체당함"
+  },
+  {
+   "id": "mtmphekl7jbmw",
+   "pas": [],
+   "def": [],
+   "videos": [],
+   "pdec": "",
+   "date": "2026-03-25",
+   "opponent": "이수초",
+   "venue": "용산",
+   "homeAway": "홈",
+   "level": "",
+   "type": "official",
+   "myScore": "",
+   "oppScore": "",
+   "note": ""
   }
  ],
- "savedAt": "2026-09-04T07:58:53.712Z",
+ "savedAt": "2026-09-04T08:42:45.034Z",
  "by": "성연제"
 }
