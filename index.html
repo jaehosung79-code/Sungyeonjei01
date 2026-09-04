@@ -619,6 +619,7 @@ const THEME_KEY = "bb_note_theme";
 const IC_PLUS    = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg>';
 const IC_BACK    = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5.6"/><path d="M11.4 5.6 5 12l6.4 6.4"/></svg>';
 const IC_TABLE   = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.2"/><path d="M3.5 9.6h17M3.5 14.6h17M9.6 9.6v9.9"/></svg>';
+const IC_CHART   = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.4 20.1h17.2" stroke-width="1.7"/><path d="M6.6 20.1V10.6M12 20.1V4.4M17.4 20.1v-6.4" stroke-width="2.8"/></svg>';
 const IC_COPY    = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11.2" height="11.2" rx="2.4"/><path d="M15.2 6.6V6a2.2 2.2 0 0 0-2.2-2.2H6A2.2 2.2 0 0 0 3.8 6v7a2.2 2.2 0 0 0 2.2 2.2h.6"/></svg>';
 const IC_UNDO    = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.2 9.2h9.6a5.4 5.4 0 1 1 0 10.8H8.4"/><path d="M7.7 5.7 4.2 9.2l3.5 3.5"/></svg>';
 const IC_ERASE   = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.8 20.4H20.2"/><path d="M14.4 4.8 5 14.2a2 2 0 0 0 0 2.83l2.4 2.4a2 2 0 0 0 2.83 0l9.4-9.4a2 2 0 0 0 0-2.83l-2.4-2.4a2 2 0 0 0-2.83 0z"/><path d="m9.5 9.7 5.6 5.6"/></svg>';
@@ -4291,7 +4292,11 @@ document.addEventListener("click", ev=>{
   if(tg){ const box=document.getElementById(tg.dataset.toggle);
     const open = box.hasAttribute("hidden");
     if(open) box.removeAttribute("hidden"); else box.setAttribute("hidden","");
-    tg.setAttribute("aria-expanded", String(open)); tg.textContent = open? "차트" : "표"; return; }
+    tg.setAttribute("aria-expanded", String(open));
+    tg.innerHTML = open? IC_CHART : IC_TABLE;                 // 글씨가 아니라 아이콘만 바꿉니다
+    const lb = open? "차트로 보기" : "표로 보기";
+    tg.title = lb; tg.setAttribute("aria-label", lb);
+    return; }
   // 시트 바깥(어두운 배경)을 눌러도 닫지 않습니다 — 입력 중 실수로 닫히는 것을 막기 위해
   // 닫기는 ✕ / 취소 버튼(또는 뒤로가기·Esc)으로만 합니다.
   if(ev.target.classList && ev.target.classList.contains("backdrop")) return;
