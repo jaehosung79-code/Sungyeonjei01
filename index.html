@@ -62,6 +62,7 @@
   --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
   --btn:#A3C6C4; --btn-ink:#0b0b0b; --btn-ring:#7fa9a7;
   --chart:#D96846; --hi:#E2495B;
+  --muted-mark:#d5d4cd; --out-mark:#6b7a8f;
   --accent-ink:#3f6b69;
   --field:#eef3ea; --dirt:#f3e7d6; --fieldline:#c9d3c1;
   --shadow:0 1px 2px rgba(11,11,11,.05), 0 6px 20px rgba(11,11,11,.05);
@@ -79,6 +80,7 @@
     --s1:#3987e5; --s2:#d95926; --s3:#199e70;
     --neutral:#898781; --accent-ink:#A3C6C4;
     --chart:#D96846; --hi:#E2495B;
+    --muted-mark:#3a3a37; --out-mark:#8b99ab;
     --field:#18211a; --dirt:#26201a; --fieldline:#2f3a30;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
   }
@@ -91,6 +93,7 @@
   --s1:#3987e5; --s2:#d95926; --s3:#199e70;
   --neutral:#898781; --accent-ink:#A3C6C4;
   --chart:#D96846; --hi:#E2495B;
+  --muted-mark:#3a3a37; --out-mark:#8b99ab;
   --field:#18211a; --dirt:#26201a; --fieldline:#2f3a30;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
 }
@@ -141,6 +144,8 @@ a{color:var(--s1)}
 .iconbtn svg{display:block}
 .iconbtn.del{color:var(--crit)}
 .iconbtn.add{color:var(--accent-ink)}
+.iconbtn.lnkon{color:var(--good)}
+.hdbtns{display:flex;align-items:center;gap:0;flex:0 0 auto;margin:-4px -6px 0 0}
 .iconbtn.del:active{background:none;opacity:.55}
 .iconbtn.sm{width:34px;height:34px;border-radius:10px}
 .iconbtn.on{color:var(--accent-ink)}
@@ -209,6 +214,8 @@ tr.grp td .hi{color:var(--hi);font-weight:700}
 .tile .lb{font-size:11.5px;font-weight:400;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0}
 .tile .v{font-size:26px;font-weight:300;letter-spacing:-.025em;line-height:1.15;margin-top:2px}
 .tile .v small{font-size:12px;font-weight:400;color:var(--text-3);margin-left:2px}
+/* 타일 안 미니 추이선 — 차트를 열지 않아도 흐름이 보이게 */
+.tile .spk{display:block;width:100%;height:16px;margin-top:4px;overflow:visible}
 
 /* ---------- filter row ---------- */
 .filters{
@@ -402,12 +409,26 @@ td.ind{padding-left:20px}
 .chart{width:100%;max-width:620px;height:auto;display:block;margin:0 auto;overflow:visible;touch-action:pan-y}
 .chart text{font-family:inherit}
 .ax{font-size:var(--cfs,10.5px);fill:var(--text-3);font-family:var(--font-ui);font-variant-numeric:tabular-nums}
-.gl{stroke:var(--grid);stroke-width:.5;stroke-dasharray:1.5 2}
+.gl{stroke:var(--grid);stroke-width:.6}
+/* 기준선 — 격자와 구분되도록 이것만 점선입니다 */
+.rl{stroke:var(--text-3);stroke-width:.8;stroke-dasharray:3 3;opacity:.85}
+/* 막대·선 위에 겹쳐도 읽히도록 배경색 테두리를 두른 라벨 */
+.halo{paint-order:stroke;stroke:var(--surface-1);stroke-width:3px;stroke-linejoin:round}
+/* 세로 안내선(크로스헤어) — 열 전체가 손가락 대상입니다 */
+.xb .xh{stroke:var(--axis);stroke-width:.8;opacity:0}
+.xb .xd{opacity:0}
+.xb:hover .xh,.xb:hover .xd{opacity:1}
+/* 레이더 축 이름 */
+.rdk{font-size:var(--cfs,10.5px);font-weight:650;fill:var(--text-1);font-family:var(--font-ui)}
+.rds{font-size:var(--cfs,10.5px);fill:var(--text-3);font-family:var(--font-ui);font-variant-numeric:tabular-nums}
 .bl{stroke:var(--axis);stroke-width:.5}
 .legend{display:flex;gap:12px;flex-wrap:wrap;margin:2px 0 8px;font-size:12px;color:var(--text-2)}
 .legend i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:-1px}
 .legend i.dot{border-radius:50%}
+/* 아웃은 색이 아니라 "속 빈 원"으로 구분합니다 */
+.legend i.dot.hollow{background:none!important;border:2px solid var(--out-mark);width:10px;height:10px}
 .dlbl{font-size:var(--cfs,10.5px);font-weight:650;fill:var(--text-1);font-family:var(--font-ui);font-variant-numeric:tabular-nums}
+.dlbl .pc{font-weight:400;fill:var(--text-3)}
 .tv{margin-top:10px;border-top:1px solid var(--grid);padding-top:8px}
 #tip{
   position:fixed;z-index:80;pointer-events:none;opacity:0;transition:opacity .1s;
@@ -566,6 +587,9 @@ const IC_CHEV_D  = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" 
 const IC_MINUS_B = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 12h12"/></svg>';
 const IC_PLUS_B  = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg>';
 /* 빈 화면 그림 */
+const IC_LINK2   = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.2 13.8a4 4 0 0 0 5.66 0l3-3a4 4 0 1 0-5.66-5.66l-1.3 1.3"/><path d="M13.8 10.2a4 4 0 0 0-5.66 0l-3 3a4 4 0 1 0 5.66 5.66l1.3-1.3"/></svg>';
+const IC_UNLINK  = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.5 9.2l1.9-1.9a3.6 3.6 0 0 0-5.1-5.1L10.4 4.1"/><path d="M8.5 14.8l-1.9 1.9a3.6 3.6 0 0 0 5.1 5.1l1.9-1.9"/><path d="M3 3l18 18"/></svg>';
+const IC_DIAG    = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12.4h3.3l2-4.8 3 9.6 2.1-6 1.5 3.2h5.1"/></svg>';
 const IC_EMPTY_BALL  = '<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path d="M7.1 5.5C8.7 7.3 9.7 9.5 9.7 12s-1 4.7-2.6 6.5"/><path d="M16.9 5.5c-1.6 1.8-2.6 4-2.6 6.5s1 4.7 2.6 6.5"/></svg>';
 const IC_EMPTY_LIST  = '<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.4" y="4.4" width="17.2" height="15.2" rx="2.4"/><path d="M3.4 9.5h17.2M3.4 14.5h17.2"/></svg>';
 const IC_EMPTY_CHART = '<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.8 19.6h16.4"/><path d="M7.6 19.6v-6.4M12 19.6V6.8M16.4 19.6v-4.2"/></svg>';
@@ -1624,16 +1648,20 @@ function calcChartFont(){
 }
 function chStyle(extra){ return `style="--cfs:${CFS.toFixed(2)}px${extra?";"+extra:""}"`; }
 
-/* 꺾은선: 단일/이중 시리즈. pts = [{x, y, tip}] (y=null 허용) */
+/* 꺾은선: 단일/이중 시리즈. pts = [{x, y, tip}] (y=null 허용)
+   opt.ref = {v, label} 이면 기준선을 한 줄 얹습니다. */
+let gradSeq = 0;
 function lineChart(series, opt){
   opt = opt||{};
-  const W=CH_W, L=Math.round(38*CK), R=Math.round(18*CK), T=Math.round(12*CK), B=Math.round(26*CK);
+  const W=CH_W, L=Math.round(38*CK), R=Math.round(20*CK), T=Math.round(14*CK), B=Math.round(26*CK);
   const H=Math.round((opt.height||160) + (B-26) + (T-12));
   const pw=W-L-R, ph=H-T-B;
   const all = series.flatMap(s=>s.pts.map(p=>p.y)).filter(v=>v!=null && isFinite(v));
   if(!all.length) return `<div class="empty">표시할 데이터 없음</div>`;
+  const ref = (opt.ref && opt.ref.v!=null && isFinite(opt.ref.v))? opt.ref : null;
   let mn = opt.min!=null? opt.min : Math.min.apply(null, all);
   let mx = opt.max!=null? opt.max : Math.max.apply(null, all);
+  if(ref){ mn=Math.min(mn, ref.v); mx=Math.max(mx, ref.v); }
   if(mn===mx){ mn = Math.max(0, mn - 0.05); mx = mx + 0.05; }
   const ticks = niceTicks(mn, mx, 4);
   const t0=ticks[0], t1=ticks[ticks.length-1];
@@ -1642,39 +1670,83 @@ function lineChart(series, opt){
   const Y = v => T + ph - ph*(v-t0)/(t1-t0);
   const fm = opt.fmt || avg3;
   const dy = CFS*0.34;
+  const single = series.length===1;
+  const gid = "lg"+(++gradSeq);
   let s = `<svg class="chart" ${chStyle()} viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||"추이 차트")}">`;
-  s += `<g>`;
+  if(single && opt.area!==false)
+    s += `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">`
+       + `<stop offset="0" stop-color="${series[0].color}" stop-opacity=".22"/>`
+       + `<stop offset="1" stop-color="${series[0].color}" stop-opacity="0"/></linearGradient></defs>`;
+  // 격자 (실선 헤어라인)
   ticks.forEach(t=>{ s += `<line class="gl" x1="${L}" x2="${W-R}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/>`
                         + `<text class="ax" x="${L-6}" y="${(Y(t)+dy).toFixed(1)}" text-anchor="end">${fm(t)}</text>`; });
   s += `<line class="bl" x1="${L}" x2="${W-R}" y1="${T+ph}" y2="${T+ph}"/>`;
-  // x축 라벨 — 글자가 커진 만큼 표시 개수를 줄여 겹치지 않게 합니다
-  const maxLbl = Math.max(3, Math.floor(pw / (CFS*3.2)));
+  // x축 라벨 — 마지막 라벨과 겹칠 만큼 가까우면 앞 라벨을 건너뜁니다
+  const maxLbl = Math.max(3, Math.floor(pw / (CFS*3.6)));
   const step = Math.max(1, Math.ceil(n/maxLbl));
-  series[0].pts.forEach((p,i)=>{ if(i%step===0 || i===n-1)
-    s += `<text class="ax" x="${X(i).toFixed(1)}" y="${(H-B+CFS+2).toFixed(1)}" text-anchor="middle">${esc(p.x)}</text>`; });
-  series.forEach((ser,si)=>{
-    const col = ser.color;
-    let d="", started=false;
-    ser.pts.forEach((p,i)=>{ if(p.y==null||!isFinite(p.y)){ started=false; return; }
-      d += (started? " L":" M") + X(i).toFixed(1)+","+Y(p.y).toFixed(1); started=true; });
-    if(d) s += `<path d="${d.trim()}" fill="none" stroke="${col}" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>`;
-    // 마지막 지점 강조 + 직접 라벨
-    let last=-1; ser.pts.forEach((p,i)=>{ if(p.y!=null&&isFinite(p.y)) last=i; });
-    if(last>=0){
-      const lx=X(last), ly=Y(ser.pts[last].y);
-      s += `<circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="4.5" fill="${col}" stroke="var(--surface-1)" stroke-width="2"/>`;
-      const anchor = last===n-1? "end" : "middle";
-      s += `<text class="dlbl" x="${lx.toFixed(1)}" y="${(ly-CFS*0.75).toFixed(1)}" text-anchor="${anchor}">${fm(ser.pts[last].y)}</text>`;
-    }
-    // 히트 영역
-    ser.pts.forEach((p,i)=>{ if(p.y==null||!isFinite(p.y)) return;
-      s += `<circle cx="${X(i).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="12" fill="transparent" data-tip="${esc(p.tip||"")}"/>`; });
+  const gap  = CFS*3.2;
+  series[0].pts.forEach((p,i)=>{
+    if(!(i%step===0 || i===n-1)) return;
+    if(i!==n-1 && X(n-1)-X(i) < gap) return;
+    s += `<text class="ax" x="${X(i).toFixed(1)}" y="${(H-B+CFS+2).toFixed(1)}" text-anchor="${i===n-1&&n>1?"end":"middle"}">${esc(p.x)}</text>`;
   });
-  s += `</g></svg>`;
+  // 선 + 면적
+  series.forEach(ser=>{
+    const col = ser.color;
+    let d="", started=false, first=-1, last=-1;
+    ser.pts.forEach((p,i)=>{ if(p.y==null||!isFinite(p.y)){ started=false; return; }
+      if(first<0) first=i; last=i;
+      d += (started? " L":" M") + X(i).toFixed(1)+","+Y(p.y).toFixed(1); started=true; });
+    if(!d) return;
+    if(single && opt.area!==false && first>=0)
+      s += `<path d="${d.trim()} L${X(last).toFixed(1)},${(T+ph).toFixed(1)} L${X(first).toFixed(1)},${(T+ph).toFixed(1)} Z" fill="url(#${gid})"/>`;
+    s += `<path d="${d.trim()}" fill="none" stroke="${col}" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    ser._last = last;
+  });
+  // 기준선 — 선 위에 얹습니다
+  if(ref){
+    s += `<line class="rl" x1="${L}" x2="${W-R}" y1="${Y(ref.v).toFixed(1)}" y2="${Y(ref.v).toFixed(1)}"/>`;
+    if(ref.label) s += `<text class="ax halo" x="${L+3}" y="${(Y(ref.v)-CFS*0.42).toFixed(1)}" text-anchor="start">${esc(ref.label)}</text>`;
+  }
+  // 값 라벨 — 단일 시리즈는 최고점과 마지막, 이중 시리즈는 마지막만
+  series.forEach(ser=>{
+    const last = ser._last; if(last==null || last<0) return;
+    const col = ser.color;
+    const idx = [];
+    if(single){
+      let hi=-1, hv=-Infinity;
+      ser.pts.forEach((p,i)=>{ if(p.y!=null&&isFinite(p.y)&&p.y>hv){hv=p.y;hi=i;} });
+      if(hi>=0 && hi!==last && X(last)-X(hi) > gap) idx.push([hi,true]);
+    }
+    idx.push([last,false]);
+    idx.forEach(([i,mutd])=>{
+      const x=X(i), y=Y(ser.pts[i].y);
+      s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${col}" stroke="var(--surface-1)" stroke-width="2"/>`;
+      s += `<text class="dlbl halo" x="${x.toFixed(1)}" y="${(y-CFS*0.8).toFixed(1)}" text-anchor="${i===n-1&&n>1?"end":"middle"}"`
+         + `${mutd?' fill="var(--text-2)"':''}>${fm(ser.pts[i].y)}</text>`;
+    });
+  });
+  // 열 전체를 손가락 대상으로 — 누르면 세로 안내선과 값이 함께 뜹니다
+  const half = n>1? (pw/(n-1))/2 : pw/2;
+  for(let i=0;i<n;i++){
+    const x=X(i), x0=Math.max(L, x-half), x1=Math.min(W-R, x+half);
+    const tips = series.map(ser=>{ const p=ser.pts[i];
+      return (p && p.y!=null && isFinite(p.y))? (p.tip||"") : ""; }).filter(Boolean);
+    if(!tips.length) continue;
+    s += `<g class="xb" data-tip="${esc(tips.join("<br>"))}">`
+       + `<rect x="${x0.toFixed(1)}" y="${T}" width="${(x1-x0).toFixed(1)}" height="${ph}" fill="transparent"/>`
+       + `<line class="xh" x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${T}" y2="${T+ph}"/>`
+       + series.map(ser=>{ const p=ser.pts[i];
+           return (p && p.y!=null && isFinite(p.y))
+             ? `<circle class="xd" cx="${x.toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="3.6" fill="${ser.color}" stroke="var(--surface-1)" stroke-width="2"/>` : ""; }).join("")
+       + `</g>`;
+  }
+  s += `</svg>`;
   return s;
 }
 
-/* 세로 막대 */
+/* 세로 막대 — 가장 큰 값만 색을 주고 나머지는 옅게 (opt.emphasis:false 로 끔)
+   opt.ref = {v, label} 이면 기준선을 한 줄 얹습니다. */
 function colChart(items, opt){
   opt=opt||{};
   if(!items.length) return `<div class="empty">표시할 데이터 없음</div>`;
@@ -1685,52 +1757,113 @@ function colChart(items, opt){
   const pw=W-L-R, ph=H-T-B;
   const vals = items.map(d=>num(d.value,0));
   const mx = Math.max.apply(null, vals.concat([opt.minMax||1]));
-  const ticks = niceTicks(0, mx, 3);
+  const ref = (opt.ref && opt.ref.v!=null && isFinite(opt.ref.v) && opt.ref.v>0)? opt.ref : null;
+  const ticks = niceTicks(0, Math.max(mx, ref? ref.v:0), 3);
   const t1 = ticks[ticks.length-1];
   const band = pw/items.length;
-  const bw = Math.min(24, band*0.62);
+  const bw = Math.min(22, band*0.58);
   const Y = v => T + ph - ph*v/t1;
   const fm = opt.fmt || (v=> String(Math.round(v*100)/100));
   const dy = CFS*0.34;
+  const peak = Math.max.apply(null, vals);
+  const emph = opt.emphasis!==false && items.length>=3 && peak>0;
   let s = `<svg class="chart" ${chStyle()} viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||"막대 차트")}">`;
   ticks.forEach(t=>{ s += `<line class="gl" x1="${L}" x2="${W-R}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/>`
     + `<text class="ax" x="${L-6}" y="${(Y(t)+dy).toFixed(1)}" text-anchor="end">${fm(t)}</text>`; });
   s += `<line class="bl" x1="${L}" x2="${W-R}" y1="${T+ph}" y2="${T+ph}"/>`;
-  // 라벨이 겹칠 만큼 항목이 많으면 건너뛰며 표시
-  const lstep = Math.max(1, Math.ceil(items.length / Math.max(3, Math.floor(pw/(CFS*2.6)))));
+  // 라벨이 겹칠 만큼 항목이 많으면 건너뛰며 표시 — 마지막 라벨과 부딪히면 앞을 건너뜁니다
+  const lstep = Math.max(1, Math.ceil(items.length / Math.max(3, Math.floor(pw/(CFS*3.0)))));
+  const cx = i => L+band*i+band/2;
+  const lastI = items.length-1, gap = CFS*3.0;
   items.forEach((d,i)=>{
-    const v=num(d.value,0), x=L+band*i+(band-bw)/2, y=Y(v), h=T+ph-y;
-    const col = d.color || opt.color || "var(--chart)";
+    const v=vals[i], x=L+band*i+(band-bw)/2, y=Y(v), h=T+ph-y;
+    const col = d.color || (emph? (v===peak? "var(--chart)" : "var(--muted-mark)") : (opt.color||"var(--chart)"));
     if(v>0) s += `<path d="${rTop(x, y, bw, h, 4)}" fill="${col}"/>`;
+    // 0 인 항목은 "기록 없음"이 아니라 "0"으로 읽히도록 바닥에 자리 표시
+    else    s += `<rect x="${x.toFixed(1)}" y="${(T+ph-1.6).toFixed(1)}" width="${bw.toFixed(1)}" height="1.6" rx="0.8" fill="var(--muted-mark)"/>`;
     s += `<rect x="${(L+band*i+1).toFixed(1)}" y="${T}" width="${(band-2).toFixed(1)}" height="${ph}" fill="transparent" data-tip="${esc(d.tip||(d.label+": "+fm(v)))}"/>`;
-    if(i%lstep===0 || i===items.length-1)
-      s += `<text class="ax" x="${(x+bw/2).toFixed(1)}" y="${(H-B+CFS+1).toFixed(1)}" text-anchor="middle">${esc(d.label)}</text>`;
-    if(opt.labelTop && v>0) s += `<text class="dlbl" x="${(x+bw/2).toFixed(1)}" y="${(y-CFS*0.42).toFixed(1)}" text-anchor="middle">${fm(v)}</text>`;
+    if((i%lstep===0 || i===lastI) && (i===lastI || cx(lastI)-cx(i) >= gap))
+      s += `<text class="ax" x="${cx(i).toFixed(1)}" y="${(H-B+CFS+1).toFixed(1)}" text-anchor="middle">${esc(d.label)}</text>`;
   });
+  if(ref){
+    s += `<line class="rl" x1="${L}" x2="${W-R}" y1="${Y(ref.v).toFixed(1)}" y2="${Y(ref.v).toFixed(1)}"/>`;
+    if(ref.label) s += `<text class="ax halo" x="${L+3}" y="${(Y(ref.v)-CFS*0.42).toFixed(1)}" text-anchor="start">${esc(ref.label)}</text>`;
+  }
+  // 값 라벨 — 항목이 적으면 전부, 많으면 최고값과 마지막만
+  if(opt.labelTop){
+    const few = items.length<=4;
+    const marks = few? items.map((_,i)=>i)
+                     : [vals.indexOf(peak), lastI].filter((v,i,a)=> v>=0 && a.indexOf(v)===i);
+    marks.forEach(i=>{ const v=vals[i]; if(!(v>0)) return;
+      s += `<text class="dlbl halo" x="${cx(i).toFixed(1)}" y="${(Y(v)-CFS*0.42).toFixed(1)}" text-anchor="middle">${fm(v)}</text>`; });
+  }
   s += `</svg>`;
   return s;
 }
 
-/* 가로 막대 */
+/* 가로 막대 — 트랙(옅은 홈) 위에 채웁니다. opt.total 을 주면 비중(%)도 함께 적습니다. */
 function hbarChart(items, opt){
   opt=opt||{};
   if(!items.length) return `<div class="empty">표시할 데이터 없음</div>`;
-  const W=CH_W, rowH=Math.round((opt.rowH||22)*CK), L=Math.round((opt.left||64)*CK), R=Math.round(34*CK), T=4;
+  const tot = opt.total!=null? opt.total : items.reduce((a,d)=>a+num(d.value,0), 0);
+  const showPct = opt.pct!==false && tot>0;
+  const W=CH_W, rowH=Math.round((opt.rowH||24)*CK), L=Math.round((opt.left||64)*CK),
+        R=Math.round((showPct?54:34)*CK), T=4;
   const H = T + items.length*rowH + 4;
   const pw = W-L-R;
   const mx = Math.max.apply(null, items.map(d=>num(d.value,0)).concat([1]));
-  const bh = Math.min(Math.round(14*CK), rowH-Math.round(8*CK));
+  const bh = Math.min(Math.round(13*CK), rowH-Math.round(9*CK));
   const fm = opt.fmt || (v=>String(v));
   const dy = CFS*0.34;
   let s = `<svg class="chart" ${chStyle()} viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.aria||"막대 차트")}">`;
   items.forEach((d,i)=>{
     const v=num(d.value,0), y=T+i*rowH+(rowH-bh)/2, w=pw*v/mx;
     const col=d.color||opt.color||"var(--chart)";
-    s += `<text class="ax" x="${L-8}" y="${(y+bh/2+dy).toFixed(1)}" text-anchor="end">${esc(d.label)}</text>`;
-    s += `<line class="gl" x1="${L}" x2="${L+pw}" y1="${(y+bh/2).toFixed(1)}" y2="${(y+bh/2).toFixed(1)}" opacity=".45"/>`;
+    s += `<text class="ax" x="${L-9}" y="${(y+bh/2+dy).toFixed(1)}" text-anchor="end">${esc(d.label)}</text>`;
+    s += `<rect x="${L}" y="${y.toFixed(1)}" width="${pw.toFixed(1)}" height="${bh}" rx="4" fill="var(--surface-2)"/>`;
     if(v>0) s += `<path d="${rRight(L, y, w, bh, 4)}" fill="${col}"/>`;
-    s += `<text class="dlbl" x="${(L+w+6).toFixed(1)}" y="${(y+bh/2+dy).toFixed(1)}">${fm(v)}</text>`;
+    s += `<text class="dlbl" x="${(L+pw+6).toFixed(1)}" y="${(y+bh/2+dy).toFixed(1)}">${fm(v)}`
+       + (showPct? `<tspan class="pc" dx="3">${Math.round(v/tot*100)}%</tspan>` : "") + `</text>`;
     s += `<rect x="${L}" y="${(T+i*rowH).toFixed(1)}" width="${pw}" height="${rowH}" fill="transparent" data-tip="${esc(d.tip||(d.label+": "+fm(v)))}"/>`;
+  });
+  s += `</svg>`;
+  return s;
+}
+
+/* 레이더 — axes = [{k:축 이름, sub:지표 이름, a:0~1, b:0~1, tip}]
+   a/b 는 이미 0~1 로 환산한 값입니다 (지표마다 좋은 방향이 달라 호출하는 쪽에서 맞춥니다).
+   선 굵기는 꺾은선 차트와 같은 1.2 를 씁니다. */
+function radarChart(axes, opt){
+  opt = opt||{};
+  const S0=CH_W, HH=Math.round(S0*0.88), cx=S0/2, cy=HH/2+2, RR=S0*0.295, n=axes.length;
+  const colA = opt.colorA || "var(--chart)", colB = opt.colorB || "var(--s1)";
+  const two = opt.two!==false;
+  const ang = i => -Math.PI/2 + i*2*Math.PI/n;
+  const P = (i,t) => [cx+Math.cos(ang(i))*RR*t, cy+Math.sin(ang(i))*RR*t];
+  const norm = v => (v==null||!isFinite(v))? 0 : clamp(v, 0, 1);
+  const poly = key => axes.map((ax,i)=>{ const [x,y]=P(i, norm(ax[key])); return x.toFixed(1)+","+y.toFixed(1); }).join(" ");
+  let s = `<svg class="chart" ${chStyle()} viewBox="0 0 ${S0} ${HH}" role="img" aria-label="${esc(opt.aria||"레이더 차트")}">`;
+  [.25,.5,.75,1].forEach(t=>{
+    s += `<polygon class="gl" fill="none" points="${axes.map((_,i)=>{const [x,y]=P(i,t);return x.toFixed(1)+","+y.toFixed(1);}).join(" ")}"/>`;
+  });
+  axes.forEach((_,i)=>{ const [x,y]=P(i,1);
+    s += `<line class="gl" x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"/>`; });
+  const layers = two? [["b",colB,.12],["a",colA,.18]] : [["a",colA,.18]];
+  layers.forEach(([k,col,op])=>{
+    s += `<polygon points="${poly(k)}" fill="${col}" fill-opacity="${op}" stroke="${col}" stroke-width="1.2" stroke-linejoin="round"/>`;
+  });
+  layers.forEach(([k,col])=>{
+    axes.forEach((ax,i)=>{ const [x,y]=P(i, norm(ax[k]));
+      s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.4" fill="${col}" stroke="var(--surface-1)" stroke-width="2"/>`; });
+  });
+  axes.forEach((ax,i)=>{
+    const [lx,ly]=P(i,1.2);
+    const an = Math.abs(lx-cx)<6? "middle" : (lx>cx? "start":"end");
+    s += `<text class="rdk" x="${lx.toFixed(1)}" y="${(ly-1).toFixed(1)}" text-anchor="${an}">${esc(ax.k)}</text>`;
+    s += `<text class="rds" x="${lx.toFixed(1)}" y="${(ly+CFS+1).toFixed(1)}" text-anchor="${an}">${esc(ax.sub)}</text>`;
+    // 축 전체를 손가락 대상으로
+    const [hx,hy]=P(i,.5);
+    s += `<circle cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" r="${(RR*0.42).toFixed(1)}" fill="transparent" data-tip="${esc(ax.tip||"")}"/>`;
   });
   s += `</svg>`;
   return s;
@@ -1871,7 +2004,7 @@ function paClass(code){
   if(RMAP[code] && RMAP[code].g==="onbase") return "ob";
   return "out";
 }
-const SPRAY_COLOR = {hit:"var(--s1)", xbh:"var(--s2)", out:"var(--neutral)", ob:"var(--s3)"};
+const SPRAY_COLOR = {hit:"var(--s1)", xbh:"var(--s2)", out:"var(--out-mark)", ob:"var(--s3)"};
 const SPRAY_LABEL = {hit:"단타", xbh:"장타(2·3루타·홈런)", out:"인플레이 아웃", ob:"출루(실책·야선)"};
 
 /* 타구 마커 크기 (viewBox 320 기준 반지름) */
@@ -1887,13 +2020,16 @@ function sprayChart(pas, lv, opt){
     pts.filter(p=>paClass(p.result)===cls).forEach(p=>{
       const z = zoneOf(p.zone, p._g? gameLevel(p._g) : lv);
       const tip = `<b>${esc(RMAP[p.result].ko)}</b><br>${esc(fmtDate(p._g? p._g.date : ""))} ${p.inning?p.inning+"회":""}<br>${esc(z.label)} · 약 ${Math.round(z.m)}m`;
-      inner += `<circle cx="${p.zone.x.toFixed(1)}" cy="${p.zone.y.toFixed(1)}" r="${R}" fill="${SPRAY_COLOR[cls]}" stroke="var(--surface-1)" stroke-width="${SW}" data-tip="${esc(tip)}"/>`;
+      // 아웃은 속 빈 원 — 색만이 아니라 모양으로도 구분됩니다
+      inner += (cls==="out")
+        ? `<circle cx="${p.zone.x.toFixed(1)}" cy="${p.zone.y.toFixed(1)}" r="${R}" fill="var(--surface-1)" fill-opacity=".55" stroke="${SPRAY_COLOR.out}" stroke-width="1.4" data-tip="${esc(tip)}"/>`
+        : `<circle cx="${p.zone.x.toFixed(1)}" cy="${p.zone.y.toFixed(1)}" r="${R}" fill="${SPRAY_COLOR[cls]}" stroke="var(--surface-1)" stroke-width="${SW}" data-tip="${esc(tip)}"/>`;
       // 누르기 쉽도록 보이지 않는 여유 영역
       inner += `<circle cx="${p.zone.x.toFixed(1)}" cy="${p.zone.y.toFixed(1)}" r="${(R*3).toFixed(2)}" fill="transparent" data-tip="${esc(tip)}"/>`;
     });
   });
   const legend = `<div class="legend">`+["xbh","hit","ob","out"].map(c=>
-    `<span><i class="dot" style="background:${SPRAY_COLOR[c]}"></i>${SPRAY_LABEL[c]}</span>`).join("")+`</div>`;
+    `<span><i class="dot${c==="out"?" hollow":""}" style="background:${SPRAY_COLOR[c]}"></i>${SPRAY_LABEL[c]}</span>`).join("")+`</div>`;
   return legend + fieldSVG(inner, fopt);
 }
 
@@ -2056,8 +2192,24 @@ function typeBadge(g){
 function resTag(res){
   return res? `<span class="tag ${res==="승"?"w":res==="패"?"l":"d"}">${res}</span>` : "";
 }
-function tile(lb, v, sub){
-  return `<div class="tile"><div class="lb">${esc(lb)}</div><div class="v">${v}${sub?`<small>${sub}</small>`:""}</div></div>`;
+function tile(lb, v, sub, spark){
+  return `<div class="tile"><div class="lb">${esc(lb)}</div><div class="v">${v}${sub?`<small>${sub}</small>`:""}</div>`
+    + (spark? sparkline(spark) : "") + `</div>`;
+}
+/* 타일 안 미니 추이선 — 값 배열만 받아 가로 60 x 세로 16 으로 그립니다 */
+function sparkline(vals, color){
+  const v = (vals||[]).filter(x=>x!=null && isFinite(x));
+  if(v.length < 3) return "";
+  const W=60, H=16, P=1.6;
+  const mn=Math.min.apply(null,v), mx=Math.max.apply(null,v), sp=(mx-mn)||1;
+  if(mx===0) return "";                                   // 전부 0이면 그리지 않습니다
+  const X=i=>P + (W-P*2)*i/(v.length-1);
+  const Y=x=> (mx===mn)? H/2 : (H-P - (H-P*2)*(x-mn)/sp);   // 값이 모두 같으면 가운데 수평선
+  const d = v.map((x,i)=>(i?"L":"M")+X(i).toFixed(1)+","+Y(x).toFixed(1)).join(" ");
+  const c = color || "var(--chart)";
+  return `<svg class="spk" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">`
+    + `<path d="${d}" fill="none" stroke="${c}" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round" opacity=".85"/>`
+    + `<circle cx="${X(v.length-1).toFixed(1)}" cy="${Y(v[v.length-1]).toFixed(1)}" r="1.8" fill="${c}"/></svg>`;
 }
 /* 상대 투수 표기 — 배번과 이름을 함께 보여 줍니다 */
 function pitcherLabel(p){
@@ -2110,9 +2262,13 @@ function viewHome(){
   });
   const trendTbl = tableHTML(["경기","상대","누적 "+METRICS[m].ko],
     gs.map((g,i)=>[fmtDate(g.date), esc(g.opponent||"-"), avg3(pts[i].y)]));
+  const career = battingOf(allPAs(S.games));            // 기준선 — 통산 기록
 
   // 최근 10경기 안타
   const recent = gs.slice(-10);
+  // 타일 안 미니 추이선 — 최근 12경기의 경기별 값
+  const perG = gs.slice(-12).map(g=>battingOf(g.pas));
+  const spk = k => perG.map(t=>t[k]);
   const hitCols = recent.map(g=>{ const t=battingOf(g.pas);
     return {label:fmtDate(g.date).slice(3), value:t.H,
       tip:`<b>${esc(fmtDate(g.date))} vs ${esc(g.opponent||"-")}</b><br>${t.AB}타수 ${t.H}안타 ${t.RBI}타점<br>타율 ${avg3(t.AVG)}`};
@@ -2127,13 +2283,18 @@ function viewHome(){
       + Object.keys(METRICS).map(k=>`<button data-act="metric" data-v="${k}" aria-pressed="${m===k}">${METRICS[k].ko}</button>`).join("")
       + `</div></div></div>`
   + `<div class="tiles" style="margin-bottom:12px">`
-      + tile("경기", gs.length, "G") + tile("타점", b.RBI) + tile("득점", b.R)
-      + tile("볼넷", b.BB) + tile("삼진", b.SO) + tile("도루", b.SB, (b.SB+b.CS)? "/"+(b.SB+b.CS) : "")
+      + tile("경기", gs.length, "G")
+      + tile("타점", b.RBI, "", spk("RBI")) + tile("득점", b.R, "", spk("R"))
+      + tile("볼넷", b.BB, "", spk("BB")) + tile("삼진", b.SO, "", spk("SO"))
+      + tile("도루", b.SB, (b.SB+b.CS)? "/"+(b.SB+b.CS) : "", spk("SB"))
     + `</div>`
   + chartCard("누적 "+METRICS[m].ko+" 추이", "경기를 치를수록 지표가 수렴하는 흐름 · 마지막 값이 현재 시즌 기록",
-      lineChart([{pts, color:"var(--chart)"}], {aria:"누적 "+METRICS[m].ko+" 추이", fmt:avg3}), trendTbl)
+      lineChart([{pts, color:"var(--chart)"}], {aria:"누적 "+METRICS[m].ko+" 추이", fmt:avg3,
+        ref:{v:career[mk], label:"통산 "+avg3(career[mk])}}), trendTbl)
   + chartCard("최근 경기 안타", recent.length+"경기 · 경기당 안타 수",
-      colChart(hitCols, {aria:"경기별 안타 수", labelTop:true, fmt:v=>String(Math.round(v))}),
+      colChart(hitCols, {aria:"경기별 안타 수", labelTop:true, fmt:v=>String(Math.round(v)),
+        ref:{v: recent.length? hitCols.reduce((a,d)=>a+d.value,0)/recent.length : null,
+             label:"평균 "+(recent.length? (hitCols.reduce((a,d)=>a+d.value,0)/recent.length).toFixed(1):"-")}}),
       tableHTML(["경기","상대","타수","안타","타점","타율"], recent.map(g=>{const t=battingOf(g.pas);
         return [fmtDate(g.date), esc(g.opponent||"-"), t.AB, t.H, t.RBI, avg3(t.AVG)];})))
   + `<div class="card"><div class="hd"><div style="flex:1"><h3>최근 경기</h3></div>
@@ -2251,6 +2412,97 @@ function viewGame(id){
 `;
 }
 
+
+/* ------------------------- 유형 카드 (레이더) -------------------------
+   각 축은 0~100% 로 환산해 그립니다. 리그 평균 자료가 없으므로 기준(100%)은
+   지표별 고정 상한을 쓰고, 기록이 그보다 좋으면 상한을 그 값까지 넓힙니다. */
+function radarCard(title, cap, rows, two, aria){
+  const axes = rows.map(r=>({k:r.k, sub:r.sub, a:r.na, b:r.nb,
+    tip:`<b>${esc(r.k)}</b> ${esc(r.sub)}<br>${two? "선택 범위 "+r.va+" · 통산 "+r.vb : r.va}`}));
+  const head = two? ["축","지표","선택 범위","통산","100% 기준"] : ["축","지표","통산","100% 기준"];
+  const body = rows.map(r=> two? [esc(r.k), esc(r.sub), r.va, r.vb, r.base]
+                                : [esc(r.k), esc(r.sub), r.va, r.base]);
+  const legend = two
+    ? `<div class="legend"><span><i class="dot" style="background:var(--chart)"></i>선택 범위</span>`
+      + `<span><i class="dot" style="background:var(--s1)"></i>통산</span></div>`
+    : "";
+  return `<div class="card"><div class="hd"><div style="flex:1"><h3>${esc(title)}</h3>
+      <div class="cap">${cap}</div></div></div>
+    ${legend}${radarChart(axes, {two, aria})}
+    <div style="margin-top:10px">${tableHTML(head, body)}</div></div>`;
+}
+/* 고정 상한 — 기록이 넘으면 그 값까지 넓힙니다 */
+function rdMax(base, ...vs){
+  const m = vs.filter(v=>v!=null && isFinite(v));
+  return Math.max(base, ...(m.length? m : [0]));
+}
+const rdN  = (v, mx) => (v==null||!isFinite(v))? 0 : clamp(v/mx, 0, 1);   // 클수록 좋은 지표
+const rdNi = (v, worst) => (v==null||!isFinite(v))? 0 : clamp(1 - v/worst, 0, 1); // 작을수록 좋은 지표
+
+/* 타격 유형 */
+function batRadar(gs, b){
+  const cg = S.games.length, sg = gs.length;
+  const c  = battingOf(allPAs(S.games));
+  const two = !(S.ui.year==="all" && (S.ui.gtype||"all")==="all");
+  if(!b.PA && !c.PA) return "";
+  const rpg = (t,g) => g? t.RBI/g : null;
+  const M = {
+    avg:  rdMax(0.500, b.AVG, c.AVG),
+    obp:  rdMax(0.600, b.OBP, c.OBP),
+    slg:  rdMax(1.000, b.SLG, c.SLG),
+    bbk:  rdMax(2.00,  b.BBK, c.BBK),
+    rpg:  rdMax(2.00,  rpg(b,sg), rpg(c,cg))
+  };
+  const rows = [
+    {k:"정확성", sub:"AVG",     na:rdN(b.AVG,M.avg), nb:rdN(c.AVG,M.avg),
+      va:avg3(b.AVG), vb:avg3(c.AVG), base:avg3(M.avg)},
+    {k:"출루",   sub:"OBP",     na:rdN(b.OBP,M.obp), nb:rdN(c.OBP,M.obp),
+      va:avg3(b.OBP), vb:avg3(c.OBP), base:avg3(M.obp)},
+    {k:"장타",   sub:"SLG",     na:rdN(b.SLG,M.slg), nb:rdN(c.SLG,M.slg),
+      va:avg3(b.SLG), vb:avg3(c.SLG), base:avg3(M.slg)},
+    {k:"선구안", sub:"BB/K",    na:rdN(b.BBK,M.bbk), nb:rdN(c.BBK,M.bbk),
+      va:fx2(b.BBK),  vb:fx2(c.BBK),  base:fx2(M.bbk)},
+    {k:"컨택",   sub:"1−K%",    na:rdN(b.PSO,1),     nb:rdN(c.PSO,1),
+      va:pct1(b.PSO), vb:pct1(c.PSO), base:"100.0%"},
+    {k:"생산",   sub:"타점/경기", na:rdN(rpg(b,sg),M.rpg), nb:rdN(rpg(c,cg),M.rpg),
+      va:fx2(rpg(b,sg)), vb:fx2(rpg(c,cg)), base:fx2(M.rpg)}
+  ];
+  const cap = two? `${gtypeLabel()} ${sg}경기 ${b.PA}타석 · 통산 ${cg}경기 ${c.PA}타석`
+                 : `통산 ${cg}경기 ${c.PA}타석`;
+  if(!two) rows.forEach(r=>{ r.na=r.nb; r.va=r.vb; });
+  return radarCard("타격 유형", cap, rows, two, "타격 유형 레이더 차트");
+}
+
+/* 투구 유형 */
+function pitRadar(pt){
+  const call = pitchingOf(allDef(S.games));
+  const two = !(S.ui.year==="all" && (S.ui.gtype||"all")==="all");
+  const ipg = t => t.APP? (t.outs/3)/t.APP : null;
+  const M = {
+    stp: rdMax(0.70, pt.STP, call.STP),
+    k9:  rdMax(12.0, pt.K9,  call.K9),
+    ipg: rdMax(5.00, ipg(pt), ipg(call))
+  };
+  const rows = [
+    {k:"제구",      sub:"스트라이크%", na:rdN(pt.STP,M.stp),  nb:rdN(call.STP,M.stp),
+      va:pct1(pt.STP), vb:pct1(call.STP), base:pct1(M.stp)},
+    {k:"탈삼진",    sub:"K/9",        na:rdN(pt.K9,M.k9),    nb:rdN(call.K9,M.k9),
+      va:fx2(pt.K9),   vb:fx2(call.K9),   base:fx2(M.k9)},
+    {k:"볼넷 억제", sub:"BB/9",       na:rdNi(pt.BB9,8),     nb:rdNi(call.BB9,8),
+      va:fx2(pt.BB9),  vb:fx2(call.BB9),  base:"0.00"},
+    {k:"피안타 억제", sub:"H/9",      na:rdNi(pt.H9,14),     nb:rdNi(call.H9,14),
+      va:fx2(pt.H9),   vb:fx2(call.H9),   base:"0.00"},
+    {k:"이닝 소화", sub:"이닝/등판",   na:rdN(ipg(pt),M.ipg), nb:rdN(ipg(call),M.ipg),
+      va:fx2(ipg(pt)), vb:fx2(ipg(call)), base:fx2(M.ipg)},
+    {k:"실점 억제", sub:"ERA",        na:rdNi(pt.ERA,12),    nb:rdNi(call.ERA,12),
+      va:fx2(pt.ERA),  vb:fx2(call.ERA),  base:"0.00"}
+  ];
+  const cap = two? `${gtypeLabel()} ${pt.APP}등판 ${fmtInn(pt.outs)}이닝 · 통산 ${call.APP}등판 ${fmtInn(call.outs)}이닝`
+                 : `통산 ${call.APP}등판 ${fmtInn(call.outs)}이닝`;
+  if(!two) rows.forEach(r=>{ r.na=r.nb; r.va=r.vb; });
+  return radarCard("투구 유형", cap, rows, two, "투구 유형 레이더 차트");
+}
+
 /* ------------------------------- 분석 ------------------------------- */
 function viewStats(){
   const gs = scopedGames(), pas = allPAs(gs), b = battingOf(pas), defs = allDef(gs);
@@ -2259,7 +2511,7 @@ function viewStats(){
 
   // 결과 분포
   const dist = RESULTS.map(r=>({label:r.ko, value:pas.filter(p=>p.result===r.c).length,
-      color: r.g==="hit"?"var(--chart)": r.g==="onbase"?"var(--s3)":"var(--neutral)"}))
+      color: r.g==="hit"?"var(--chart)": r.g==="onbase"?"var(--s3)":"var(--muted-mark)"}))
     .filter(d=>d.value>0).sort((a,c)=>c.value-a.value);
   dist.forEach(d=>{ d.tip = `<b>${esc(d.label)}</b><br>${d.value}회 · 전체 타석의 ${pct1(d.value/Math.max(pas.length,1))}`; });
 
@@ -2318,7 +2570,7 @@ function viewStats(){
   // 수비 결과 분포
   const defPlays = defs.filter(d=>d.result);
   const defDist = DEF_RESULTS.map(r=>({label:r.sk||r.ko, value:defPlays.filter(d=>d.result===r.c).length,
-      color: r.g==="out"?"var(--s3)": r.g==="err"?"var(--crit)":"var(--neutral)"}))
+      color: r.g==="out"?"var(--s3)": r.g==="err"?"var(--crit)":"var(--muted-mark)"}))
     .filter(d=>d.value>0).sort((a,c)=>c.value-a.value);
   defDist.forEach(d=>{ d.tip = `<b>${esc(d.label)}</b><br>${d.value}회 · 수비 기록의 ${pct1(d.value/Math.max(defPlays.length,1))}`; });
 
@@ -2351,6 +2603,7 @@ function viewStats(){
       <div class="card"><div class="hd"><div style="flex:1"><h3>타격 — 세이버메트릭스</h3>
         <div class="cap">출루·장타 가치로 다시 본 지표</div></div></div>${bSaber}</div>
     </div>`
+  + batRadar(gs, b)
   + ((b.SB+b.CS)? `<div class="card"><div class="hd"><div style="flex:1"><h3>도루</h3>
       <div class="cap">도루 시도 ${b.SB+b.CS}회</div></div></div>
       <div class="tiles">${tile("시도", b.SB+b.CS)+tile("성공", b.SB)+tile("실패", b.CS)+tile("성공률", pct1(b.SBP))
@@ -2368,20 +2621,20 @@ function viewStats(){
       tableHTML(["깊이","타구"], depth.map(d=>[d.label, d.value])))
   + `</div>`
   + chartCard("타석 결과 분포", `총 ${pas.length}타석의 결과별 횟수`,
-      hbarChart(dist, {aria:"타석 결과 분포", left:78, fmt:v=>String(Math.round(v))}),
+      hbarChart(dist, {aria:"타석 결과 분포", left:78, total:pas.length, fmt:v=>String(Math.round(v))}),
       tableHTML(["결과","횟수","비중"], dist.map(d=>[d.label, d.value, pct1(d.value/Math.max(pas.length,1))])))
   + (innings.length? chartCard("이닝별 타율", `타석이 있었던 이닝만 표시 · ${esc(LEVELS[curLevel()].ko)} 정규 ${regInnings(curLevel())}이닝`,
-      colChart(innings, {aria:"이닝별 타율", fmt:avg3}),
+      colChart(innings, {aria:"이닝별 타율", fmt:avg3, ref:{v:b.AVG, label:"전체 "+avg3(b.AVG)}}),
       tableHTML(["이닝","타수","안타","타율"], innings.map(d=>[d.label, d._t.AB, d._t.H, avg3(d._t.AVG)]))) : "")
   + (months.length>1? chartCard("월별 타율", "월 단위 시즌 흐름",
-      colChart(months, {aria:"월별 타율", fmt:avg3}),
+      colChart(months, {aria:"월별 타율", fmt:avg3, ref:{v:b.AVG, label:"전체 "+avg3(b.AVG)}}),
       tableHTML(["월","타수","안타","타점","타율","OPS"], months.map(d=>[d.label, d._t.AB, d._t.H, d._t.RBI, avg3(d._t.AVG), avg3(d._t.OPS)]))) : "")
   + (pTeams.length? `<div class="card"><div class="hd"><div style="flex:1"><h3>상대 투수별 성적</h3>
       <div class="cap">${pYears}개 시즌 · ${pTeams.length}개 팀 · 투수 ${pitcherN}명</div></div></div>
       ${vsPitcherTable(pTeams)}</div>` : "")
   + pitchingSection(gs, defs)
   + (defDist.length? chartCard("수비 결과 분포", `결과를 입력한 수비 기록 ${defPlays.length}건`,
-      hbarChart(defDist, {aria:"수비 결과 분포", left:82, fmt:v=>String(Math.round(v))}),
+      hbarChart(defDist, {aria:"수비 결과 분포", left:82, total:defPlays.length, fmt:v=>String(Math.round(v))}),
       tableHTML(["결과","횟수","비중"], defDist.map(d=>[d.label, d.value, pct1(d.value/Math.max(defPlays.length,1))]))) : "")
   + (posRows.length? `<div class="card"><div class="hd"><div style="flex:1"><h3>포지션별 수비</h3>
       <div class="cap">수비율 = (자살+보살) / (자살+보살+실책)</div></div></div>
@@ -2428,7 +2681,7 @@ function pitchingSection(gs, defs){
     const dt = e.g? e.g.date : "";
     const lb = fmtDate(dt).slice(3);
     eraPts.push({x:lb, y:cera, tip:`<b>${esc(fmtDate(dt))} vs ${esc((e.g&&e.g.opponent)||"-")}</b><br>이 경기 ${fmtInn(e.outs)}이닝 ${e.ER}자책${e.dec? " · "+decKo(e.dec):""}<br>누적 ERA ${fx2(cera)} · WHIP ${fx2(cwhip)}`});
-    whipPts.push({x:lb, y:cwhip, tip:`누적 WHIP ${fx2(cwhip)}`});
+    whipPts.push({x:lb, y:cwhip, tip:`<b>${esc(fmtDate(dt))} vs ${esc((e.g&&e.g.opponent)||"-")}</b><br>누적 WHIP ${fx2(cwhip)} · 피안타 ${aH} 볼넷 ${aBB}`});
     gameRows.push([fmtDate(dt), esc((e.g&&e.g.opponent)||"-"), fmtInn(e.outs), e.TBF||"-", e.H, e.BB, e.SO, e.R, e.ER,
       e.NP||"-", esc(e.dec? decKo(e.dec):"-"), fx2(e.ERA)]);
   });
@@ -2460,10 +2713,15 @@ function pitchingSection(gs, defs){
       <div class="card"><div class="hd"><div style="flex:1"><h3>투수 — 세이버메트릭스</h3>
         <div class="cap">운·수비 영향을 덜 받는 지표 (FIP 상수 ${FIP_C.toFixed(2)})</div></div></div>${saber}</div>
     </div>`
-  + (eraPts.length? chartCard("누적 평균자책 · WHIP 추이", "등판을 거치며 지표가 수렴하는 흐름 · 마지막 값이 현재 기록",
-      `<div class="legend"><span><i style="background:var(--chart)"></i>누적 ERA</span><span><i style="background:var(--s1)"></i>누적 WHIP</span></div>`
-      + lineChart([{pts:eraPts, color:"var(--chart)"},{pts:whipPts, color:"var(--s1)"}], {aria:"누적 ERA·WHIP 추이", fmt:fx2}),
-      tableHTML(["경기","상대","이닝","타자","피안타","볼넷","삼진","실점","자책","투구수","승패","ERA"], gameRows)) : "")
+  + pitRadar(pt)
+  /* ERA(0~10대)와 WHIP(0~3대)은 범위가 달라 한 축에 겹치면 WHIP이 바닥에 눌립니다 — 따로 그립니다 */
+  + (eraPts.length? `<div class="grid g2">`
+      + chartCard("누적 평균자책 (ERA)", "등판을 거치며 수렴하는 흐름 · 마지막 값이 현재 기록",
+          lineChart([{pts:eraPts, color:"var(--chart)"}], {aria:"누적 ERA 추이", fmt:fx2, height:140}),
+          tableHTML(["경기","상대","이닝","타자","피안타","볼넷","삼진","실점","자책","투구수","승패","ERA"], gameRows))
+      + chartCard("누적 WHIP", "이닝당 출루 허용 · 마지막 값이 현재 기록",
+          lineChart([{pts:whipPts, color:"var(--s1)"}], {aria:"누적 WHIP 추이", fmt:fx2, height:140}))
+      + `</div>` : "")
   + (pt.pitches.length? chartCard("투구 코스 (스트라이크 존)", `기록된 ${pt.pitches.length}구 · 존 안 ${pt.pitches.length-heat.outside}구 / 존 밖 ${heat.outside}구 · 점을 누르면 상세 표시`,
       zoneScatter(pt.pitches),
       tableHTML(["날짜","구종","결과","코스","구속"], pt.pitches.map(q=>[
@@ -2474,11 +2732,11 @@ function pitchingSection(gs, defs){
       tableHTML(["코스","투구","비중"], ZCELL_KO.map((k,i)=>[k, heat.cells[i], pct1(heat.cells[i]/Math.max(heat.tot,1))]).concat([["존 밖", heat.outside, pct1(heat.outside/Math.max(heat.tot,1))]]))) : "")
   + `<div class="grid g2">`
   + (ptypes.length? chartCard("구종별 투구", `구종을 입력한 투구 ${ptypes.reduce((a,x)=>a+x.value,0)}구`,
-      hbarChart(ptypes, {aria:"구종별 투구 수", left:76, fmt:v=>String(Math.round(v))}),
+      hbarChart(ptypes, {aria:"구종별 투구 수", left:76, total:pt.pitches.length, fmt:v=>String(Math.round(v))}),
       tableHTML(["구종","투구","비중","스트라이크%","헛스윙%"], ptypes.map(x=>[x.label, x.value,
         pct1(x.value/Math.max(pt.pitches.length,1)), pct1(x.value? x._st/x.value:null), pct1(x.value? x._sw/x.value:null)]))) : "")
   + (pres.length? chartCard("투구 결과 분포", `스트라이크 ${pt.ST}구 (${pct1(pt.STP)}) · 볼 ${pt.NP-pt.ST}구`,
-      hbarChart(pres, {aria:"투구 결과 분포", left:76, fmt:v=>String(Math.round(v))}),
+      hbarChart(pres, {aria:"투구 결과 분포", left:76, total:pt.pitches.length, fmt:v=>String(Math.round(v))}),
       tableHTML(["결과","투구","비중"], pres.map(x=>[x.label, x.value, pct1(x.value/Math.max(pt.pitches.length,1))]))) : "")
   + `</div>`
   + `<div class="card"><div class="hd"><div style="flex:1"><h3>경기별 투수 기록</h3>
@@ -3122,8 +3380,16 @@ function ghCard(){
   const c = ghCfg();
   const on = ghOn();
   const t = x => x? new Date(x).toLocaleString("ko-KR") : "없음";
+  /* 연결 · 해제 · 진단은 카드 오른쪽 위에 아이콘으로 모읍니다 (길게 누르거나 마우스를 올리면 이름 표시).
+     연결되어 있으면 첫 아이콘이 초록색이 됩니다. */
+  const hdBtns = `<div class="hdbtns">
+      <button class="iconbtn sm${on?" lnkon":""}" data-act="ghSheet"
+        title="${on? "연결됨 — 연결 정보 수정" : "저장소 연결"}" aria-label="${on? "연결됨 — 연결 정보 수정" : "저장소 연결"}">${IC_LINK2}</button>
+      ${on? `<button class="iconbtn sm" data-act="ghForget" title="연결 해제" aria-label="연결 해제">${IC_UNLINK}</button>` : ""}
+      <button class="iconbtn sm" data-act="ghDiag" title="연결 진단" aria-label="연결 진단">${IC_DIAG}</button>
+    </div>`;
   return `<div class="card"><div class="hd"><div style="flex:1"><h3>GitHub 기록 공유</h3>
-      <div class="cap">기록만 저장소에 올림 (동영상 파일 제외)</div></div></div>`
+      <div class="cap">기록만 저장소에 올림 (동영상 파일 제외)</div></div>${hdBtns}</div>`
    + (on
     ? `<div class="hint" style="margin-bottom:10px">
          저장소 <b>${esc(c.repo)}</b> · ${esc(c.branch)} · <b>${esc(c.path)}</b><br>
@@ -3133,23 +3399,20 @@ function ghCard(){
             ? `<span style="color:var(--warn);font-weight:650">올리지 않은 변경 있음</span>`
             : `<span style="color:var(--good);font-weight:650">저장소와 같은 상태</span>`}
          ${ghState.err? `<br><span style="color:var(--crit)">최근 오류: ${esc(ghState.err)}</span>`:""}</div>
-       <div class="btnrow">
-         ${ghCanPush()? `<button class="btn pri" data-act="ghPushNow">지금 저장</button>`:""}
-         <button class="btn ${ghCanPush()?"":"pri"}" data-act="ghPullNow">지금 받기</button>
-         <button class="iconbtn" data-act="ghSheet" title="연결 정보 수정" aria-label="연결 정보 수정">${ICON_EDIT}</button>
-         <button class="btn sm" data-act="ghDiag">연결 진단</button>
-         <button class="btn" data-act="ghForget">연결 해제</button>
+       <div class="iorow">
+         ${ghCanPush()? `<button class="iobtn" data-act="ghPushNow" title="지금 저장" aria-label="지금 저장">
+           <span class="ic">${ICON_SAVE}</span><span class="lb">Save</span><span class="sb">지금 저장</span></button>`:""}
+         <button class="iobtn" data-act="ghPullNow" title="지금 받기" aria-label="지금 받기">
+           <span class="ic">${ICON_OPEN}</span><span class="lb">Down</span><span class="sb">지금 받기</span></button>
        </div>
-       <div class="btnrow" style="margin-top:8px">
+       <div class="btnrow" style="margin-top:10px">
          ${ghCanPush()? togBtn("ghAuto", c.auto, "바뀌면 자동 저장") : ""}
          ${ghCanPush()? togBtn("ghWifi", c.wifi, "와이파이에서만") : ""}
          ${ghCanPush()? "" : togBtn("ghAutoPull", c.autoPull, "앱 열 때 자동으로 받기")}
        </div>
        <div class="hint" style="margin-top:10px">오프라인에서는 이 기기에 저장 · 연결되면 바뀐 내용만 올림</div>`
     : `<div class="hint" style="margin-bottom:10px">저장소를 연결하면 기록 자동 저장 · 다른 사람과 같은 기록 공유</div>
-       <div class="btnrow"><button class="btn pri" data-act="ghSheet">저장소 연결</button>
-         <button class="btn sm" data-act="ghDiag">연결 진단</button></div>
-       <div class="hint" style="margin-top:10px"><b>비공개 저장소</b> 권장</div>`)
+       <div class="hint"><b>비공개 저장소</b> 권장</div>`)
    + `</div>`;
 }
 
