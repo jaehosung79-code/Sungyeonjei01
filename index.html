@@ -204,7 +204,10 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
 .dcell.sel{background:var(--surface-2);box-shadow:0 0 0 1.5px var(--accent-ink) inset;border-color:var(--accent-ink)}
 .dcell .dic{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px;line-height:0}
 .dcell .dic svg{width:14px;height:14px;display:block;color:var(--accent-ink)}
-.dcell .gdot{font-size:9px;font-weight:750;color:var(--surface-1);background:var(--accent-ink);border-radius:999px;padding:1px 5px;line-height:1.5}
+/* 경기가 있는 날 — 일정 아이콘과 구분되도록 색을 채운 야구장 아이콘으로 표시합니다 */
+.dcell .gdot{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex:none;
+  border-radius:999px;background:var(--accent-ink)}
+.dcell .gdot svg{width:11px;height:11px;color:var(--surface-1);stroke-width:2.1}
 .dcell .more{font-size:9.5px;color:var(--text-3);font-weight:650}
 /* 일정 목록 줄의 아이콘 자리 */
 .pic{flex:none;width:36px;height:36px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;
@@ -586,11 +589,15 @@ body.ro [data-act="newGame"], body.ro [data-act="editGame"], body.ro [data-act="
 body.ro [data-act="newPA"],   body.ro [data-act="delPA"],
 body.ro [data-act="newDef"],  body.ro [data-act="delDef"],
 body.ro [data-act="newVideo"],body.ro [data-act="editVideo"], body.ro [data-act="delVideo"],
+body.ro [data-act="newPlan"], body.ro [data-act="delPlan"],
 body.ro [data-act="relinkVideos"], body.ro [data-act="relinkOne"],
 body.ro [data-act="saveProfile"],  body.ro [data-act="pfAddYear"], body.ro [data-act="pfDelYear"],
 body.ro [data-act="wipe"],    body.ro [data-act="openMenu"],
 body.ro [data-act="ghPushNow"]{ display:none!important }
 body.ro .row[data-act="editPA"] .r, body.ro .row[data-act="editDef"] .r{ visibility:hidden }
+/* 보기 모드 — 일정 줄은 눌러도 수정 시트가 열리지 않게 합니다 */
+body.ro .row .main[data-act="editPlan"]{ pointer-events:none }
+body.ro .row:has(.main[data-act="editPlan"]){ cursor:default }
 .iorow{display:flex;gap:10px}
 .iobtn{
   flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
@@ -789,10 +796,10 @@ const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
 const uid = ()=> Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 /* ---- 일정 아이콘 ---- */
 const PLAN_ICONS = [
-  {c:"run",   ko:"런닝",   d:'<circle cx="15.2" cy="4.9" r="2"/><path d="M6.4 20.4 9.7 16l-2.1-3 1.3-4.4 3.7-1.1 2.6 2.7 3.4 1"/><path d="m12.6 11.3 2 3.6.9 5.1"/><path d="M7.6 9.7 5 11.5 4 14.3"/>'},
-  {c:"ball",  ko:"레슨",   d:'<circle cx="12" cy="12" r="8.2"/><path d="M7.5 5.5C9.3 7.2 10.3 9.5 10.3 12s-1 4.8-2.8 6.5"/><path d="M16.5 5.5c-1.8 1.7-2.8 4-2.8 6.5s1 4.8 2.8 6.5"/>'},
-  {c:"field", ko:"야구장", d:'<path d="M3.6 17.6C3.6 10.7 7.3 4.8 12 4.8s8.4 5.9 8.4 12.8"/><path d="M12 20.6 7.6 16.2 12 11.8l4.4 4.4z"/><path d="M12 11.8V8.4"/>'},
-  {c:"gym",   ko:"헬스장", d:'<path d="M6.6 8.9v6.2M4.1 10.4v3.2M17.4 8.9v6.2M19.9 10.4v3.2M6.6 12h10.8"/>'}
+  {c:"run",   ko:"RL",     d:'<circle cx="15.2" cy="4.9" r="2"/><path d="M6.4 20.4 9.7 16l-2.1-3 1.3-4.4 3.7-1.1 2.6 2.7 3.4 1"/><path d="m12.6 11.3 2 3.6.9 5.1"/><path d="M7.6 9.7 5 11.5 4 14.3"/>'},
+  {c:"ball",  ko:"BL",     d:'<circle cx="12" cy="12" r="8.2"/><path d="M7.5 5.5C9.3 7.2 10.3 9.5 10.3 12s-1 4.8-2.8 6.5"/><path d="M16.5 5.5c-1.8 1.7-2.8 4-2.8 6.5s1 4.8 2.8 6.5"/>'},
+  {c:"field", ko:"Game",   d:'<path d="M3.6 17.6C3.6 10.7 7.3 4.8 12 4.8s8.4 5.9 8.4 12.8"/><path d="M12 20.6 7.6 16.2 12 11.8l4.4 4.4z"/><path d="M12 11.8V8.4"/>'},
+  {c:"gym",   ko:"GYM",  d:'<path d="M6.6 8.9v6.2M4.1 10.4v3.2M17.4 8.9v6.2M19.9 10.4v3.2M6.6 12h10.8"/>'}
 ];
 const PIMAP = {}; PLAN_ICONS.forEach(x=> PIMAP[x.c]=x);
 function planIcon(c, size){
@@ -2649,7 +2656,7 @@ function viewPlans(){
     const ps = plansOn(ds), gm = gamesOn(ds);
     const wd = new Date(ds+"T00:00:00").getDay();
     const cls = ["dcell", ds.slice(0,7)!==m? "out":"", ds===tdy? "tdy":"", ds===sel? "sel":"", wd===0? "sun":""].filter(Boolean).join(" ");
-    const marks = (gm.length? `<span class="gdot">경기</span>` : "")
+    const marks = (gm.length? `<span class="gdot" title="경기">${planIcon("field", 11)}</span>` : "")
       + ps.slice(0,3).map(x=> planIcon(x.icon, 14)).join("")
       + (ps.length>3? `<span class="more">+${ps.length-3}</span>` : "");
     return `<button type="button" class="${cls}" data-act="pickDay" data-v="${ds}" aria-pressed="${ds===sel}"
@@ -2694,8 +2701,8 @@ function viewPlans(){
       <div class="hd"><div style="flex:1"><h3>${esc(fmtDateLong(sel))}</h3>
         <div class="cap">${list.length? "일정 "+list.length+"개" : "일정 없음"}${gsel.length? " · 경기 "+gsel.length+"건" : ""}</div></div>
         ${addBtn("newPlan", `data-v="${sel}"`, "일정 추가")}</div>
-      <div class="list">${rows || `<div class="hint">이 날은 비어 있음 · 오른쪽 위 + 로 추가</div>`}</div>
-      <button class="btn pri block nb" data-act="newPlan" data-v="${sel}" style="margin-top:10px">+ 일정 추가</button>
+      <div class="list">${rows || `<div class="hint">이 날은 비어 있음${readOnly()? "" : " · 오른쪽 위 + 로 추가"}</div>`}</div>
+      ${readOnly()? "" : `<button class="btn pri block nb" data-act="newPlan" data-v="${sel}" style="margin-top:10px">+ 일정 추가</button>`}
     </div>`;
 }
 
