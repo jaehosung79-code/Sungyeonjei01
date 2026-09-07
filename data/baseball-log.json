@@ -1202,6 +1202,18 @@
    ],
    "def": [
     {
+     "id": "mtqkqrvebc1il",
+     "pos": "2B",
+     "inning": 1,
+     "result": "INN",
+     "innings": "",
+     "note": "",
+     "po": 0,
+     "a": 0,
+     "e": 0,
+     "dp": 0
+    },
+    {
      "id": "mtqi637foav1d",
      "pos": "2B",
      "inning": 5,
@@ -1261,6 +1273,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-07T00:30:22.762Z",
+ "savedAt": "2026-09-07T01:41:08.643Z",
  "by": "성연제"
 }
