@@ -170,7 +170,7 @@ nav.tabs{
   background:color-mix(in srgb, var(--surface-1) 92%, transparent);
   backdrop-filter:saturate(180%) blur(14px);
   border-top:1px solid var(--border);
-  display:grid;grid-template-columns:repeat(4,1fr);
+  display:grid;grid-template-columns:repeat(5,1fr);
   padding-bottom:env(safe-area-inset-bottom);
 }
 nav.tabs button{
@@ -182,6 +182,41 @@ nav.tabs button .ic{display:flex;align-items:center;justify-content:center;heigh
 nav.tabs button .ic svg{width:22px;height:22px;display:block}
 nav.tabs button[aria-current="page"] .ic svg{stroke-width:1.9}
 nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
+
+/* ---------- 일정 달력 ---------- */
+.calhd{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.calhd .m{flex:1;text-align:center;font-size:15.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.wkhd{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+.wkhd span{text-align:center;font-size:11.5px;color:var(--text-3);font-weight:650;padding:2px 0}
+.wkhd span.sun{color:var(--crit)}
+.wkhd span.sat{color:var(--accent-ink)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dcell{
+  position:relative;min-height:60px;border:1px solid var(--border);border-radius:10px;
+  background:var(--surface-1);cursor:pointer;padding:5px 2px 4px;color:var(--text-1);
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+}
+.dcell .dn{font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.15}
+.dcell.sun .dn{color:var(--crit)}
+.dcell.out{opacity:.35}
+.dcell.tdy{border-color:var(--accent-ink)}
+.dcell.tdy .dn{color:var(--accent-ink);font-weight:750}
+.dcell.sel{background:var(--surface-2);box-shadow:0 0 0 1.5px var(--accent-ink) inset;border-color:var(--accent-ink)}
+.dcell .dic{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px;line-height:0}
+.dcell .dic svg{width:14px;height:14px;display:block;color:var(--accent-ink)}
+.dcell .gdot{font-size:9px;font-weight:750;color:var(--surface-1);background:var(--accent-ink);border-radius:999px;padding:1px 5px;line-height:1.5}
+.dcell .more{font-size:9.5px;color:var(--text-3);font-weight:650}
+/* 일정 목록 줄의 아이콘 자리 */
+.pic{flex:none;width:36px;height:36px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;
+  background:var(--surface-2);color:var(--accent-ink)}
+.pic svg{width:20px;height:20px;display:block}
+/* 아이콘 고르기 */
+.icpick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.icbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  padding:11px 4px;border:1px solid var(--border);border-radius:12px;background:var(--surface-1);
+  cursor:pointer;font-size:12px;color:var(--text-2);min-height:74px}
+.icbtn svg{width:24px;height:24px;display:block}
+.icbtn[aria-pressed="true"]{border-color:var(--accent-ink);color:var(--accent-ink);background:var(--surface-2);font-weight:650}
 
 /* ---------- cards ---------- */
 .card{
@@ -265,6 +300,9 @@ input:focus,select,textarea:focus{outline:2px solid color-mix(in srgb,var(--s1) 
 select{outline:none;-webkit-appearance:none;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--text-3) 50%),linear-gradient(135deg,var(--text-3) 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:36px}
 .f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .f3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+/* 경기 정보의 "포지션별 수비 이닝" 한 줄 — 포지션 · 이닝 · 지우기 */
+.dirow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;margin-bottom:8px}
+.dirow select{min-width:0}
 
 .stepper{display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface-1)}
 .stepper button{width:46px;min-height:46px;border:0;background:var(--surface-2);font-size:19px;cursor:pointer;flex:0 0 auto}
@@ -610,6 +648,7 @@ body.ro .row[data-act="editPA"] .r, body.ro .row[data-act="editDef"] .r{ visibil
 <nav class="tabs" role="tablist" aria-label="주요 화면">
   <button data-nav="home"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.4 12 4l8 6.4V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z"/></svg></span>홈</button>
   <button data-nav="games"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 9.3h17M9.4 9.3v10.2"/></svg></span>경기</button>
+  <button data-nav="plans"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.6"/><path d="M3.5 9.6h17M8.4 3.4v3.2M15.6 3.4v3.2"/></svg></span>일정</button>
   <button data-nav="stats"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.8 15.6 9.3 9.9l3.5 3.4L20 6.2"/><path d="M15.2 6.2H20v4.7"/></svg></span>분석</button>
   <button data-nav="videos"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="3.2"/><path d="M10.4 9.6 15.6 12l-5.2 2.4z"/></svg></span>영상</button>
 </nav>
@@ -748,12 +787,51 @@ const LEVEL_KEYS = ["elem","mid","high","univ"];
 const $  = (s,r)=> (r||document).querySelector(s);
 const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
 const uid = ()=> Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+/* ---- 일정 아이콘 ---- */
+const PLAN_ICONS = [
+  {c:"run",   ko:"런닝",   d:'<circle cx="15.2" cy="4.9" r="2"/><path d="M6.4 20.4 9.7 16l-2.1-3 1.3-4.4 3.7-1.1 2.6 2.7 3.4 1"/><path d="m12.6 11.3 2 3.6.9 5.1"/><path d="M7.6 9.7 5 11.5 4 14.3"/>'},
+  {c:"ball",  ko:"야구공", d:'<circle cx="12" cy="12" r="8.2"/><path d="M7.5 5.5C9.3 7.2 10.3 9.5 10.3 12s-1 4.8-2.8 6.5"/><path d="M16.5 5.5c-1.8 1.7-2.8 4-2.8 6.5s1 4.8 2.8 6.5"/>'},
+  {c:"field", ko:"야구장", d:'<path d="M3.6 17.6C3.6 10.7 7.3 4.8 12 4.8s8.4 5.9 8.4 12.8"/><path d="M12 20.6 7.6 16.2 12 11.8l4.4 4.4z"/><path d="M12 11.8V8.4"/>'},
+  {c:"gym",   ko:"헬스장", d:'<path d="M6.6 8.9v6.2M4.1 10.4v3.2M17.4 8.9v6.2M19.9 10.4v3.2M6.6 12h10.8"/>'}
+];
+const PIMAP = {}; PLAN_ICONS.forEach(x=> PIMAP[x.c]=x);
+function planIcon(c, size){
+  const x = PIMAP[c] || PLAN_ICONS[0], w = size||20;
+  return `<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${x.d}</svg>`;
+}
+function planName(c){ return (PIMAP[c]||PLAN_ICONS[0]).ko; }
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const num = (v,d)=> { const n = parseFloat(v); return isFinite(n)? n : (d||0); };
 const clamp = (v,a,b)=> Math.max(a, Math.min(b, v));
 const pad2 = n => String(n).padStart(2,"0");
 
 function today(){ const d=new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+function thisMonth(){ return today().slice(0,7); }
+/* 일정 목록 다듬기 — 날짜가 없거나 형식이 어긋난 줄은 버립니다 */
+function normalizePlans(list){
+  return (Array.isArray(list)? list : [])
+    .filter(x=> x && /^\d{4}-\d{2}-\d{2}$/.test(String(x.date||"")))
+    .map(x=>({ id: x.id || uid(), date: String(x.date),
+      icon: PIMAP[x.icon]? x.icon : "run",
+      time: /^\d{2}:\d{2}$/.test(String(x.time||""))? String(x.time) : "",
+      title: String(x.title||""), note: String(x.note||"") }));
+}
+/* 달력에서 보고 있는 달 · 고른 날짜 */
+function planMonth(){ const m=(S.ui&&S.ui.pm)||""; return /^\d{4}-\d{2}$/.test(m)? m : thisMonth(); }
+function planDay(){
+  const d=(S.ui&&S.ui.pd)||"";
+  if(/^\d{4}-\d{2}-\d{2}$/.test(d) && d.slice(0,7)===planMonth()) return d;
+  return planMonth()===thisMonth()? today() : planMonth()+"-01";
+}
+function shiftMonth(m, k){
+  const dt = new Date(+m.slice(0,4), +m.slice(5,7)-1+k, 1);
+  return dt.getFullYear()+"-"+pad2(dt.getMonth()+1);
+}
+function plansOn(ds){
+  return (S.plans||[]).filter(x=>x.date===ds)
+    .slice().sort((a,b)=> String(a.time||"~").localeCompare(String(b.time||"~")));
+}
+function gamesOn(ds){ return (S.games||[]).filter(g=>g.date===ds); }
 function fmtDate(s){ if(!s) return "-"; const p=s.split("-"); return p.length===3? `${p[0].slice(2)}.${p[1]}.${p[2]}` : s; }
 function fmtDateLong(s){ if(!s) return "-"; const p=s.split("-"); if(p.length!==3) return s;
   const wd=["일","월","화","수","목","금","토"][new Date(s+"T00:00:00").getDay()];
@@ -780,11 +858,12 @@ const blank = ()=>({
   profile:{ name:"", team:"", number:"", position:"", bats:"우타", throws:"우투" },
   profiles:{},          // 연도별 선수 정보 { "2026": {name, team, number, position, bats, throws}, ... }
   games:[],
+  plans:[],             // 일정 — {id, date:"YYYY-MM-DD", icon, time, title, note}
   settings:{ level:"elem", inningsBy:{elem:6, mid:7, high:7, univ:9}, autoplay:"sound",
              fullscreen:true, viewOnly:false,
              gh:{repo:GH_DEFAULT_REPO, branch:"main", path:"data/baseball-log.json", auto:true, wifi:true, autoPull:true, off:false} },
   backup:{ at:0, sig:"" },
-  ui:{ tab:"home", year:"all", gtype:"all", metric:"avg", bmode:"classic", pmode:"classic" }
+  ui:{ tab:"home", year:"all", gtype:"all", metric:"avg", bmode:"classic", pmode:"classic", pm:"", pd:"" }
 });
 let S = blank();
 let saveTimer = null;
@@ -814,6 +893,11 @@ function normalizeGames(list){
     const lv = (g && LEVELS[g.level])? g.level : ((S.settings && LEVELS[S.settings.level])? S.settings.level : "high");
     g.pas.forEach(p=>{ migrateZone(p, lv); if(p.pitcherNo==null) p.pitcherNo=""; });
     if(!GAME_TYPES[g.type]) g.type = "official";
+    // 경기 이닝 · 포지션별 수비 이닝 (예전 기록에는 없던 항목)
+    if(g.inn == null) g.inn = 0;
+    g.dinn = Array.isArray(g.dinn)
+      ? g.dinn.filter(x=> x && x.pos).map(x=> ({pos:String(x.pos), inn:Math.max(0, Math.round(num(x.inn,0)))}))
+      : [];
     g.def.forEach(d=>{ if(d.note==null) d.note=""; if(d.result==null) d.result=""; if(d.inning==null) d.inning=0;
       if(d.pit){
         d.pit.pitches = Array.isArray(d.pit.pitches)? d.pit.pitches : [];
@@ -841,6 +925,7 @@ function load(){
   }catch(e){ console.warn("저장 데이터 읽기 실패", e); }
   if(!Array.isArray(S.games)) S.games = [];
   if(!S.ui.gtype) S.ui.gtype = "all";
+  S.plans = normalizePlans(S.plans);
   normalizeGames(S.games);
   migrateProfiles();
   S.games.forEach(g=>{ g.pas=g.pas||[]; g.def=g.def||[]; g.videos=g.videos||[];
@@ -1351,9 +1436,14 @@ async function restoreBundle(file){
   if(k!==0 && k!==1) return;
   if(k===0){
     S.games = o.games;
+    if(Array.isArray(o.plans)) S.plans = normalizePlans(o.plans);
     if(o.profile) S.profile = Object.assign(blank().profile, o.profile);
     S.ui.year="all"; S.ui.gameId=null;
   } else {
+    if(Array.isArray(o.plans)){
+      const hp = new Set((S.plans||[]).map(x=>x.id));
+      normalizePlans(o.plans).forEach(x=>{ if(!hp.has(x.id)) S.plans.push(x); });
+    }
     const have=new Set(S.games.map(g=>g.id));
     o.games.forEach(g=>{ if(!have.has(g.id)) S.games.push(g);
       else { const cur=S.games.find(x=>x.id===g.id);
@@ -1496,9 +1586,12 @@ function battingOf(pas){
   t.PSO = t.PA? (t.PA - t.SO)/t.PA : null;                          // 인플레이 전환율
   return t;
 }
-function fieldingOf(defs){
+/* games 를 함께 넘기면 이닝은 경기 정보의 수비 이닝에서 셉니다 (넘기지 않으면 예전 방식) */
+function fieldingOf(defs, games){
   const t={outs:0,PO:0,A:0,E:0,DP:0};
-  defs.forEach(d=>{ t.outs+=inn2outs(d.innings); t.PO+=num(d.po,0); t.A+=num(d.a,0); t.E+=num(d.e,0); t.DP+=num(d.dp,0); });
+  defs.forEach(d=>{ t.PO+=num(d.po,0); t.A+=num(d.a,0); t.E+=num(d.e,0); t.DP+=num(d.dp,0); });
+  t.outs = games? games.reduce((a,g)=>a+gameDefOuts(g), 0)
+                : defs.reduce((a,d)=>a+inn2outs(d.innings), 0);
   const den = t.PO+t.A+t.E;
   t.FPCT = den? (t.PO+t.A)/den : null;
   t.INN = t.outs/3;
@@ -1534,7 +1627,7 @@ function autoDecision(g){
   const first = inns.length? Math.min.apply(null, inns) : 0;
   const last  = inns.length? Math.max.apply(null, inns) : 0;
   const res = gameResult(g);
-  const reg = regInnings(gameLevel(g));
+  const reg = gameInnings(g);          // 콜드게임·연장도 실제 진행 이닝으로 판정합니다
   const need = Math.max(1, Math.ceil(reg/2));
   const started  = first>0 && first<=1;
   const finished = last>0 && last>=reg;
@@ -1642,6 +1735,41 @@ function regInnings(lv){
   const k = LEVELS[lv]? lv : curLevel();
   const v = S.settings && S.settings.inningsBy && S.settings.inningsBy[k];
   return (v && isFinite(v) && v>0)? v : LEVELS[k].inn;
+}
+/* ---- 경기 이닝 · 수비 이닝 ----
+   경기 정보에 "몇 회까지 진행됐는지"와 "포지션마다 몇 회를 지켰는지"를 적어 둡니다.
+   수비 집계(이닝·수비율·포지션별 표)는 모두 이 값에서 나옵니다. */
+function gameInnings(g){
+  const v = num(g && g.inn, 0);
+  return (v>0)? clamp(Math.round(v), 1, 30) : regInnings(gameLevel(g));
+}
+/* 이 경기의 포지션별 수비 이닝 — [{pos, inn}] · 비었으면 빈 배열 */
+function defInnList(g){
+  return (((g && g.dinn) || [])
+    .filter(x=> x && x.pos && num(x.inn,0) > 0)
+    .map(x=> ({pos:String(x.pos), inn:Math.max(0, Math.round(num(x.inn,0)))})));
+}
+/* "유격수 5회 · 중견수 2회" 처럼 읽을 수 있게 */
+function defInnText(g){
+  return defInnList(g).map(x=> (PMAP[x.pos]||x.pos) + " " + x.inn + "회").join(" · ");
+}
+/* 이 경기의 수비 아웃 카운트 — 경기 정보의 포지션별 수비 이닝이 우선,
+   적어 두지 않은 예전 기록은 수비 기록의 이닝 표기(5.2)를 더해서 씁니다 */
+function gameDefOuts(g){
+  const l = defInnList(g);
+  if(l.length) return l.reduce((a,x)=>a+x.inn*3, 0);
+  return (((g&&g.def)||[]).reduce((a,d)=>a+inn2outs(d.innings), 0));
+}
+/* 여러 경기의 포지션별 수비 아웃 — {포지션: 아웃} */
+function defOutsByPos(gs){
+  const out = {};
+  (gs||[]).forEach(g=>{
+    const l = defInnList(g);
+    if(l.length){ l.forEach(x=>{ out[x.pos] = (out[x.pos]||0) + x.inn*3; }); return; }
+    ((g&&g.def)||[]).forEach(d=>{ const o = inn2outs(d.innings);
+      if(o && d.pos) out[d.pos] = (out[d.pos]||0) + o; });
+  });
+  return out;
 }
 function hasBIP(code){ return !!(RMAP[code] && RMAP[code].bip); }
 const AUTOPLAY = {sound:"소리와 함께", muted:"음소거로", off:"수동"};
@@ -2269,7 +2397,7 @@ function viewHome(){
   const gs = scopedGames();
   const pas = allPAs(gs);
   const b = battingOf(pas);
-  const f = fieldingOf(allDef(gs));
+  const f = fieldingOf(allDef(gs), gs);
   const hp = pitchingOf(allDef(gs));
   const m = S.ui.metric, mk = METRICS[m].k;
 
@@ -2415,7 +2543,7 @@ function viewGames(){
 function viewGame(id){
   const g = S.games.find(x=>x.id===id);
   if(!g){ S.ui.gameId=null; return viewGames(); }
-  const t = battingOf(g.pas), f = fieldingOf(g.def);
+  const t = battingOf(g.pas), f = fieldingOf(g.def, [g]);
   const gp = pitchingOf(g.def.map(d=>Object.assign({_g:g},d)));
   const gdec = gameDecision(g);
   const res = gameResult(g);
@@ -2450,7 +2578,7 @@ function viewGame(id){
         <h3>${typeBadge(g)} ${resTag(res)} ${esc(g.opponent||"상대 미입력")}</h3>
         <div class="cap">${esc(GAME_TYPES[gameType(g)].ko)} · ${esc(fmtDateLong(g.date))}${g.venue?" · "+esc(g.venue):""}${g.homeAway?" · "+esc(g.homeAway):""}
         ${(g.myScore!==""&&g.oppScore!=="")?` · ${esc(String(g.myScore))} : ${esc(String(g.oppScore))}`:""}
-        · <span style="color:var(--text-2)">${esc(LEVELS[gameLevel(g)].ko)} 규격</span></div>
+        · <span style="color:var(--text-2)">${esc(LEVELS[gameLevel(g)].ko)} 규격 · ${gameInnings(g)}회 경기</span></div>
       </div></div>
       <div class="tiles">${tile("타석",t.PA)+tile("타수",t.AB)+tile("안타",t.H)+tile("타점",t.RBI)+tile("타율",avg3(t.AVG))+tile("OPS",avg3(t.OPS))}</div>
       ${g.note?`<div class="note" style="margin-top:10px">${esc(g.note)}</div>`:""}
@@ -2465,7 +2593,9 @@ function viewGame(id){
         tableHTML(["타석","결과","위치","추정 거리"], pas.map((p,i)=>({p,i})).filter(o=>o.p.zone && hasBIP(o.p.result)).map(o=>{const z=zoneOf(o.p.zone, gameLevel(g));
           return [o.i+1, esc(RMAP[o.p.result].ko), esc(z.label), Math.round(z.m)+"m"];}))) : ""}
     <div class="card">
-      <div class="hd"><div style="flex:1"><h3>수비 기록</h3><div class="cap">${f.INN? fmtInn(f.outs)+"이닝 · 수비율 "+avg3(f.FPCT) : "미기록"}</div></div>
+      <div class="hd"><div style="flex:1"><h3>수비 기록</h3><div class="cap">${f.INN
+        ? "수비 "+fmtInn(f.outs)+"이닝"+(defInnText(g)? " ("+esc(defInnText(g))+")" : "")+" · 수비율 "+avg3(f.FPCT)
+        : "수비 이닝 미입력 — 위 연필 단추로 경기 정보에서 입력"}</div></div>
         ${addBtn("newDef", `data-gid="${g.id}"`, "수비 기록 추가")}</div>
       <div class="list">${defList}</div>
     </div>
@@ -2491,6 +2621,83 @@ function viewGame(id){
 `;
 }
 
+
+/* ------------------------------- 일정 -------------------------------
+   달력에서 날짜를 누르면 그 날의 일정과 경기가 아래에 나옵니다.
+   일정은 아이콘 · 시간 · 내용으로 적고, 목록에서 바로 지울 수 있습니다. */
+const WKD = ["일","월","화","수","목","금","토"];
+function planLine(p){
+  return [p.time || "", p.note || ""].filter(Boolean).join(" · ");
+}
+function viewPlans(){
+  const m = planMonth(), sel = planDay(), tdy = today();
+  const y = +m.slice(0,4), mo = +m.slice(5,7);
+  const first = new Date(y, mo-1, 1);
+  const start = new Date(y, mo-1, 1 - first.getDay());          // 그 주 일요일부터 그립니다
+  const week = [];
+  for(let w=0; w<6; w++){
+    const days = [];
+    for(let i=0; i<7; i++){
+      const dt = new Date(start.getFullYear(), start.getMonth(), start.getDate() + w*7 + i);
+      days.push(dt.getFullYear()+"-"+pad2(dt.getMonth()+1)+"-"+pad2(dt.getDate()));
+    }
+    // 줄 전체가 다음 달이면 그리지 않습니다
+    if(w>=4 && days.every(d=> d.slice(0,7)!==m)) break;
+    week.push(days);
+  }
+  const cells = week.flat().map(ds=>{
+    const ps = plansOn(ds), gm = gamesOn(ds);
+    const wd = new Date(ds+"T00:00:00").getDay();
+    const cls = ["dcell", ds.slice(0,7)!==m? "out":"", ds===tdy? "tdy":"", ds===sel? "sel":"", wd===0? "sun":""].filter(Boolean).join(" ");
+    const marks = (gm.length? `<span class="gdot">경기</span>` : "")
+      + ps.slice(0,3).map(x=> planIcon(x.icon, 14)).join("")
+      + (ps.length>3? `<span class="more">+${ps.length-3}</span>` : "");
+    return `<button type="button" class="${cls}" data-act="pickDay" data-v="${ds}" aria-pressed="${ds===sel}"
+      aria-label="${esc(fmtDateLong(ds))}${ps.length? " · 일정 "+ps.length+"개":""}${gm.length? " · 경기":""}">
+      <span class="dn">${+ds.slice(8)}</span><span class="dic">${marks}</span></button>`;
+  }).join("");
+
+  const list = plansOn(sel), gsel = gamesOn(sel);
+  const rows = gsel.map(g=>`
+      <div class="row" data-act="openGame" data-id="${g.id}">
+        <span class="pic">${planIcon("ball", 20)}</span>
+        <div class="main"><div class="t">${typeBadge(g)} ${esc(g.opponent||"상대 미입력")}</div>
+          <div class="s">경기 기록${g.venue? " · "+esc(g.venue):""}</div></div>
+        <div class="r ch">${IC_CHEV_R}</div>
+      </div>`).join("")
+    + list.map(x=>`
+      <div class="row">
+        <span class="pic">${planIcon(x.icon, 20)}</span>
+        <div class="main" data-act="editPlan" data-id="${x.id}">
+          <div class="t">${esc(x.title || planName(x.icon))}</div>
+          <div class="s">${esc(planLine(x)) || planName(x.icon)}</div></div>
+        ${delBtn("delPlan", `data-id="${x.id}"`, "일정 삭제")}
+      </div>`).join("");
+
+  // 이번 달 요약 — 아이콘별 횟수
+  const mon = (S.plans||[]).filter(x=> x.date.slice(0,7)===m);
+  const sum = PLAN_ICONS.map(ic=>({ic, k:mon.filter(x=>x.icon===ic.c).length})).filter(x=>x.k>0);
+
+  return `<div class="card">
+      <div class="calhd">
+        <button class="iconbtn sm" data-act="pmMove" data-v="-1" title="이전 달" aria-label="이전 달">${IC_BACK}</button>
+        <div class="m">${y}년 ${mo}월</div>
+        <button class="btn sm" data-act="pmToday">오늘</button>
+        <button class="iconbtn sm" data-act="pmMove" data-v="1" title="다음 달" aria-label="다음 달">${IC_CHEV_R}</button>
+      </div>
+      <div class="wkhd">${WKD.map((d,i)=>`<span class="${i===0?"sun":i===6?"sat":""}">${d}</span>`).join("")}</div>
+      <div class="cal">${cells}</div>
+      ${sum.length? `<div class="hint" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+        이번 달 ${sum.map(x=>`<span style="display:inline-flex;align-items:center;gap:4px">${planIcon(x.ic.c,15)}${x.ic.ko} <b>${x.k}</b></span>`).join("")}</div>` : ""}
+    </div>
+    <div class="card">
+      <div class="hd"><div style="flex:1"><h3>${esc(fmtDateLong(sel))}</h3>
+        <div class="cap">${list.length? "일정 "+list.length+"개" : "일정 없음"}${gsel.length? " · 경기 "+gsel.length+"건" : ""}</div></div>
+        ${addBtn("newPlan", `data-v="${sel}"`, "일정 추가")}</div>
+      <div class="list">${rows || `<div class="hint">이 날은 비어 있음 · 오른쪽 위 + 로 추가</div>`}</div>
+      <button class="btn pri block nb" data-act="newPlan" data-v="${sel}" style="margin-top:10px">+ 일정 추가</button>
+    </div>`;
+}
 
 /* ------------------------------- 분석 ------------------------------- */
 function viewStats(){
@@ -2518,7 +2725,7 @@ function viewStats(){
   });
 
   // 이닝별
-  const maxInn = Math.max(regInnings(curLevel()), ...pas.map(p=>num(p.inning,0)), 1);
+  const maxInn = Math.max(regInnings(curLevel()), ...gs.map(x=>gameInnings(x)), ...pas.map(p=>num(p.inning,0)), 1);
   const innings = Array.from({length:Math.min(maxInn,15)},(_,k)=>k+1).map(i=>{
     const t = battingOf(pas.filter(p=>num(p.inning,0)===i));
     return {label:i+"회", value:t.AVG==null?0:t.AVG, _t:t,
@@ -2563,10 +2770,15 @@ function viewStats(){
     .filter(d=>d.value>0).sort((a,c)=>c.value-a.value);
   defDist.forEach(d=>{ d.tip = `<b>${esc(d.label)}</b><br>${d.value}회 · 수비 기록의 ${pct1(d.value/Math.max(defPlays.length,1))}`; });
 
-  // 포지션별 수비
+  // 포지션별 수비 — 이닝은 경기 정보에 적은 포지션별 수비 이닝에서 옵니다
   const byPos = {};
-  defs.forEach(d=>{ (byPos[d.pos]=byPos[d.pos]||[]).push(d); });
-  const posRows = Object.keys(byPos).map(k=>({pos:k, f:fieldingOf(byPos[k])})).sort((a,c)=>c.f.outs-a.f.outs);
+  defs.forEach(d=>{ if(d.pos) (byPos[d.pos]=byPos[d.pos]||[]).push(d); });
+  const posOuts = defOutsByPos(gs);
+  const posRows = Array.from(new Set(Object.keys(byPos).concat(Object.keys(posOuts)))).map(k=>{
+    const f = fieldingOf(byPos[k]||[], []);
+    f.outs = posOuts[k]||0; f.INN = f.outs/3;
+    return {pos:k, f};
+  }).sort((a,c)=> (c.f.outs-a.f.outs) || ((c.f.PO+c.f.A)-(a.f.PO+a.f.A)));
 
   // 타격 — 클래식 지표 (기록지에 그대로 적히는 수치)
   const bClassic = tableHTML(["항목","값","항목","값"],
@@ -2627,11 +2839,11 @@ function viewStats(){
   + (defDist.length? chartCard("수비 결과 분포", `결과를 입력한 수비 기록 ${defPlays.length}건`,
       hbarChart(defDist, {aria:"수비 결과 분포", left:82, total:defPlays.length, fmt:v=>String(Math.round(v))}),
       tableHTML(["결과","횟수","비중"], defDist.map(d=>[d.label, d.value, pct1(d.value/Math.max(defPlays.length,1))]))) : "")
-  + (posRows.length? `<div class="card"><div class="hd"><div style="flex:1"><h3>포지션별 수비</h3>
-      <div class="cap">수비율 = (자살+보살) / (자살+보살+실책)</div></div></div>
+  + (posRows.length? (()=>{ const ft = fieldingOf(defs, gs); return `<div class="card"><div class="hd"><div style="flex:1"><h3>포지션별 수비</h3>
+      <div class="cap">이닝은 경기 정보에 적은 포지션별 수비 이닝 · 수비율 = (자살+보살) / (자살+보살+실책)</div></div></div>
       ${tableHTML(["포지션","이닝","자살","보살","실책","병살","수비율"],
         posRows.map(r=>[esc(PMAP[r.pos]||r.pos), fmtInn(r.f.outs), r.f.PO, r.f.A, r.f.E, r.f.DP, avg3(r.f.FPCT)]),
-        ["합계", fmtInn(fieldingOf(defs).outs), fieldingOf(defs).PO, fieldingOf(defs).A, fieldingOf(defs).E, fieldingOf(defs).DP, avg3(fieldingOf(defs).FPCT)])}</div>` : "")
+        ["합계", fmtInn(ft.outs), ft.PO, ft.A, ft.E, ft.DP, avg3(ft.FPCT)])}</div>`; })() : "")
   + `<div class="note"><b>OPS</b> 출루율+장타율 · <b>ISO</b> 순수 장타력 · <b>wOBA</b> 종합 타격 ·
       <b>BABIP</b> 인플레이 안타율 · <b>SecA</b> 안타 외 생산 · <b>RC</b> 추정 득점</div>`;
 }
@@ -3029,7 +3241,7 @@ function ghPayload(){
       paId:v.paId, defId:v.defId, note:v.note||"", createdAt:v.createdAt
     });
   });
-  return {app:"bb-note", version:1, profile:S.profile, profiles:S.profiles||{}, games:games};
+  return {app:"bb-note", version:1, profile:S.profile, profiles:S.profiles||{}, games:games, plans:S.plans||[]};
 }
 function ghHash(o){ return hashStr(stableStr(o || ghPayload())); }
 function ghDirty(){ return ghHash() !== ghState.hash; }
@@ -3213,6 +3425,10 @@ function ghApply(o, mode){
   const mine = new Map();
   (S.games||[]).forEach(g=> mine.set(g.id, (g.videos||[]).filter(v=> v.kind==="file")));
   if(mode==="merge"){
+    if(Array.isArray(o.plans)){                      // 일정도 같은 방식으로 합칩니다
+      const hp = new Set((S.plans||[]).map(x=>x.id));
+      normalizePlans(o.plans).forEach(x=>{ if(!hp.has(x.id)) S.plans.push(x); });
+    }
     const have = new Set(S.games.map(g=>g.id));
     inc.forEach(g=>{
       if(!have.has(g.id)){ S.games.push(g); return; }
@@ -3230,6 +3446,7 @@ function ghApply(o, mode){
       }
     });
     S.games = inc;
+    if(Array.isArray(o.plans)) S.plans = normalizePlans(o.plans);
     if(o.profile) S.profile = Object.assign(blank().profile, o.profile);
     if(o.profiles && typeof o.profiles==="object") S.profiles = o.profiles;
     migrateProfiles(); syncProfile();
@@ -3295,7 +3512,7 @@ async function ghPull(manual){
     if(got.missing){ if(manual) toast("저장소에 기록 파일 없음"); return false; }
     const o = got.data;
     if(!o || !Array.isArray(o.games)) throw new Error("야구 기록 파일 아님");
-    const same = ghHash({app:"bb-note", version:1, profile:o.profile||{}, profiles:o.profiles||{}, games:(o.games||[]).map(g=>Object.assign({}, g, {videos:(g.videos||[]).filter(v=>v.kind==="link")}))}) === ghHash();
+    const same = ghHash({app:"bb-note", version:1, profile:o.profile||{}, profiles:o.profiles||{}, games:(o.games||[]).map(g=>Object.assign({}, g, {videos:(g.videos||[]).filter(v=>v.kind==="link")})), plans:normalizePlans(o.plans)}) === ghHash();
     if(same){
       ghState.sha = got.sha; ghState.hash = ghHash(); ghState.pull = Date.now(); ghSaveState();
       if(manual) toast("이미 최신");
@@ -3505,7 +3722,8 @@ function roMsg(){
 }
 /* 보기 모드에서 막는 동작 */
 const RO_BLOCK = new Set([
-  "newGame","editGame","saveGame","delGame",
+  "newGame","editGame","saveGame","delGame","addDefInn","delDefInn",
+  "newPlan","editPlan","savePlan","delPlan",
   "newPA","editPA","savePA","delPA",
   "newDef","editDef","saveDef","delDef",
   "newVideo","editVideo","saveVideo","updateVideo","delVideo",
@@ -3588,14 +3806,45 @@ function stepper(id, val, min, max){
 }
 
 /* ---------------------------- 경기 정보 시트 ---------------------------- */
+let gdraft = null;   // 경기 시트에서 편집 중인 포지션별 수비 이닝
+let gPaint = null;   // 수비 이닝 줄 다시 그리기 (추가 · 삭제)
+/* 포지션별 수비 이닝 한 줄씩 */
+function defInnRowsHTML(){
+  if(!gdraft || !gdraft.dinn.length)
+    return `<div class="hint" style="margin:2px 0 8px">아직 없음 — 아래 <b>포지션 추가</b>로 입력</div>`;
+  return gdraft.dinn.map((x,i)=>`
+    <div class="dirow">
+      <select class="di_pos" aria-label="수비 포지션"><option value="">포지션 선택</option>
+        ${POS.map(o=>`<option value="${o.c}" ${x.pos===o.c?"selected":""}>${o.ko}</option>`).join("")}</select>
+      ${stepper("di_inn_"+i, clamp(num(x.inn,0),0,30), 0, 30)}
+      <button type="button" class="iconbtn sm" data-act="delDefInn" data-i="${i}"
+        title="이 줄 지우기" aria-label="이 줄 지우기">${IC_XCIRC}</button>
+    </div>`).join("");
+}
+/* 화면의 입력값을 gdraft 로 옮겨 담습니다 (추가·삭제·저장 전에 부릅니다) */
+function syncDefInn(){
+  const wrap = $("#modal #g_dinn"); if(!wrap || !gdraft) return;
+  const rows = Array.from(wrap.querySelectorAll(".dirow"));
+  if(!rows.length) return;
+  gdraft.dinn = rows.map(r=>({
+    pos: (r.querySelector(".di_pos")||{}).value || "",
+    inn: clamp(num((r.querySelector("input[type=number]")||{}).value, 0), 0, 30)
+  }));
+}
 function gameSheet(id){
   const g = id? S.games.find(x=>x.id===id) : null;
-  const d = g || {date:today(), opponent:"", venue:"", homeAway:"홈", myScore:"", oppScore:"", note:"", level:"", type:"official", pdec:""};
+  const d = g || {date:today(), opponent:"", venue:"", homeAway:"홈", myScore:"", oppScore:"", note:"", level:"", type:"official", pdec:"", inn:0, dinn:[]};
   const auto = g? autoDecision(g) : {dec:"", why:"", auto:true};
   const hasP = g? gamePitRecs(g).length>0 : false;
   const gt = gameType(d);
   const venues = Array.from(new Set(S.games.map(x=>x.venue).filter(Boolean)));
   const opps = Array.from(new Set(S.games.map(x=>x.opponent).filter(Boolean)));
+  const dlv = (d.level && LEVELS[d.level])? d.level : curLevel();
+  const innAuto = !(num(d.inn,0) > 0);                       // 직접 적은 적이 없으면 규격 기본값을 따라갑니다
+  const innVal  = innAuto? regInnings(dlv) : clamp(Math.round(num(d.inn,0)),1,30);
+  /* 새 경기는 등록한 선수의 주 포지션으로 한 줄 깔아 둡니다 (이닝 0 = 기록 안 함) */
+  gdraft = {dinn: (g? defInnList(g) : []).slice()};
+  if(!gdraft.dinn.length && !g && S.profile.position) gdraft.dinn = [{pos:S.profile.position, inn:0}];
   openSheet(`
     <div class="sh"><h3>${g?"경기 정보 수정":"새 경기"}</h3><div class="spacer" style="flex:1"></div>
       <button class="iconbtn" data-act="close" title="닫기" aria-label="닫기">${IC_X}</button></div>
@@ -3616,8 +3865,21 @@ function gameSheet(id){
       <label class="f"><span>경기장 규격</span><select id="g_lv">
         <option value="">기본값 (${LEVELS[curLevel()].ko})</option>
         ${LEVEL_KEYS.map(k=>`<option value="${k}" ${d.level===k?"selected":""}>${LEVELS[k].ko}</option>`).join("")}</select></label>
+      <label class="f"><span>경기 이닝 <span style="color:var(--text-3);font-weight:400">— 몇 회까지</span></span>
+        ${stepper("g_inn", innVal, 1, 30)}</label>
       <label class="f"><span>우리 점수</span><input id="g_ms" type="number" inputmode="numeric" value="${esc(d.myScore)}"></label>
       <label class="f"><span>상대 점수</span><input id="g_os" type="number" inputmode="numeric" value="${esc(d.oppScore)}"></label>
+    </div>
+    <div class="f" style="margin-bottom:12px">
+      <span style="display:block;font-size:12.5px;color:var(--text-2);margin-bottom:6px;font-weight:550">수비 이닝
+        <span style="color:var(--text-3);font-weight:400">— 포지션마다 몇 회를 지켰는지</span></span>
+      <div id="g_dinn">${defInnRowsHTML()}</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button type="button" class="btn sm" data-act="addDefInn">+ 포지션 추가</button>
+        <div class="hint" id="g_dinn_sum" style="flex:1;min-width:120px;text-align:right"></div>
+      </div>
+      <div class="hint" style="margin-top:8px">여기 적은 이닝이 <b>수비 기록</b>의 이닝 · 수비율 · 포지션별 표에 그대로 쓰입니다 ·
+        0회는 기록하지 않음</div>
     </div>
     ${hasP? `<label class="f"><span>투수 승패 기록</span>
       <select id="g_pdec">
@@ -3628,7 +3890,64 @@ function gameSheet(id){
      : `<input id="g_pdec" type="hidden" value="${esc(d.pdec||"")}">`}
     <label class="f"><span>메모</span><textarea id="g_note" placeholder="컨디션, 날씨, 기억할 장면 등">${esc(d.note)}</textarea></label>
     <div class="sf"><button class="btn" data-act="close">취소</button>
-      <button class="btn pri" data-act="saveGame" data-id="${g?g.id:""}">저장</button></div>`);
+      <button class="btn pri" data-act="saveGame" data-id="${g?g.id:""}">저장</button></div>`,
+  sheet=>{
+    const innInp = sheet.querySelector("#g_inn");
+    const lvSel  = sheet.querySelector("#g_lv");
+    const wrap   = sheet.querySelector("#g_dinn");
+    const sumEl  = sheet.querySelector("#g_dinn_sum");
+    let auto = innAuto;                       // 사용자가 손대기 전에는 규격 기본값을 따라갑니다
+    const syncSum = ()=>{
+      syncDefInn();
+      const tot = (gdraft.dinn||[]).reduce((a,x)=> a + (x.pos? Math.max(0,num(x.inn,0)) : 0), 0);
+      const gi  = clamp(num(innInp.value,0),0,30);
+      sumEl.innerHTML = tot
+        ? `수비 합계 <b>${tot}이닝</b> / 경기 ${gi}회` + (tot>gi? ` · <span style="color:var(--crit)">경기 이닝보다 많음</span>` : "")
+        : "0회는 기록하지 않음";
+    };
+    gPaint = (op, i)=>{
+      syncDefInn();
+      if(op==="add") gdraft.dinn.push({pos:"", inn:clamp(num(innInp.value,0),0,30)});
+      else if(op==="del") gdraft.dinn.splice(i,1);
+      wrap.innerHTML = defInnRowsHTML();
+      syncSum();
+    };
+    innInp.addEventListener("input", ()=>{ auto = false; syncSum(); });
+    lvSel.addEventListener("change", ()=>{
+      if(auto){ const k = (lvSel.value && LEVELS[lvSel.value])? lvSel.value : curLevel();
+        innInp.value = String(regInnings(k)); }
+      syncSum();
+    });
+    wrap.addEventListener("input", syncSum);
+    wrap.addEventListener("change", syncSum);
+    syncSum();
+  });
+}
+
+/* ------------------------------ 일정 시트 ------------------------------ */
+let plDraft = null;
+function planSheet(id, date){
+  const x = id? (S.plans||[]).find(o=>o.id===id) : null;
+  const v = x || {id:null, date: date || planDay(), icon:"run", time:"", title:"", note:""};
+  plDraft = {icon: PIMAP[v.icon]? v.icon : "run"};
+  openSheet(`
+    <div class="sh"><h3>${x?"일정 수정":"일정 추가"}</h3><div class="spacer" style="flex:1"></div>
+      <button class="iconbtn" data-act="close" title="닫기" aria-label="닫기">${IC_X}</button></div>
+    <span style="display:block;font-size:12.5px;color:var(--text-2);margin-bottom:6px;font-weight:550">아이콘</span>
+    <div class="icpick">
+      ${PLAN_ICONS.map(ic=>`<button type="button" class="icbtn" data-act="pickPlanIcon" data-v="${ic.c}"
+        aria-pressed="${plDraft.icon===ic.c}">${planIcon(ic.c,24)}<span>${ic.ko}</span></button>`).join("")}
+    </div>
+    <div class="f2">
+      <label class="f"><span>날짜</span><input id="pl_date" type="date" value="${esc(v.date)}"></label>
+      <label class="f"><span>시간 <span style="color:var(--text-3);font-weight:400">— 선택</span></span>
+        <input id="pl_time" type="time" value="${esc(v.time||"")}"></label>
+    </div>
+    <label class="f"><span>내용 <span style="color:var(--text-3);font-weight:400">— 비우면 아이콘 이름</span></span>
+      <input id="pl_title" value="${esc(v.title||"")}" placeholder="예: 러닝 5km · 팀 훈련 · 하체 운동"></label>
+    <label class="f"><span>메모</span><textarea id="pl_note" placeholder="장소, 준비물, 함께하는 사람 등">${esc(v.note||"")}</textarea></label>
+    <div class="sf">${x? delBtn("delPlan", `data-id="${x.id}"`, "이 일정 삭제") : `<button class="btn" data-act="close">취소</button>`}
+      <button class="btn pri" data-act="savePlan" data-id="${x?x.id:""}">저장</button></div>`);
 }
 
 /* ------------------------------ 타석 시트 ------------------------------ */
@@ -3655,7 +3974,9 @@ function paSheet(gid, pid){
       <div class="spacer" style="flex:1"></div>
       <button class="iconbtn" data-act="close" title="닫기" aria-label="닫기">${IC_X}</button></div>
     <div class="f2">
-      <label class="f"><span>이닝 <span style="color:var(--text-3);font-weight:400">/ 정규 ${regInnings(LV)}이닝</span></span>${stepper("pa_inn", clamp(num(draft.inning,1),1,regInnings(LV)+3), 1, regInnings(LV)+3)}</label>
+      <label class="f"><span>이닝 <span style="color:var(--text-3);font-weight:400">/ 경기 ${gameInnings(g)}회</span></span>${(()=>{
+        const mx = Math.max(gameInnings(g), num(draft.inning,0)||1);
+        return stepper("pa_inn", clamp(num(draft.inning,1),1,mx), 1, mx); })()}</label>
     </div>
     <div class="f2">
       <label class="f"><span>상대 투수 배번</span><input id="pa_pitno" value="${esc(draft.pitcherNo||"")}" inputmode="numeric" list="dl_pitno" placeholder="예: 11">
@@ -3729,6 +4050,7 @@ function defSheet(gid, did){
   const v = d || {pos:(last&&last.pos)||S.profile.position||"", inning:(last? num(last.inning,0)+1 : 1),
                   result:"", innings:"", po:0, a:0, e:0, dp:0, note:""};
   const LV = gameLevel(g);
+  const GMX = Math.max(gameInnings(g), num(v.inning,0)||1);
   ddraft = {result: v.result||""};
   const pv = (d && d.pit) || {};
   pdraft = {pitches: ((pv.pitches)||[]).map(x=>Object.assign({},x)), t:"FB", r:"CS"};
@@ -3745,13 +4067,13 @@ function defSheet(gid, did){
     <div class="f2">
       <label class="f"><span>포지션</span><select id="d_pos"><option value="">선택</option>
         ${POS.map(x=>`<option value="${x.c}" ${v.pos===x.c?"selected":""}>${x.ko}</option>`).join("")}</select></label>
-      <label class="f"><span>이닝 <span style="color:var(--text-3);font-weight:400">/ 정규 ${regInnings(LV)}이닝</span></span>
-        ${stepper("d_inning", clamp(num(v.inning,1)||1,1,regInnings(LV)+3), 1, regInnings(LV)+3)}</label>
+      <label class="f"><span>이닝 <span style="color:var(--text-3);font-weight:400">/ 경기 ${gameInnings(g)}회</span></span>
+        ${stepper("d_inning", clamp(num(v.inning,1)||1, 1, GMX), 1, GMX)}</label>
     </div>
     <div style="margin-bottom:6px"><span style="display:block;font-size:12.5px;color:var(--text-2);margin-bottom:6px;font-weight:550">수비 결과</span>${groups}</div>
     <div id="p_wrap" ${v.pos==="P"?"":"hidden"}>
       <div class="pblock">
-        <div class="gl2">투수 기록 <span>— 위에서 고른 <b id="p_inntag">${clamp(num(v.inning,1)||1,1,regInnings(LV)+3)}회</b>기록만 입력 · 총 이닝·ERA·승패 자동 계산</span></div>
+        <div class="gl2">투수 기록 <span>— 위에서 고른 <b id="p_inntag">${clamp(num(v.inning,1)||1,1,GMX)}회</b>기록만 입력 · 총 이닝·ERA·승패 자동 계산</span></div>
         ${(()=>{ const others = g.def.filter(x=>hasPitData(x) && (!d || x.id!==d.id));
           if(!others.length) return "";
           const oo = others.reduce((a,x)=>a+pitOuts(x),0);
@@ -3796,9 +4118,13 @@ function defSheet(gid, did){
       <summary>세부 기록 · 수비 이닝 직접 입력</summary>
       <div class="dtlbody">
         <div class="hint" style="margin:0 0 10px">결과를 고르면 자동 입력 · 필요하면 직접 수정</div>
-        <label class="f" id="d_inn_row"><span>수비 이닝 <span style="color:var(--text-3);font-weight:400">— 이 경기에서 지킨 총 이닝 (한 번만 입력)</span></span>
-          <input id="d_inn" inputmode="decimal" value="${esc(v.innings||"")}" placeholder="예: ${Math.max(1,regInnings(LV)-1)}.2"></label>
-        <div class="hint" style="margin:-6px 0 12px">이닝 표기 — <b>5.2</b> = 5이닝 2아웃</div>
+        ${defInnList(g).length
+          ? `<div class="hint" style="margin:0 0 12px">수비 이닝은 <b>경기 정보</b>에 포지션별로 적혀 있습니다 —
+               <b>${esc(defInnText(g))}</b> · 여기서는 적지 않습니다
+               <input id="d_inn" type="hidden" value="${esc(v.innings||"")}"></div>`
+          : `<label class="f" id="d_inn_row"><span>수비 이닝 <span style="color:var(--text-3);font-weight:400">— 예전 방식 · 경기 정보에 포지션별로 적는 쪽을 권장</span></span>
+              <input id="d_inn" inputmode="decimal" value="${esc(v.innings||"")}" placeholder="예: ${Math.max(1,regInnings(LV)-1)}.2"></label>
+             <div class="hint" style="margin:-6px 0 12px">이닝 표기 — <b>5.2</b> = 5이닝 2아웃</div>`}
         <div class="f2">
           <label class="f"><span>자살 (PO)</span>${stepper("d_po", num(v.po,0), 0)}</label>
           <label class="f"><span>보살 (A)</span>${stepper("d_a", num(v.a,0), 0)}</label>
@@ -4187,10 +4513,12 @@ function rowsPitches(){
   return rows;
 }
 function rowsGames(){
-  const rows = [["날짜","상대","경기종류","구장","홈원정","경기장규격","우리점수","상대점수","승패","타석","타수","안타","타점","타율","OPS","메모"]];
+  const rows = [["날짜","상대","경기종류","구장","홈원정","경기장규격","경기이닝","수비이닝","수비이닝상세",
+                 "우리점수","상대점수","승패","타석","타수","안타","타점","타율","OPS","메모"]];
   scopedGames().forEach(g=>{
     const t = battingOf(g.pas);
     rows.push([g.date, g.opponent, GAME_TYPES[gameType(g)].ko, g.venue, g.homeAway, LEVELS[gameLevel(g)].ko,
+      gameInnings(g), fmtInn(gameDefOuts(g)), defInnText(g),
       g.myScore, g.oppScore, gameResult(g)||"", t.PA, t.AB, t.H, t.RBI, avg3(t.AVG), avg3(t.OPS), g.note||""]);
   });
   return rows;
@@ -4242,10 +4570,15 @@ function importJSONFile(f){
               g.pas.forEach(p=>{ if(!cur.pas.some(x=>x.id===p.id)) cur.pas.push(p); });
               g.def.forEach(p=>{ if(!cur.def.some(x=>x.id===p.id)) cur.def.push(p); });
               g.videos.forEach(p=>{ if(!cur.videos.some(x=>x.id===p.id)) cur.videos.push(p); }); } });
+          if(Array.isArray(o.plans)){
+            const hp = new Set((S.plans||[]).map(x=>x.id));
+            normalizePlans(o.plans).forEach(x=>{ if(!hp.has(x.id)) S.plans.push(x); });
+          }
           if(o.profile && !S.profile.name) S.profile = Object.assign(S.profile, o.profile);
           saveNow(); relinkAll().then(render); render(); toast(`${add}경기 추가`);
         } else if(k===1){
-          S.games = o.games; if(o.profile) S.profile = Object.assign(blank().profile, o.profile);
+          S.games = o.games; if(Array.isArray(o.plans)) S.plans = normalizePlans(o.plans);
+          if(o.profile) S.profile = Object.assign(blank().profile, o.profile);
           S.ui.year="all"; S.ui.gameId=null; saveNow(); relinkAll().then(render); render(); toast(`${o.games.length}경기로 교체`);
         }
       });
@@ -4337,10 +4670,20 @@ function sampleData(){
 
 /* ============================== 이벤트 ============================== */
 function readGameSheet(){
-  const pd = $("#g_pdec");
+  const pd = $("#g_pdec"), gi = $("#g_inn");
+  syncDefInn();
+  /* 같은 포지션을 여러 줄에 적었으면 하나로 합칩니다 */
+  const dmap = {};
+  ((gdraft && gdraft.dinn) || []).forEach(x=>{
+    const inn = clamp(num(x.inn,0),0,30);
+    if(!x.pos || inn<=0) return;
+    dmap[x.pos] = (dmap[x.pos]||0) + inn;
+  });
   return {date:$("#g_date").value||today(), opponent:$("#g_opp").value.trim(), venue:$("#g_venue").value.trim(),
     homeAway:$("#g_ha").value, level:$("#g_lv").value, type:($("#g_type").value||"official"),
     myScore:$("#g_ms").value, oppScore:$("#g_os").value, pdec: pd? pd.value : "",
+    inn: gi? clamp(num(gi.value,0),1,30) : 0,
+    dinn: Object.keys(dmap).map(k=>({pos:k, inn:Math.min(dmap[k],30)})),
     note:$("#g_note").value.trim()};
 }
 document.addEventListener("click", ev=>{
@@ -4390,8 +4733,39 @@ document.addEventListener("click", ev=>{
       S.settings.inningsBy[curLevel()] = n;
       saveNow(); render(); toast(LEVELS[curLevel()].ko+" 정규 "+n+"이닝으로 설정"); break; }
 
+    /* ---- 일정 ---- */
+    case "pmMove": S.ui.pm = shiftMonth(planMonth(), num(v,0)); S.ui.pd = ""; save(); render(); break;
+    case "pmToday": S.ui.pm = thisMonth(); S.ui.pd = today(); save(); render(); break;
+    case "pickDay": S.ui.pm = String(v).slice(0,7); S.ui.pd = v; save(); render(); break;
+    case "newPlan": planSheet(null, v || planDay()); break;
+    case "editPlan": planSheet(id, null); break;
+    case "pickPlanIcon":
+      plDraft.icon = v;
+      $$("#modal .icbtn").forEach(b=> b.setAttribute("aria-pressed", String(b.dataset.v===v)));
+      break;
+    case "savePlan": {
+      const dt = $("#pl_date").value || today();
+      const d = { date: dt, icon: (plDraft && PIMAP[plDraft.icon])? plDraft.icon : "run",
+                  time: $("#pl_time").value || "", title: $("#pl_title").value.trim(),
+                  note: $("#pl_note").value.trim() };
+      S.plans = Array.isArray(S.plans)? S.plans : [];
+      if(id){ const o = S.plans.find(x=>x.id===id); if(o) Object.assign(o, d); }
+      else S.plans.push(Object.assign({id:uid()}, d));
+      S.ui.tab = "plans"; S.ui.pm = dt.slice(0,7); S.ui.pd = dt;
+      saveNow(); closeSheet(); render(); toast("일정 저장"); break; }
+    case "delPlan": {
+      const o = (S.plans||[]).find(x=>x.id===id);
+      ask("일정 삭제", o? `<b>${esc(o.title || planName(o.icon))}</b><br>${esc(fmtDateLong(o.date))}` : "이 일정을 삭제",
+        [{label:"삭제",style:"dan"},{label:"취소"}]).then(k=>{
+        if(k!==0) return;
+        S.plans = (S.plans||[]).filter(x=>x.id!==id);
+        saveNow(); closeSheet(); render(); toast("삭제 완료");
+      }); break; }
+
     case "newGame": gameSheet(null); break;
     case "editGame": gameSheet(id); break;
+    case "addDefInn": if(gPaint) gPaint("add"); break;
+    case "delDefInn": if(gPaint) gPaint("del", num(el.dataset.i,0)); break;
     case "saveGame": {
       const d = readGameSheet();
       if(id){ const g=S.games.find(x=>x.id===id); Object.assign(g,d); }
@@ -4808,6 +5182,7 @@ function render(){
   const t = S.ui.tab;
   const html = (t==="games" && S.ui.gameId)? viewGame(S.ui.gameId)
     : t==="games"? viewGames()
+    : t==="plans"? viewPlans()
     : t==="stats"? viewStats()
     : t==="videos"? viewVideos()
     : t==="settings"? viewSettings()
