@@ -1486,8 +1486,30 @@
    "reps": 5,
    "title": "운동짐(재)",
    "note": ""
+  },
+  {
+   "id": "mtqokjrxbq11g",
+   "date": "2026-09-23",
+   "end": "",
+   "icon": "gym",
+   "col": "gray",
+   "time": "",
+   "reps": 6,
+   "title": "",
+   "note": ""
+  },
+  {
+   "id": "mtqoku6q9mc59",
+   "date": "2026-09-28",
+   "end": "",
+   "icon": "gym",
+   "col": "gray",
+   "time": "",
+   "reps": 7,
+   "title": "",
+   "note": ""
   }
  ],
- "savedAt": "2026-09-07T03:27:49.560Z",
+ "savedAt": "2026-09-07T03:28:32.981Z",
  "by": "성연제"
 }
