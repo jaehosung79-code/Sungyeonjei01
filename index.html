@@ -186,30 +186,35 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
 /* ---------- 일정 달력 ---------- */
 .calhd{display:flex;align-items:center;gap:6px;margin-bottom:10px}
 .calhd .m{flex:1;text-align:center;font-size:15.5px;font-weight:700;font-variant-numeric:tabular-nums}
-.wkhd{display:grid;grid-template-columns:repeat(7,1fr);gap:0;margin-bottom:2px}
-.wkhd span{text-align:center;font-size:11.5px;color:var(--text-3);font-weight:650;padding:2px 0}
+/* 요일 머리줄 — 영문 대문자 · 왼쪽 맞춤 */
+.wkhd{display:grid;grid-template-columns:repeat(7,1fr);gap:0;margin:2px 0 0}
+.wkhd span{text-align:left;font-size:7.5px;color:var(--text-3);font-weight:700;padding:0 0 12px 1px;
+  letter-spacing:.06em}
 .wkhd span.sun{color:var(--crit)}
-.wkhd span.sat{color:var(--accent-ink)}
-/* 날짜 칸 — 좌우 테두리와 둥근 모서리 없이 가로줄만 남깁니다 */
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:0;border-bottom:1px solid var(--border);overflow:hidden}
+.wkhd span.tdy{color:var(--hi)}
+/* 날짜 칸 — 칸마다 짧은 윗줄, 좌우 테두리·둥근 모서리 없음 · 내용은 왼쪽 맞춤 목록 */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0;overflow:hidden}
 .dcell{
-  position:relative;min-height:80px;border:0;border-top:1px solid var(--border);border-radius:0;
-  background:none;cursor:pointer;padding:5px 2px 4px;color:var(--text-1);
-  display:flex;flex-direction:column;align-items:center;gap:3px;
+  position:relative;min-height:84px;border:0;border-radius:0;
+  background:none;cursor:pointer;padding:0 3px 12px 0;color:var(--text-1);text-align:left;
+  display:flex;flex-direction:column;align-items:stretch;gap:0;min-width:0;
 }
-.dcell .dn{font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.35;
-  min-width:21px;border-radius:999px;padding:0 5px}
+/* 칸 위의 짧은 구분선 — 오른쪽에 칸 사이 여백을 둡니다 */
+.dcell::before{content:"";display:block;height:2px;border-radius:2px;background:var(--grid);
+  margin:0 0 11px;flex:none}
+.dcell.tdy::before{background:var(--hi);opacity:.55}
+.dcell .dn{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.05;
+  letter-spacing:-.04em;color:var(--text-1);padding:0 0 9px 1px}
 .dcell.sun .dn,.dcell.hol .dn{color:var(--crit)}
-.dcell.out{opacity:.35}
-.dcell.tdy .dn{color:var(--accent-ink);font-weight:750}
+.dcell.out{opacity:.34}
+.dcell.tdy .dn{color:var(--hi)}
 .dcell.sel{background:var(--surface-2)}
-.dcell.sel .dn{background:var(--text-1);color:var(--surface-0)}
-.dcell.sel.tdy .dn,.dcell.sel.hol .dn,.dcell.sel.sun .dn{background:var(--accent-ink);color:var(--surface-1)}
-/* 공휴일 이름 */
-.dcell .hnm{font-size:9px;line-height:1.25;color:var(--crit);font-weight:600;max-width:100%;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 1px}
+/* 공휴일 — 다른 일정과 같은 모양으로 목록에 넣습니다 */
+.dcell .hnm{font-size:8px;line-height:1.3;color:var(--crit);font-weight:750;letter-spacing:-.04em;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  word-break:keep-all;overflow-wrap:anywhere;padding:0 0 1px 1px}
 /* 여러 날에 걸친 일정 띠 — 칸 끝까지 채워 옆 칸과 이어 보이게 합니다 */
-.dcell .dbars{display:flex;flex-direction:column;gap:2px;width:calc(100% + 4px);margin:0 -2px}
+.dcell .dbars{display:flex;flex-direction:column;gap:2px;width:calc(100% + 5px);margin:0 -5px 4px 0}
 .dbar{position:relative;height:14px;background:transparent}
 .dbar.s{border-top-left-radius:4px;border-bottom-left-radius:4px}
 .dbar.e{border-top-right-radius:4px;border-bottom-right-radius:4px}
@@ -217,19 +222,49 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
    칸보다 길면 옆 칸으로 넘쳐 "----○○대회----" 처럼 이어 보이게 둡니다 */
 .dbar .blbl{
   position:absolute;z-index:5;left:50%;top:50%;transform:translate(-50%,-50%);
-  white-space:nowrap;font-size:9.5px;font-weight:700;line-height:1;color:#fff;
+  white-space:nowrap;font-size:9px;font-weight:700;line-height:1;color:#fff;
   text-shadow:0 0 2px rgba(0,0,0,.45);pointer-events:none;padding:0 3px;
 }
-.dcell .dic{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;line-height:0}
-.dcell .dic svg{width:18px;height:18px;display:block}
-/* 아이콘 + 그 옆의 횟수 */
-.dcell .dpi{display:inline-flex;align-items:center;gap:2px}
-.dcell .dpi .rn{font-size:11.5px;font-weight:750;line-height:1;font-variant-numeric:tabular-nums}
-/* 경기가 있는 날 — 일정 아이콘과 구분되도록 색을 채운 야구장 아이콘으로 표시합니다 */
-.dcell .gdot{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;flex:none;
-  border-radius:999px;background:var(--accent-ink)}
-.dcell .gdot svg{width:14px;height:14px;color:var(--surface-1);stroke-width:2.1}
-.dcell .more{font-size:11px;color:var(--text-3);font-weight:700}
+/* 그 날의 일정 목록 — 아이콘 · 이름 · 횟수 한 줄, 그 아래 시간 한 줄 */
+.dcell .dic{display:flex;flex-direction:column;align-items:stretch;gap:0;min-width:0}
+/* 일정 한 줄 — 아이콘 · 이름 · 횟수 · 시간 왼쪽 정렬 (한 줄에 모두) */
+.dcell .dev{display:flex;align-items:center;gap:1px;min-width:0;line-height:1.35;
+  padding:0 0 1px 1px;margin:6px -3px 0 0;overflow:hidden;white-space:nowrap}
+.dcell .dev:first-child{margin-top:0}
+/* 마지막 칸은 오른쪽으로 넘길 자리가 없습니다 */
+.dcell:nth-child(7n) .dev{margin-right:0}
+.dcell .dev svg{width:8px;height:8px;flex:none;display:block}
+/* 자리가 모자라면 이름부터 줄여 숫자·시간이 남게 합니다 */
+.dcell .dev .nm{flex:0 1 auto;min-width:0;font-size:7.5px;font-weight:750;color:var(--text-1);
+  letter-spacing:-.05em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dcell .dev .ct{flex:none;font-size:7.5px;font-weight:800;color:var(--text-1);
+  font-variant-numeric:tabular-nums;letter-spacing:-.05em}
+.dcell .dev .tm{flex:none;font-size:6.5px;font-weight:600;color:var(--text-3);
+  font-variant-numeric:tabular-nums;letter-spacing:-.05em;margin-left:2px}
+.dcell .dev.noic .nm{color:var(--text-1)}
+/* 경기 줄은 살짝 강조합니다 */
+.dcell .dev.gm .nm{color:var(--accent-ink)}
+.dcell .more{font-size:7.5px;color:var(--text-3);font-weight:600;padding:0 0 0 1px;line-height:1.3;margin-top:6px}
+/* 아주 좁은 화면에서는 한 번 더 줄여 한 줄에 들어가게 합니다 */
+@media(max-width:399px){
+  .dcell{padding-right:2px}
+  .dcell .dev{gap:0;padding-left:0}
+  .dcell .dev svg{width:7px;height:7px;margin-right:1px}
+  .dcell .dev .nm{letter-spacing:-.07em}
+  .dcell .dev .ct,.dcell .dev .tm{letter-spacing:-.08em}
+  .dcell .dev .ct{margin-left:1px}
+  .dcell .dev .tm{margin-left:1px}
+  .dcell .dev .nm,.dcell .dev .ct{font-size:7px}
+  .dcell .dev .tm{font-size:6px}
+  .dcell .hnm{font-size:7px}
+}
+@media(max-width:349px){
+  .dcell .dn{font-size:12px}
+  .dcell .dev svg{display:none}          /* 아주 좁으면 아이콘을 빼고 이름·횟수·시간만 남깁니다 */
+  .dcell .dev .nm,.dcell .dev .ct{font-size:6.5px}
+  .dcell .dev .tm{font-size:5.5px}
+  .dcell .hnm{font-size:6.5px}
+}
 /* 일정 목록 줄의 아이콘 자리 */
 .pic{flex:none;width:36px;height:36px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;
   background:var(--surface-2);color:var(--accent-ink)}
@@ -870,6 +905,19 @@ const PLAN_COLS = [
 const PCOL = {}; PLAN_COLS.forEach(x=>{ PCOL[x.c]=x; });
 function planBarColor(x){ return (PCOL[x && x.col] || PCOL.gray).v; }
 function isRange(x){ return !!(x && x.end && x.end > x.date); }
+/* 달력에 쓰는 이름 — ETC 는 직접 적은 내용, 나머지는 아이콘 이름 */
+function repsTxt(v){ const k=num(v,0); return k<100? pad2(k) : String(k); }
+/* 달력용 짧은 시간 표기 — 6:30 · 10시 */
+function timeTxt(t){
+  if(!/^\d{2}:\d{2}$/.test(String(t||""))) return "";
+  const h = +t.slice(0,2), m = t.slice(3,5);
+  return m==="00"? h+"시" : h+":"+m;
+}
+function planCalName(x){
+  if(!x) return "";
+  if(x.icon === "etc") return String(x.title||"").trim() || planName("etc");
+  return planName(x.icon);
+}
 /* 자동 횟수 — 같은 아이콘으로 이 날짜까지 적어 둔 마지막 일정의 횟수 + 1 */
 function nextReps(icon, date, selfId){
   const list = (S.plans||[])
@@ -2750,7 +2798,7 @@ function viewGame(id){
 /* ------------------------------- 일정 -------------------------------
    달력에서 날짜를 누르면 그 날의 일정과 경기가 아래에 나옵니다.
    일정은 아이콘 · 시간 · 내용으로 적고, 목록에서 바로 지울 수 있습니다. */
-const WKD = ["일","월","화","수","목","금","토"];
+const WKD = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
 function planLine(p){
   return [planRange(p), p.time || "", num(p.reps,0)? num(p.reps,0)+"회" : "", p.note || ""]
     .filter(Boolean).join(" · ");
@@ -2772,6 +2820,7 @@ function viewPlans(){
     week.push(row);
   }
   const days = week.flat(), gFrom = days[0], gTo = days[days.length-1];
+  const twd = new Date(tdy+"T00:00:00").getDay();          // 오늘 요일 — 머리줄을 강조합니다
 
   /* 여러 날에 걸친 일정은 띠로 그립니다 — 겹치면 줄(레인)을 나눠 씁니다 (최대 3줄) */
   const ranges = (S.plans||[]).filter(x=> x.end && x.end > x.date && x.end >= gFrom && x.date <= gTo)
@@ -2812,17 +2861,25 @@ function viewPlans(){
         if(!r) return `<span class="dbar"></span>`;
         const c = ["dbar", ds===r.date? "s":"", ds===r.end? "e":""].filter(Boolean).join(" ");
         const lb = labelAt[ds+"|"+i];
-        const tx = lb? `<span class="blbl">${esc((lb.title || planName(lb.icon)) + (num(lb.reps,0)? " "+num(lb.reps,0)+"회" : ""))}</span>` : "";
+        const tx = lb? `<span class="blbl">${esc((String(lb.title||"").trim() || planCalName(lb)) + (num(lb.reps,0)? " "+repsTxt(lb.reps) : ""))}</span>` : "";
         return `<span class="${c}" style="background:${planBarColor(r)}">${tx}</span>`;
       }).join("") + `</span>` : "";
-    const marks = (gm.length? `<span class="gdot" title="경기">${planIcon("field", 14)}</span>` : "")
-      + one.slice(0,3).map(x=> `<span class="dpi" style="color:${planColor(x.icon)}">${planIcon(x.icon, 18)}${
-          num(x.reps,0)? `<b class="rn">${num(x.reps,0)}</b>` : ""}</span>`).join("")
-      + (one.length>3? `<span class="more">+${one.length-3}</span>` : "");
+    /* 한 항목 = [아이콘 · 이름 · 횟수] + 그 아래 시간 한 줄 */
+    /* 일정 하나 = 한 줄 · 아이콘 → 이름 → 횟수 → 시간 순 왼쪽 정렬
+       (ETC 는 직접 적은 이름만 쓰고 아이콘은 넣지 않습니다) */
+    const evItem = (icon, name, cnt, sub, cls2) =>
+      `<span class="dev ${cls2||""}${icon==="etc"? " noic":""}" style="color:${planColor(icon)}">${
+        icon==="etc"? "" : planIcon(icon, 11)}<span class="nm">${esc(name)}</span>${
+        cnt? `<span class="ct">${cnt}</span>` : ""}${
+        sub? `<span class="tm">${esc(sub)}</span>` : ""}</span>`;
+    const items = gm.map(g=> evItem("field", g.opponent || planName("field"), "", "", "gm"))
+      .concat(one.map(x=> evItem(x.icon, planCalName(x), num(x.reps,0)? repsTxt(x.reps) : "", timeTxt(x.time))));
+    const marks = items.slice(0,3).join("")
+      + (items.length>3? `<span class="more">외 ${items.length-3}건</span>` : "");
     return `<button type="button" class="${cls}" data-act="pickDay" data-v="${ds}" aria-pressed="${ds===sel}"
       aria-label="${esc(fmtDateLong(ds))}${hn? " · "+esc(hn):""}${all.length? " · 일정 "+all.length+"개":""}${gm.length? " · 경기":""}">
-      <span class="dn">${+ds.slice(8)}</span>${bars}${hn? `<span class="hnm">${esc(hn)}</span>` : ""}
-      <span class="dic">${marks}</span></button>`;
+      <span class="dn">${pad2(+ds.slice(8))}</span>${bars}
+      <span class="dic">${hn? `<span class="hnm">${esc(hn)}</span>` : ""}${marks}</span></button>`;
   }).join("");
 
   const list = plansOn(sel), gsel = gamesOn(sel), selHol = holidayName(sel);
@@ -2855,7 +2912,7 @@ function viewPlans(){
         <button class="btn sm" data-act="pmToday">오늘</button>
         <button class="iconbtn sm" data-act="pmMove" data-v="1" title="다음 달" aria-label="다음 달">${IC_CHEV_R}</button>
       </div>
-      <div class="wkhd">${WKD.map((d,i)=>`<span class="${i===0?"sun":i===6?"sat":""}">${d}</span>`).join("")}</div>
+      <div class="wkhd">${WKD.map((d,i)=>`<span class="${[i===0?"sun":"", (days.indexOf(tdy)>=0 && i===twd)?"tdy":""].filter(Boolean).join(" ")}">${d}</span>`).join("")}</div>
       <div class="cal">${cells}</div>
       ${sum.length? `<div class="hint" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
         이번 달 ${sum.map(x=>`<span style="display:inline-flex;align-items:center;gap:4px;color:${x.ic.col}">${planIcon(x.ic.c,15)}<span style="color:var(--text-3)">${x.ic.ko}</span> <b style="color:var(--text-2)">${x.k}</b></span>`).join("")}</div>` : ""}
@@ -4149,7 +4206,8 @@ function planSheet(id, date){
         <button type="button" class="mini" id="pl_auto" data-act="toggleAutoReps" aria-pressed="${plDraft.auto}">자동</button></span>
         ${stepper("pl_reps", clamp(num(v.reps,0),0,999), 0, 999)}</div>
     </div>
-    <div class="hint" id="pl_autohint" style="margin:-6px 0 12px"></div>
+    <div class="hint" id="pl_titlehint" style="margin:-6px 0 4px"></div>
+    <div class="hint" id="pl_autohint" style="margin:0 0 12px"></div>
     <label class="f"><span>메모</span><textarea id="pl_note" placeholder="장소, 준비물, 함께하는 사람 등">${esc(v.note||"")}</textarea></label>
     <div class="sf">${x? delBtn("delPlan", `data-id="${x.id}"`, "이 일정 삭제") : `<button class="btn" data-act="close">취소</button>`}
       <button class="btn pri" data-act="savePlan" data-id="${x?x.id:""}">저장</button></div>`,
@@ -4175,7 +4233,11 @@ function planSheet(id, date){
           autoEl = sheet.querySelector("#pl_auto"),
           ahEl   = sheet.querySelector("#pl_autohint");
     let quiet = false;
+    const thEl = sheet.querySelector("#pl_titlehint");
     plRecalc = ()=>{
+      thEl.innerHTML = plDraft.icon==="etc"
+        ? `ETC 는 달력에 <b>내용에 적은 이름</b>이 표시됩니다 — 비우면 ETC`
+        : `달력에는 <b>${planName(plDraft.icon)}</b> 로 표시됩니다`;
       autoEl.setAttribute("aria-pressed", String(!!plDraft.auto));
       if(plDraft.auto){
         quiet = true;
