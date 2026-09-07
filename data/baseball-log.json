@@ -1184,7 +1184,19 @@
     }
    ],
    "def": [],
-   "videos": [],
+   "videos": [
+    {
+     "id": "mtqhnk7kkvbqb",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/1qhAHwH0Mlyn6NzaN_jL_hDxztfDJQhmN/view?usp=drivesdk",
+     "title": "1번째 타석 · 1회 직선타 아웃",
+     "folder": "",
+     "paId": "mtqhn14ubf34r",
+     "defId": null,
+     "note": "",
+     "createdAt": 1788740071184
+    }
+   ],
    "pdec": "",
    "date": "2026-09-05",
    "opponent": "방배초",
@@ -1197,6 +1209,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-07T00:14:15.284Z",
+ "savedAt": "2026-09-07T00:24:33.492Z",
  "by": "성연제"
 }
