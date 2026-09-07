@@ -1347,68 +1347,84 @@
   {
    "id": "mtqmmgw48qele",
    "date": "2026-09-11",
+   "end": "",
    "icon": "ball",
    "time": "20:00",
+   "reps": 0,
    "title": "BTAC 39",
    "note": ""
   },
   {
    "id": "mtqmnbrh0yxgg",
    "date": "2026-09-09",
+   "end": "",
    "icon": "gym",
    "time": "21:00",
+   "reps": 0,
    "title": "PT 03",
    "note": ""
   },
   {
    "id": "mtqmqj1hlpcx8",
    "date": "2026-09-05",
+   "end": "",
    "icon": "run",
    "time": "18:00",
+   "reps": 0,
    "title": "A트렉 02",
    "note": ""
   },
   {
    "id": "mtqmz931fpv6j",
    "date": "2026-09-15",
+   "end": "",
    "icon": "ball",
    "time": "20:00",
+   "reps": 0,
    "title": "BTAC 40",
    "note": ""
   },
   {
    "id": "mtqn1mpt1v1tm",
    "date": "2026-09-16",
+   "end": "",
    "icon": "gym",
    "time": "21:00",
+   "reps": 0,
    "title": "PT 04",
    "note": ""
   },
   {
    "id": "mtqnmf40pjhkj",
    "date": "2026-08-30",
+   "end": "",
    "icon": "run",
    "time": "",
+   "reps": 0,
    "title": "A트렉 01",
    "note": ""
   },
   {
    "id": "mtqnn0rpnb115",
    "date": "2026-09-01",
+   "end": "",
    "icon": "ball",
    "time": "20:00",
+   "reps": 0,
    "title": "BTAC 38",
    "note": ""
   },
   {
    "id": "mtqnnq5x93jgp",
    "date": "2026-09-02",
+   "end": "",
    "icon": "gym",
    "time": "21:00",
+   "reps": 0,
    "title": "운동짐 01",
    "note": ""
   }
  ],
- "savedAt": "2026-09-07T03:05:51.022Z",
+ "savedAt": "2026-09-07T03:09:22.253Z",
  "by": "성연제"
 }
