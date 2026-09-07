@@ -1508,8 +1508,19 @@
    "reps": 7,
    "title": "",
    "note": ""
+  },
+  {
+   "id": "mtqol4pei6muh",
+   "date": "2026-09-30",
+   "end": "",
+   "icon": "gym",
+   "col": "gray",
+   "time": "",
+   "reps": 8,
+   "title": "",
+   "note": ""
   }
  ],
- "savedAt": "2026-09-07T03:28:32.981Z",
+ "savedAt": "2026-09-07T03:28:45.867Z",
  "by": "성연제"
 }
