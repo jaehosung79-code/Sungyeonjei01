@@ -186,24 +186,38 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
 /* ---------- 일정 달력 ---------- */
 .calhd{display:flex;align-items:center;gap:6px;margin-bottom:10px}
 .calhd .m{flex:1;text-align:center;font-size:15.5px;font-weight:700;font-variant-numeric:tabular-nums}
-.wkhd{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+.wkhd{display:grid;grid-template-columns:repeat(7,1fr);gap:0;margin-bottom:2px}
 .wkhd span{text-align:center;font-size:11.5px;color:var(--text-3);font-weight:650;padding:2px 0}
 .wkhd span.sun{color:var(--crit)}
 .wkhd span.sat{color:var(--accent-ink)}
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+/* 날짜 칸 — 좌우 테두리와 둥근 모서리 없이 가로줄만 남깁니다 */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:0;border-bottom:1px solid var(--border)}
 .dcell{
-  position:relative;min-height:60px;border:1px solid var(--border);border-radius:10px;
-  background:var(--surface-1);cursor:pointer;padding:5px 2px 4px;color:var(--text-1);
+  position:relative;min-height:60px;border:0;border-top:1px solid var(--border);border-radius:0;
+  background:none;cursor:pointer;padding:5px 2px 4px;color:var(--text-1);
   display:flex;flex-direction:column;align-items:center;gap:3px;
 }
-.dcell .dn{font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.15}
-.dcell.sun .dn{color:var(--crit)}
+.dcell .dn{font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.3;
+  min-width:19px;border-radius:999px;padding:0 4px}
+.dcell.sun .dn,.dcell.hol .dn{color:var(--crit)}
 .dcell.out{opacity:.35}
-.dcell.tdy{border-color:var(--accent-ink)}
 .dcell.tdy .dn{color:var(--accent-ink);font-weight:750}
-.dcell.sel{background:var(--surface-2);box-shadow:0 0 0 1.5px var(--accent-ink) inset;border-color:var(--accent-ink)}
-.dcell .dic{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px;line-height:0}
-.dcell .dic svg{width:14px;height:14px;display:block;color:var(--accent-ink)}
+.dcell.sel{background:var(--surface-2)}
+.dcell.sel .dn{background:var(--text-1);color:var(--surface-0)}
+.dcell.sel.tdy .dn,.dcell.sel.hol .dn,.dcell.sel.sun .dn{background:var(--accent-ink);color:var(--surface-1)}
+/* 공휴일 이름 */
+.dcell .hnm{font-size:9px;line-height:1.25;color:var(--crit);font-weight:600;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 1px}
+/* 여러 날에 걸친 일정 띠 — 칸 끝까지 채워 옆 칸과 이어 보이게 합니다 */
+.dcell .dbars{display:flex;flex-direction:column;gap:1px;width:calc(100% + 4px);margin:0 -2px}
+.dbar{height:4px;background:transparent}
+.dbar.s{border-top-left-radius:3px;border-bottom-left-radius:3px}
+.dbar.e{border-top-right-radius:3px;border-bottom-right-radius:3px}
+.dcell .dic{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:3px;line-height:0}
+.dcell .dic svg{width:14px;height:14px;display:block}
+/* 아이콘 + 그 옆의 횟수 */
+.dcell .dpi{display:inline-flex;align-items:center;gap:1px}
+.dcell .dpi .rn{font-size:9.5px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
 /* 경기가 있는 날 — 일정 아이콘과 구분되도록 색을 채운 야구장 아이콘으로 표시합니다 */
 .dcell .gdot{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex:none;
   border-radius:999px;background:var(--accent-ink)}
@@ -214,10 +228,10 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
   background:var(--surface-2);color:var(--accent-ink)}
 .pic svg{width:20px;height:20px;display:block}
 /* 아이콘 고르기 */
-.icpick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
-.icbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
-  padding:11px 4px;border:1px solid var(--border);border-radius:12px;background:var(--surface-1);
-  cursor:pointer;font-size:12px;color:var(--text-2);min-height:74px}
+.icpick{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px}
+.icbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  padding:10px 2px;border:1px solid var(--border);border-radius:12px;background:var(--surface-1);
+  cursor:pointer;font-size:11px;color:var(--text-2);min-height:70px}
 .icbtn svg{width:24px;height:24px;display:block}
 .icbtn[aria-pressed="true"]{border-color:var(--accent-ink);color:var(--accent-ink);background:var(--surface-2);font-weight:650}
 
@@ -317,6 +331,10 @@ input[type="time"]::-webkit-calendar-picker-indicator{flex:none;margin-left:auto
 /* 시간 — 기기 기본 시계 팝업이 시트 안에서 잘리는 일이 없도록 드롭다운 두 개로 고릅니다 */
 .tsel{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .tsel select{min-width:0}
+/* 내용 + 횟수 한 줄 */
+.f2.tr{grid-template-columns:minmax(0,1fr) 136px}
+.f2.tr>.f{margin-bottom:12px}
+@media(max-width:359px){ .f2.tr{grid-template-columns:1fr} .f2.tr>.f{margin-bottom:10px} }
 @media(min-width:400px){ .f2.dt{grid-template-columns:1fr 1fr} }
 /* 경기 정보의 "포지션별 수비 이닝" 한 줄 — 포지션 · 이닝 · 지우기 */
 .dirow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;margin-bottom:8px}
@@ -811,10 +829,11 @@ const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
 const uid = ()=> Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 /* ---- 일정 아이콘 ---- */
 const PLAN_ICONS = [
-  {c:"run",   ko:"RL",     d:'<circle cx="15.2" cy="4.9" r="2"/><path d="M6.4 20.4 9.7 16l-2.1-3 1.3-4.4 3.7-1.1 2.6 2.7 3.4 1"/><path d="m12.6 11.3 2 3.6.9 5.1"/><path d="M7.6 9.7 5 11.5 4 14.3"/>'},
-  {c:"ball",  ko:"BL",     d:'<circle cx="12" cy="12" r="8.2"/><path d="M7.5 5.5C9.3 7.2 10.3 9.5 10.3 12s-1 4.8-2.8 6.5"/><path d="M16.5 5.5c-1.8 1.7-2.8 4-2.8 6.5s1 4.8 2.8 6.5"/>'},
-  {c:"gym",   ko:"GYM",  d:'<path d="M6.6 8.9v6.2M4.1 10.4v3.2M17.4 8.9v6.2M19.9 10.4v3.2M6.6 12h10.8"/>'},
-  {c:"field", ko:"Game",   d:'<path d="M3.6 17.6C3.6 10.7 7.3 4.8 12 4.8s8.4 5.9 8.4 12.8"/><path d="M12 20.6 7.6 16.2 12 11.8l4.4 4.4z"/><path d="M12 11.8V8.4"/>'}
+  {c:"run",   ko:"RL",   col:"var(--s3)",         d:'<circle cx="15.2" cy="4.9" r="2"/><path d="M6.4 20.4 9.7 16l-2.1-3 1.3-4.4 3.7-1.1 2.6 2.7 3.4 1"/><path d="m12.6 11.3 2 3.6.9 5.1"/><path d="M7.6 9.7 5 11.5 4 14.3"/>'},
+  {c:"ball",  ko:"BL",   col:"var(--s1)",         d:'<circle cx="12" cy="12" r="8.2"/><path d="M7.5 5.5C9.3 7.2 10.3 9.5 10.3 12s-1 4.8-2.8 6.5"/><path d="M16.5 5.5c-1.8 1.7-2.8 4-2.8 6.5s1 4.8 2.8 6.5"/>'},
+  {c:"gym",   ko:"GYM",  col:"var(--s2)",         d:'<path d="M6.6 8.9v6.2M4.1 10.4v3.2M17.4 8.9v6.2M19.9 10.4v3.2M6.6 12h10.8"/>'},
+  {c:"etc",   ko:"ETC",  col:"var(--neutral)",    d:'<circle cx="5.6" cy="12" r="1.55" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.55" fill="currentColor" stroke="none"/><circle cx="18.4" cy="12" r="1.55" fill="currentColor" stroke="none"/>'},
+  {c:"field", ko:"Game", col:"var(--accent-ink)", d:'<path d="M3.6 17.6C3.6 10.7 7.3 4.8 12 4.8s8.4 5.9 8.4 12.8"/><path d="M12 20.6 7.6 16.2 12 11.8l4.4 4.4z"/><path d="M12 11.8V8.4"/>'}
 ];
 const PIMAP = {}; PLAN_ICONS.forEach(x=> PIMAP[x.c]=x);
 function planIcon(c, size){
@@ -822,6 +841,38 @@ function planIcon(c, size){
   return `<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${x.d}</svg>`;
 }
 function planName(c){ return (PIMAP[c]||PLAN_ICONS[0]).ko; }
+function planColor(c){ return (PIMAP[c]||PLAN_ICONS[0]).col; }
+
+/* ---- 대한민국 공휴일 ----
+   음력 공휴일(설날·추석·부처님오신날)과 대체공휴일은 해마다 날짜가 달라
+   2025~2030년 확정 날짜를 표로 담았습니다. 그 밖의 해는 날짜가 고정된 국경일만 표시합니다. */
+const HOL_FIX = {"01-01":"신정","03-01":"삼일절","05-05":"어린이날","06-06":"현충일",
+                 "08-15":"광복절","10-03":"개천절","10-09":"한글날","12-25":"성탄절"};
+const HOL_Y0 = 2025, HOL_Y1 = 2030;
+const HOL_Y = {
+ 2025:"01-27 임시공휴일|01-28 설날 연휴|01-29 설날|01-30 설날 연휴|03-03 대체공휴일|05-05 어린이날·부처님오신날|05-06 대체공휴일|06-03 대통령선거일|10-05 추석 연휴|10-06 추석|10-07 추석 연휴|10-08 대체공휴일",
+ 2026:"02-16 설날 연휴|02-17 설날|02-18 설날 연휴|03-02 대체공휴일|05-24 부처님오신날|05-25 대체공휴일|06-03 지방선거일|08-17 대체공휴일|09-24 추석 연휴|09-25 추석|09-26 추석 연휴|10-05 대체공휴일",
+ 2027:"02-06 설날 연휴|02-07 설날|02-08 설날 연휴|02-09 대체공휴일|05-13 부처님오신날|08-16 대체공휴일|09-14 추석 연휴|09-15 추석|09-16 추석 연휴|10-04 대체공휴일|10-11 대체공휴일|12-27 대체공휴일",
+ 2028:"01-26 설날 연휴|01-27 설날|01-28 설날 연휴|05-02 부처님오신날|10-02 추석 연휴|10-03 추석·개천절|10-04 추석 연휴|10-05 대체공휴일",
+ 2029:"02-12 설날 연휴|02-13 설날|02-14 설날 연휴|05-07 대체공휴일|05-20 부처님오신날|05-21 대체공휴일|09-21 추석 연휴|09-22 추석|09-23 추석 연휴|09-24 대체공휴일",
+ 2030:"02-02 설날 연휴|02-03 설날|02-04 설날 연휴|02-05 대체공휴일|05-06 대체공휴일|05-09 부처님오신날|09-11 추석 연휴|09-12 추석|09-13 추석 연휴"
+};
+const _holCache = {};
+function holidaysOf(y){
+  if(_holCache[y]) return _holCache[y];
+  const map = {};
+  Object.keys(HOL_FIX).forEach(k=>{ map[y+"-"+k] = HOL_FIX[k]; });
+  String(HOL_Y[y]||"").split("|").filter(Boolean).forEach(t=>{
+    const i = t.indexOf(" ");
+    if(i>0) map[y+"-"+t.slice(0,i)] = t.slice(i+1);   // 그 해 표가 고정 국경일보다 우선
+  });
+  _holCache[y] = map;
+  return map;
+}
+function holidayName(ds){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(ds||""))) return "";
+  return holidaysOf(+ds.slice(0,4))[ds] || "";
+}
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const num = (v,d)=> { const n = parseFloat(v); return isFinite(n)? n : (d||0); };
 const clamp = (v,a,b)=> Math.max(a, Math.min(b, v));
@@ -833,10 +884,23 @@ function thisMonth(){ return today().slice(0,7); }
 function normalizePlans(list){
   return (Array.isArray(list)? list : [])
     .filter(x=> x && /^\d{4}-\d{2}-\d{2}$/.test(String(x.date||"")))
-    .map(x=>({ id: x.id || uid(), date: String(x.date),
-      icon: PIMAP[x.icon]? x.icon : "run",
-      time: /^\d{2}:\d{2}$/.test(String(x.time||""))? String(x.time) : "",
-      title: String(x.title||""), note: String(x.note||"") }));
+    .map(x=>{
+      const d = String(x.date);
+      let e = /^\d{4}-\d{2}-\d{2}$/.test(String(x.end||""))? String(x.end) : "";
+      if(e && e <= d) e = "";                       // 종료일이 시작일 이전·같으면 하루짜리로 봅니다
+      return { id: x.id || uid(), date: d, end: e,
+        icon: PIMAP[x.icon]? x.icon : "run",
+        time: /^\d{2}:\d{2}$/.test(String(x.time||""))? String(x.time) : "",
+        reps: clamp(Math.round(num(x.reps,0)), 0, 999),
+        title: String(x.title||""), note: String(x.note||"") };
+    });
+}
+/* 이 일정이 덮는 마지막 날 */
+function planEnd(x){ return (x && x.end) || (x && x.date) || ""; }
+/* 여러 날에 걸친 일정이면 "9월 12일 ~ 9월 14일" */
+function planRange(x){
+  if(!x || !x.end) return "";
+  return `${+x.date.slice(5,7)}월 ${+x.date.slice(8)}일 ~ ${+x.end.slice(5,7)}월 ${+x.end.slice(8)}일`;
 }
 /* 달력에서 보고 있는 달 · 고른 날짜 */
 function planMonth(){ const m=(S.ui&&S.ui.pm)||""; return /^\d{4}-\d{2}$/.test(m)? m : thisMonth(); }
@@ -849,8 +913,9 @@ function shiftMonth(m, k){
   const dt = new Date(+m.slice(0,4), +m.slice(5,7)-1+k, 1);
   return dt.getFullYear()+"-"+pad2(dt.getMonth()+1);
 }
+/* 그 날에 걸쳐 있는 일정 — 여러 날짜 일정은 시작일부터 종료일까지 모두 포함합니다 */
 function plansOn(ds){
-  return (S.plans||[]).filter(x=>x.date===ds)
+  return (S.plans||[]).filter(x=> x.date<=ds && ds<=planEnd(x))
     .slice().sort((a,b)=> String(a.time||"~").localeCompare(String(b.time||"~")));
 }
 function gamesOn(ds){ return (S.games||[]).filter(g=>g.date===ds); }
@@ -2649,7 +2714,8 @@ function viewGame(id){
    일정은 아이콘 · 시간 · 내용으로 적고, 목록에서 바로 지울 수 있습니다. */
 const WKD = ["일","월","화","수","목","금","토"];
 function planLine(p){
-  return [p.time || "", p.note || ""].filter(Boolean).join(" · ");
+  return [planRange(p), p.time || "", num(p.reps,0)? num(p.reps,0)+"회" : "", p.note || ""]
+    .filter(Boolean).join(" · ");
 }
 function viewPlans(){
   const m = planMonth(), sel = planDay(), tdy = today();
@@ -2658,28 +2724,52 @@ function viewPlans(){
   const start = new Date(y, mo-1, 1 - first.getDay());          // 그 주 일요일부터 그립니다
   const week = [];
   for(let w=0; w<6; w++){
-    const days = [];
+    const row = [];
     for(let i=0; i<7; i++){
       const dt = new Date(start.getFullYear(), start.getMonth(), start.getDate() + w*7 + i);
-      days.push(dt.getFullYear()+"-"+pad2(dt.getMonth()+1)+"-"+pad2(dt.getDate()));
+      row.push(dt.getFullYear()+"-"+pad2(dt.getMonth()+1)+"-"+pad2(dt.getDate()));
     }
     // 줄 전체가 다음 달이면 그리지 않습니다
-    if(w>=4 && days.every(d=> d.slice(0,7)!==m)) break;
-    week.push(days);
+    if(w>=4 && row.every(d=> d.slice(0,7)!==m)) break;
+    week.push(row);
   }
-  const cells = week.flat().map(ds=>{
-    const ps = plansOn(ds), gm = gamesOn(ds);
+  const days = week.flat(), gFrom = days[0], gTo = days[days.length-1];
+
+  /* 여러 날에 걸친 일정은 띠로 그립니다 — 겹치면 줄(레인)을 나눠 씁니다 (최대 3줄) */
+  const ranges = (S.plans||[]).filter(x=> x.end && x.end >= gFrom && x.date <= gTo)
+    .slice().sort((a,b)=> a.date.localeCompare(b.date) || b.end.localeCompare(a.end));
+  const laneEnd = [], laneOf = {};
+  ranges.forEach(r=>{
+    let i = 0;
+    while(i<laneEnd.length && laneEnd[i] >= r.date) i++;
+    laneEnd[i] = r.end; laneOf[r.id] = i;
+  });
+  const laneN = Math.min(laneEnd.length, 3);
+
+  const cells = days.map(ds=>{
+    const all = plansOn(ds), gm = gamesOn(ds);
+    const one = all.filter(x=> !x.end);                        // 하루짜리 일정만 아이콘으로
+    const hn = holidayName(ds);
     const wd = new Date(ds+"T00:00:00").getDay();
-    const cls = ["dcell", ds.slice(0,7)!==m? "out":"", ds===tdy? "tdy":"", ds===sel? "sel":"", wd===0? "sun":""].filter(Boolean).join(" ");
+    const cls = ["dcell", ds.slice(0,7)!==m? "out":"", ds===tdy? "tdy":"", ds===sel? "sel":"",
+                 wd===0? "sun":"", hn? "hol":""].filter(Boolean).join(" ");
+    const bars = laneN? `<span class="dbars">` + Array.from({length:laneN},(_,i)=>{
+        const r = ranges.find(x=> laneOf[x.id]===i && x.date<=ds && ds<=x.end);
+        if(!r) return `<span class="dbar"></span>`;
+        const c = ["dbar", ds===r.date? "s":"", ds===r.end? "e":""].filter(Boolean).join(" ");
+        return `<span class="${c}" style="background:${planColor(r.icon)}"></span>`;
+      }).join("") + `</span>` : "";
     const marks = (gm.length? `<span class="gdot" title="경기">${planIcon("field", 11)}</span>` : "")
-      + ps.slice(0,3).map(x=> planIcon(x.icon, 14)).join("")
-      + (ps.length>3? `<span class="more">+${ps.length-3}</span>` : "");
+      + one.slice(0,3).map(x=> `<span class="dpi" style="color:${planColor(x.icon)}">${planIcon(x.icon, 14)}${
+          num(x.reps,0)? `<b class="rn">${num(x.reps,0)}</b>` : ""}</span>`).join("")
+      + (one.length>3? `<span class="more">+${one.length-3}</span>` : "");
     return `<button type="button" class="${cls}" data-act="pickDay" data-v="${ds}" aria-pressed="${ds===sel}"
-      aria-label="${esc(fmtDateLong(ds))}${ps.length? " · 일정 "+ps.length+"개":""}${gm.length? " · 경기":""}">
-      <span class="dn">${+ds.slice(8)}</span><span class="dic">${marks}</span></button>`;
+      aria-label="${esc(fmtDateLong(ds))}${hn? " · "+esc(hn):""}${all.length? " · 일정 "+all.length+"개":""}${gm.length? " · 경기":""}">
+      <span class="dn">${+ds.slice(8)}</span>${bars}${hn? `<span class="hnm">${esc(hn)}</span>` : ""}
+      <span class="dic">${marks}</span></button>`;
   }).join("");
 
-  const list = plansOn(sel), gsel = gamesOn(sel);
+  const list = plansOn(sel), gsel = gamesOn(sel), selHol = holidayName(sel);
   const rows = gsel.map(g=>`
       <div class="row" data-act="openGame" data-id="${g.id}">
         <span class="pic">${planIcon("field", 20)}</span>
@@ -2689,16 +2779,18 @@ function viewPlans(){
       </div>`).join("")
     + list.map(x=>`
       <div class="row">
-        <span class="pic">${planIcon(x.icon, 20)}</span>
+        <span class="pic" style="color:${planColor(x.icon)}">${planIcon(x.icon, 20)}</span>
         <div class="main" data-act="editPlan" data-id="${x.id}">
-          <div class="t">${esc(x.title || planName(x.icon))}</div>
+          <div class="t">${esc(x.title || planName(x.icon))}${num(x.reps,0)? ` <span style="color:var(--text-3);font-weight:500">${num(x.reps,0)}회</span>` : ""}</div>
           <div class="s">${esc(planLine(x)) || planName(x.icon)}</div></div>
         ${delBtn("delPlan", `data-id="${x.id}"`, "일정 삭제")}
       </div>`).join("");
 
-  // 이번 달 요약 — 아이콘별 횟수
+  // 이번 달 요약 — 아이콘별 횟수 (시작일 기준)
   const mon = (S.plans||[]).filter(x=> x.date.slice(0,7)===m);
   const sum = PLAN_ICONS.map(ic=>({ic, k:mon.filter(x=>x.icon===ic.c).length})).filter(x=>x.k>0);
+  const holNote = (y < HOL_Y0 || y > HOL_Y1)
+    ? `<div class="hint" style="margin-top:8px">${HOL_Y0}~${HOL_Y1}년 밖에서는 날짜가 고정된 국경일만 표시 — 설날·추석·대체공휴일 제외</div>` : "";
 
   return `<div class="card">
       <div class="calhd">
@@ -2710,11 +2802,12 @@ function viewPlans(){
       <div class="wkhd">${WKD.map((d,i)=>`<span class="${i===0?"sun":i===6?"sat":""}">${d}</span>`).join("")}</div>
       <div class="cal">${cells}</div>
       ${sum.length? `<div class="hint" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
-        이번 달 ${sum.map(x=>`<span style="display:inline-flex;align-items:center;gap:4px">${planIcon(x.ic.c,15)}${x.ic.ko} <b>${x.k}</b></span>`).join("")}</div>` : ""}
+        이번 달 ${sum.map(x=>`<span style="display:inline-flex;align-items:center;gap:4px;color:${x.ic.col}">${planIcon(x.ic.c,15)}<span style="color:var(--text-3)">${x.ic.ko}</span> <b style="color:var(--text-2)">${x.k}</b></span>`).join("")}</div>` : ""}
+      ${holNote}
     </div>
     <div class="card">
       <div class="hd"><div style="flex:1"><h3>${esc(fmtDateLong(sel))}</h3>
-        <div class="cap">${list.length? "일정 "+list.length+"개" : "일정 없음"}${gsel.length? " · 경기 "+gsel.length+"건" : ""}</div></div>
+        <div class="cap">${selHol? `<span style="color:var(--crit);font-weight:650">${esc(selHol)}</span> · ` : ""}${list.length? "일정 "+list.length+"개" : "일정 없음"}${gsel.length? " · 경기 "+gsel.length+"건" : ""}</div></div>
         ${addBtn("newPlan", `data-v="${sel}"`, "일정 추가")}</div>
       <div class="list">${rows || `<div class="hint">이 날은 비어 있음${readOnly()? "" : " · 오른쪽 위 + 로 추가"}</div>`}</div>
       ${readOnly()? "" : `<button class="btn pri block nb" data-act="newPlan" data-v="${sel}" style="margin-top:10px">+ 일정 추가</button>`}
@@ -3969,7 +4062,12 @@ function planSheet(id, date){
     </div>
     ${x? "" : `<div class="hint" style="margin:-4px 0 12px"><b>Game</b> 은 일정이 아니라 <b>경기 기록</b>으로 등록됩니다 —
       고르면 새 경기 화면이 열립니다</div>`}
-    <label class="f"><span>날짜</span><input id="pl_date" type="date" value="${esc(v.date)}"></label>
+    <div class="f2 dt">
+      <label class="f"><span>시작 날짜</span><input id="pl_date" type="date" value="${esc(v.date)}"></label>
+      <label class="f"><span>종료 날짜 <span style="color:var(--text-3);font-weight:400">— 선택 · 여러 날 일정</span></span>
+        <input id="pl_end" type="date" value="${esc(v.end||"")}"></label>
+    </div>
+    <div class="hint" id="pl_rangehint" style="margin:-4px 0 12px">비우면 하루짜리 일정</div>
     <label class="f"><span>시간 <span style="color:var(--text-3);font-weight:400">— 선택</span></span>
       <div class="tsel">
         <select id="pl_h" aria-label="시">
@@ -3980,8 +4078,12 @@ function planSheet(id, date){
           ${MOPT.map(mm=>`<option value="${mm}" ${TM===mm?"selected":""}>${+mm}분</option>`).join("")}
         </select>
       </div></label>
-    <label class="f"><span>내용 <span style="color:var(--text-3);font-weight:400">— 비우면 아이콘 이름</span></span>
-      <input id="pl_title" value="${esc(v.title||"")}" placeholder="예: 러닝 5km · 팀 훈련 · 하체 운동"></label>
+    <div class="f2 tr">
+      <label class="f"><span>내용 <span style="color:var(--text-3);font-weight:400">— 비우면 아이콘 이름</span></span>
+        <input id="pl_title" value="${esc(v.title||"")}" placeholder="예: 러닝 5km · 팀 훈련"></label>
+      <label class="f"><span>횟수 <span style="color:var(--text-3);font-weight:400">— 0이면 없음</span></span>
+        ${stepper("pl_reps", clamp(num(v.reps,0),0,999), 0, 999)}</label>
+    </div>
     <label class="f"><span>메모</span><textarea id="pl_note" placeholder="장소, 준비물, 함께하는 사람 등">${esc(v.note||"")}</textarea></label>
     <div class="sf">${x? delBtn("delPlan", `data-id="${x.id}"`, "이 일정 삭제") : `<button class="btn" data-act="close">취소</button>`}
       <button class="btn pri" data-act="savePlan" data-id="${x?x.id:""}">저장</button></div>`,
@@ -3990,6 +4092,18 @@ function planSheet(id, date){
     const h = sheet.querySelector("#pl_h"), mm = sheet.querySelector("#pl_m");
     const sync = ()=>{ const off = !h.value; mm.disabled = off; mm.style.opacity = off? ".45" : ""; };
     h.addEventListener("change", sync); sync();
+    // 시작~종료 날짜 안내
+    const d1 = sheet.querySelector("#pl_date"), d2 = sheet.querySelector("#pl_end"),
+          rh = sheet.querySelector("#pl_rangehint");
+    const syncR = ()=>{
+      const a = d1.value, b = d2.value;
+      if(!b){ rh.innerHTML = "비우면 하루짜리 일정"; return; }
+      if(!a || b <= a){ rh.innerHTML = `<span style="color:var(--crit)">종료 날짜가 시작 날짜보다 뒤여야 합니다 — 저장하면 하루짜리로 저장됩니다</span>`; return; }
+      const dd = Math.round((new Date(b+"T00:00:00") - new Date(a+"T00:00:00"))/86400000) + 1;
+      rh.innerHTML = `<b>${dd}일</b>짜리 일정 — 달력에 이어진 띠로 표시`;
+    };
+    [d1,d2].forEach(el=>{ el.addEventListener("change", syncR); el.addEventListener("input", syncR); });
+    syncR();
   });
 }
 
@@ -4796,8 +4910,12 @@ document.addEventListener("click", ev=>{
     case "savePlan": {
       const dt = $("#pl_date").value || today();
       const hh = $("#pl_h").value;
-      const d = { date: dt, icon: (plDraft && PIMAP[plDraft.icon])? plDraft.icon : "run",
+      let en = $("#pl_end").value || "";
+      if(en && en <= dt) en = "";                    // 종료일이 앞서면 하루짜리로 저장합니다
+      const d = { date: dt, end: en,
+                  icon: (plDraft && PIMAP[plDraft.icon])? plDraft.icon : "run",
                   time: hh? hh + ":" + ($("#pl_m").value || "00") : "",
+                  reps: clamp(num($("#pl_reps").value, 0), 0, 999),
                   title: $("#pl_title").value.trim(), note: $("#pl_note").value.trim() };
       S.plans = Array.isArray(S.plans)? S.plans : [];
       if(id){ const o = S.plans.find(x=>x.id===id); if(o) Object.assign(o, d); }
