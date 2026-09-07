@@ -499,28 +499,6 @@ video{
   width:100%;max-width:100%;height:auto;display:block;margin:0 auto;
   border-radius:var(--r-sm);background:#000;
 }
-/* 링크 영상(유튜브·드라이브·Vimeo)을 앱 안에서 여는 상자 — 16:9 비율 그대로입니다 */
-.lvbox{
-  position:relative;width:100%;
-  aspect-ratio:16 / 9;margin:0 auto;background:#000;
-  border-radius:var(--r-sm);overflow:hidden;
-}
-.lvbox iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;border-radius:0}
-/* 영상 위에 얹는 작은 조작 단추 — 유튜브 자체 조작줄(아래쪽)을 가리지 않게 오른쪽 위에 둡니다 */
-.lvbar{
-  position:absolute;top:0;right:0;z-index:2;display:flex;gap:6px;
-  padding:8px;padding-top:max(8px, env(safe-area-inset-top));
-}
-.lvbar button{
-  width:34px;height:34px;flex:none;display:inline-flex;align-items:center;justify-content:center;
-  border:0;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;
-  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
-}
-.lvbar button:active{opacity:.65}
-.lvbox .lvhint{
-  position:absolute;left:0;right:0;bottom:0;z-index:1;padding:8px 10px;
-  background:rgba(0,0,0,.55);color:#fff;font-size:11.5px;line-height:1.4;
-}
 .vidcard{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px;margin-bottom:8px}
 .vidcard .vh{display:flex;gap:8px;align-items:center;margin-bottom:8px}
 .vtitle{
@@ -529,6 +507,9 @@ video{
   min-height:38px;color:var(--accent-ink);
 }
 .vtitle .tx{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 링크 영상 제목은 새 창 바로가기(<a>)입니다 — 오른쪽 끝에 화살표 아이콘을 답니다 */
+a.vtitle{text-decoration:none}
+.vtitle .ext{flex:none;display:inline-flex;margin-left:8px;opacity:.6}
 .vtitle .lico{flex:none;display:inline-flex;margin-right:6px;opacity:.85}
 .vtitle:active{opacity:.7}
 .vgame{
@@ -1169,7 +1150,8 @@ function armFullscreen(){
     /* [전체 화면으로 보기] 버튼을 누른 터치는 그냥 둡니다 —
        여기서 먼저 전체 화면으로 바꾸면, 이어서 실행되는 버튼이
        "이미 전체 화면이네" 하고 다시 꺼 버려서 아무 일도 안 일어납니다. */
-    try{ if(ev && ev.target && ev.target.closest && ev.target.closest("[data-act='fullscreen']")) return; }catch(e){}
+    try{ if(ev && ev.target && ev.target.closest
+             && ev.target.closest("[data-act='fullscreen'],[data-vlink]")) return; }catch(e){}
     document.removeEventListener("pointerdown", once, true);
     document.removeEventListener("keydown", once, true);
     fsScreenArmed = false;
@@ -2795,10 +2777,17 @@ function videoCard(v, g, lite){
   const head = v.kind==="file"? (v.title || v.name || "영상") : (v.title || linkName(v.url));
   return `<div class="vidcard" data-vid="${v.id}">
     <div class="vh">
-      <button class="vtitle" data-act="playVideo" data-gid="${g.id}" data-id="${v.id}" title="${v.kind==="link"? "눌러서 가로 전체 화면으로 재생" : "눌러서 재생"}">
-        ${v.kind==="link"? `<span class="lico" aria-hidden="true">${ICON_LINK}</span>` : ""}
-        <span class="tx">${esc(head)}</span>
-      </button>
+      ${v.kind==="link"
+        /* 링크 영상 — 앱 안에서 재생하지 않고 새 창 바로가기로 엽니다 */
+        ? `<a class="vtitle" href="${esc(v.url||"")}" target="_blank" rel="noopener noreferrer"
+             data-vlink="1" title="새 창에서 열기" aria-label="${esc(head)} — 새 창에서 열기">
+            <span class="lico" aria-hidden="true">${ICON_LINK}</span>
+            <span class="tx">${esc(head)}</span>
+            <span class="ext" aria-hidden="true">${IC_NEWWIN}</span>
+          </a>`
+        : `<button class="vtitle" data-act="playVideo" data-gid="${g.id}" data-id="${v.id}" title="눌러서 재생">
+            <span class="tx">${esc(head)}</span>
+          </button>`}
       ${lite? "" : `<button class="iconbtn sm" data-act="editVideo" data-gid="${g.id}" data-id="${v.id}" title="영상 정보 수정" aria-label="영상 정보 수정">${ICON_EDIT}</button>
       ${delBtn("delVideo", `data-gid="${g.id}" data-id="${v.id}"`, "영상 삭제")}`}
     </div>
@@ -2953,9 +2942,9 @@ function viewSettings(){
       <div class="filters" style="margin-bottom:8px"><div class="seg" role="group" aria-label="자동 재생 방식">
         ${Object.keys(AUTOPLAY).map(k=>`<button data-act="autoplay" data-v="${k}" aria-pressed="${apMode()===k}">${AUTOPLAY[k]}</button>`).join("")}
       </div></div>
-      <div class="hint">자동 재생 설정은 파일 영상과 링크 영상에 함께 적용</div>
-      <div class="hint" style="margin-top:8px">유튜브 · 구글 드라이브 · Vimeo 링크는 앱 안에서 바로 재생 ·
-        그 밖의 주소는 새 창에서 열림</div>
+      <div class="hint">자동 재생 설정은 이 기기에 저장한 파일 영상에만 적용</div>
+      <div class="hint" style="margin-top:8px">링크 영상은 제목을 누르면 새 창(유튜브 · 구글 드라이브 앱 등)에서 바로 열림 —
+        앱 안에서는 재생하지 않음</div>
     </div>
 
     <div class="card"><div class="hd"><div style="flex:1"><h3>백업 / 복원</h3>
@@ -3953,7 +3942,7 @@ function videoSheet(gid, vid){
     <div id="v_link">
       <label class="f"><span>영상 주소 <span style="color:var(--text-3);font-weight:400">— 함께 입력 가능 (파일 없을 때 이 주소로 재생)</span></span>
         <input id="v_url" inputmode="url" value="${V?esc(V.url||""):""}" placeholder="https://youtu.be/... 또는 드라이브 주소"></label>
-      <div class="hint" style="margin:-6px 0 12px">주소만 넣으면 새 창에서 열림 · 파일과 함께 넣으면 파일 우선<br>
+      <div class="hint" style="margin:-6px 0 12px">주소만 넣으면 제목이 새 창 바로가기가 됨 · 파일과 함께 넣으면 파일 우선<br>
         드라이브는 <b>링크가 있는 모든 사용자</b>, 유튜브는 <b>일부 공개</b> 이상 필요</div>
     </div>
     <div id="v_pick" class="pickbox" hidden></div>
@@ -4017,60 +4006,6 @@ function linkName(url){
   return "링크 영상";
 }
 
-/* ---- 링크 주소에서 영상 번호를 뽑아 앱 안에서 열 수 있는 주소로 바꿉니다 ---- */
-function ytId(u){
-  const m = String(u||"").match(
-    /(?:youtube\.com\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/|live\/|v\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/i);
-  return m? m[1] : "";
-}
-/* 주소 끝의 시작 시간(t=90 · t=1h2m3s)을 초로 바꿉니다 */
-function ytStart(u){
-  const m = String(u||"").match(/[?&#](?:t|start)=([0-9hms]+)/i);
-  if(!m) return 0;
-  const v = m[1];
-  if(/^\d+$/.test(v)) return +v;
-  let sec = 0, x;
-  if((x = v.match(/(\d+)h/i))) sec += +x[1]*3600;
-  if((x = v.match(/(\d+)m/i))) sec += +x[1]*60;
-  if((x = v.match(/(\d+)s/i))) sec += +x[1];
-  return sec;
-}
-function driveId(u){
-  const s = String(u||"");
-  const m = s.match(/\/file\/d\/([A-Za-z0-9_-]{10,})/) || s.match(/[?&]id=([A-Za-z0-9_-]{10,})/);
-  return m? m[1] : "";
-}
-function vimeoId(u){
-  const m = String(u||"").match(/vimeo\.com\/(?:video\/)?(\d{6,})/i);
-  return m? m[1] : "";
-}
-/* 주소가 영상 파일 그 자체인 경우 — <video> 로 바로 재생합니다 */
-function directVideoURL(u){
-  return /^https?:\/\/[^?#]+\.(mp4|m4v|webm|ogv|ogg|mov)(\?|#|$)/i.test(String(u||""));
-}
-/* 앱 안에서 열 수 있는 주소면 iframe 주소를, 아니면 빈 글자를 돌려줍니다 */
-function embedURL(url){
-  const ap = apMode();
-  const auto = ap === "off"? "" : "&autoplay=1" + (ap === "muted"? "&mute=1" : "");
-  const y = ytId(url);
-  if(y){
-    const t = ytStart(url);
-    return "https://www.youtube.com/embed/" + y + "?playsinline=1&rel=0" + auto + (t? "&start="+t : "");
-  }
-  const d = driveId(url);
-  if(d) return "https://drive.google.com/file/d/" + d + "/preview";
-  const vm = vimeoId(url);
-  if(vm) return "https://player.vimeo.com/video/" + vm + "?playsinline=1" + auto.replace("&mute=","&muted=");
-  return "";
-}
-
-/* 영상 위에 얹는 조작 단추 — 새 창 / 닫기 */
-function lvBar(gid, id){
-  return `<div class="lvbar">
-    <button data-act="openLinkOut" data-gid="${gid}" data-id="${id}" title="새 창에서 열기" aria-label="새 창에서 열기">${IC_NEWWIN}</button>
-    <button data-act="closeLink" data-gid="${gid}" data-id="${id}" title="닫기" aria-label="닫기">${IC_X}</button>
-  </div>`;
-}
 
 function playVideo(gid, vid){
   const g = S.games.find(x=>x.id===gid); if(!g) return;
@@ -4112,7 +4047,7 @@ function playVideo(gid, vid){
     }
   };
 
-  /* 앱 안에서 열 수 없는 주소는 새 창(유튜브·드라이브 앱 등)으로 넘깁니다 */
+  /* 링크 영상은 언제나 새 창(유튜브·드라이브 앱 등)에서 엽니다 */
   const openOutside = () =>{
     host.innerHTML = ""; host.dataset.on = "0";
     let w = null;
@@ -4124,19 +4059,8 @@ function playVideo(gid, vid){
       host.innerHTML = `<div class="hint">새 창 차단 — 브라우저에서 팝업 허용 필요</div>`;
     }
   };
-  /* 링크 영상 — 앱 안에서 그대로 재생합니다 */
-  const playLink = () =>{
-    if(directVideoURL(v.url)){ mountVideo(v.url); return; }
-    const em = embedURL(v.url);
-    if(!em){ openOutside(); return; }
-    const ttl = v.title || linkName(v.url);
-    host.innerHTML = `<div class="lvbox">
-        <iframe src="${esc(em)}" title="${esc(ttl)}" loading="eager"
-          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-          referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-        ${lvBar(g.id, v.id)}
-      </div>`;
-  };
+  /* 링크 영상 — 앱 안에서 재생하지 않고 새 창으로 넘깁니다 */
+  const playLink = openOutside;
   if(v.kind === "link"){ playLink(); return; }
 
   // 이 기기에 저장한 파일 (파일이 우선입니다)
@@ -4591,15 +4515,6 @@ document.addEventListener("click", ev=>{
       const fi=$("#v_input"); if(fi){ fi.accept = "video/*"; fi.click(); } break; }
     case "saveVideo": saveVideo(gid, el); break;
     case "playVideo": playVideo(gid, id); break;
-    /* 영상 상자 위의 작은 단추들 — render() 를 부르면 재생 중인 영상이 지워지므로 부르지 않습니다 */
-    case "openLinkOut": {
-      const g2 = S.games.find(x=>x.id===gid);
-      const v2 = g2 && g2.videos.find(x=>x.id===id);
-      if(!v2 || !v2.url){ toast("영상 주소 없음"); break; }
-      try{ const w = window.open(v2.url, "_blank"); if(w){ try{ w.opener = null; }catch(e){} }
-           else toast("새 창 차단 — 브라우저에서 팝업 허용 필요"); }catch(e){ toast("새 창 열기 실패"); }
-      break; }
-    case "closeLink": playVideo(gid, id); break;
     case "autoplay": S.settings.autoplay=v; saveNow(); render(); toast("자동 재생 · "+AUTOPLAY[v]); break;
     case "theme": setTheme(v); break;
     case "fullscreen": toggleFullscreen(); setTimeout(render, 150); break;
