@@ -1214,6 +1214,30 @@
      "dp": 0
     },
     {
+     "id": "mtqkr6zy7mg2u",
+     "pos": "2B",
+     "inning": 2,
+     "result": "INN",
+     "innings": "",
+     "note": "",
+     "po": 0,
+     "a": 0,
+     "e": 0,
+     "dp": 0
+    },
+    {
+     "id": "mtqkrbq80rvst",
+     "pos": "2B",
+     "inning": 3,
+     "result": "INN",
+     "innings": "",
+     "note": "",
+     "po": 0,
+     "a": 0,
+     "e": 0,
+     "dp": 0
+    },
+    {
      "id": "mtqi637foav1d",
      "pos": "2B",
      "inning": 5,
@@ -1222,6 +1246,18 @@
      "note": "",
      "po": 0,
      "a": 1,
+     "e": 0,
+     "dp": 0
+    },
+    {
+     "id": "mtqkr1l879epn",
+     "pos": "2B",
+     "inning": 6,
+     "result": "INN",
+     "innings": "",
+     "note": "",
+     "po": 0,
+     "a": 0,
      "e": 0,
      "dp": 0
     }
@@ -1273,6 +1309,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-07T01:41:08.643Z",
+ "savedAt": "2026-09-07T01:41:34.604Z",
  "by": "성연제"
 }
