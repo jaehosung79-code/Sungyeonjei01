@@ -274,13 +274,15 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
 .pic{flex:none;width:36px;height:36px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;
   background:var(--surface-2);color:var(--accent-ink)}
 .pic svg{width:20px;height:20px;display:block}
+/* 고른 날짜 제목 — 2026년 9월 7일 (월) */
+.card h3.dtitle{font-size:13px;font-weight:600}
 /* 날짜 목록 한 줄 — 이름 · 횟수 · 시간 · 나머지 정보 */
 .row .main.one{display:flex;align-items:baseline;gap:6px;min-width:0;white-space:nowrap;overflow:hidden}
-.row .main.one .t{flex:0 1 auto;min-width:0;font-size:14.5px;font-weight:700;
+.row .main.one .t{flex:0 1 auto;min-width:0;font-size:12px;font-weight:500;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.row .main.one .ct{flex:none;font-size:13px;font-weight:800;color:var(--text-1);font-variant-numeric:tabular-nums}
-.row .main.one .tm{flex:none;font-size:12px;font-weight:600;color:var(--text-2);font-variant-numeric:tabular-nums}
-.row .main.one .mt{flex:1 1 auto;min-width:0;font-size:11.5px;font-weight:400;color:var(--text-3);
+.row .main.one .ct{flex:none;font-size:12px;font-weight:500;color:var(--text-1);font-variant-numeric:tabular-nums}
+.row .main.one .tm{flex:none;font-size:11px;font-weight:500;color:var(--text-2);font-variant-numeric:tabular-nums}
+.row .main.one .mt{flex:1 1 auto;min-width:0;font-size:11px;font-weight:400;color:var(--text-3);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* 아이콘 고르기 */
 .icpick{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px}
@@ -2964,7 +2966,7 @@ function viewPlans(){
       ${holNote}
     </div>
     <div class="card">
-      <div class="hd"><div style="flex:1"><h3>${esc(fmtDateLong(sel))}</h3>
+      <div class="hd"><div style="flex:1"><h3 class="dtitle">${esc(fmtDateLong(sel))}</h3>
         <div class="cap">${selHol? `<span style="color:var(--crit);font-weight:650">${esc(selHol)}</span> · ` : ""}${list.length? "일정 "+list.length+"개" : "일정 없음"}${gsel.length? " · 경기 "+gsel.length+"건" : ""}</div></div>
         ${addBtn("newPlan", `data-v="${sel}"`, "일정 추가")}</div>
       <div class="list">${rows || `<div class="hint">이 날은 비어 있음${readOnly()? "" : " · 오른쪽 위 + 로 추가"}</div>`}</div>
