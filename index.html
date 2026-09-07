@@ -238,14 +238,14 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
 .dcell:nth-child(7n) .dev{margin-right:0}
 .dcell .dev svg{width:8px;height:8px;flex:none;display:block}
 /* 자리가 모자라면 이름부터 줄여 숫자·시간이 남게 합니다 */
-/* 일정 글씨는 파란색 — 경기 줄(.gm)과 공휴일은 각자 색을 씁니다 */
-.dcell .dev .nm{flex:0 1 auto;min-width:0;font-size:7.5px;font-weight:750;color:var(--s1);
+/* 일정 글씨는 청록(accent-ink) — 공휴일만 빨간색을 씁니다 */
+.dcell .dev .nm{flex:0 1 auto;min-width:0;font-size:7.5px;font-weight:750;color:var(--accent-ink);
   letter-spacing:-.05em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dcell .dev .ct{flex:none;font-size:7.5px;font-weight:800;color:var(--s1);
+.dcell .dev .ct{flex:none;font-size:7.5px;font-weight:800;color:var(--accent-ink);
   font-variant-numeric:tabular-nums;letter-spacing:-.05em}
-.dcell .dev .tm{flex:none;font-size:6.5px;font-weight:600;color:var(--s1);opacity:.7;
+.dcell .dev .tm{flex:none;font-size:6.5px;font-weight:600;color:var(--accent-ink);opacity:.7;
   font-variant-numeric:tabular-nums;letter-spacing:-.05em;margin-left:2px}
-.dcell .dev.noic .nm{color:var(--s1)}
+.dcell .dev.noic .nm{color:var(--accent-ink)}
 /* 경기 줄은 살짝 강조합니다 */
 .dcell .dev.gm .nm{color:var(--accent-ink)}
 .dcell .more{font-size:7.5px;color:var(--text-3);font-weight:600;padding:0 0 0 1px;line-height:1.3;margin-top:6px}
