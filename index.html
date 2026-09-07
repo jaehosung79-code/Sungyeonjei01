@@ -191,14 +191,14 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
 .wkhd span.sun{color:var(--crit)}
 .wkhd span.sat{color:var(--accent-ink)}
 /* 날짜 칸 — 좌우 테두리와 둥근 모서리 없이 가로줄만 남깁니다 */
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:0;border-bottom:1px solid var(--border)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:0;border-bottom:1px solid var(--border);overflow:hidden}
 .dcell{
-  position:relative;min-height:60px;border:0;border-top:1px solid var(--border);border-radius:0;
+  position:relative;min-height:80px;border:0;border-top:1px solid var(--border);border-radius:0;
   background:none;cursor:pointer;padding:5px 2px 4px;color:var(--text-1);
   display:flex;flex-direction:column;align-items:center;gap:3px;
 }
-.dcell .dn{font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.3;
-  min-width:19px;border-radius:999px;padding:0 4px}
+.dcell .dn{font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.35;
+  min-width:21px;border-radius:999px;padding:0 5px}
 .dcell.sun .dn,.dcell.hol .dn{color:var(--crit)}
 .dcell.out{opacity:.35}
 .dcell.tdy .dn{color:var(--accent-ink);font-weight:750}
@@ -209,20 +209,27 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
 .dcell .hnm{font-size:9px;line-height:1.25;color:var(--crit);font-weight:600;max-width:100%;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 1px}
 /* 여러 날에 걸친 일정 띠 — 칸 끝까지 채워 옆 칸과 이어 보이게 합니다 */
-.dcell .dbars{display:flex;flex-direction:column;gap:1px;width:calc(100% + 4px);margin:0 -2px}
-.dbar{height:4px;background:transparent}
-.dbar.s{border-top-left-radius:3px;border-bottom-left-radius:3px}
-.dbar.e{border-top-right-radius:3px;border-bottom-right-radius:3px}
-.dcell .dic{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:3px;line-height:0}
-.dcell .dic svg{width:14px;height:14px;display:block}
+.dcell .dbars{display:flex;flex-direction:column;gap:2px;width:calc(100% + 4px);margin:0 -2px}
+.dbar{position:relative;height:14px;background:transparent}
+.dbar.s{border-top-left-radius:4px;border-bottom-left-radius:4px}
+.dbar.e{border-top-right-radius:4px;border-bottom-right-radius:4px}
+/* 기간 일정의 이름 — 그 주에 걸친 구간 가운데에 한 번만 쓰고,
+   칸보다 길면 옆 칸으로 넘쳐 "----○○대회----" 처럼 이어 보이게 둡니다 */
+.dbar .blbl{
+  position:absolute;z-index:5;left:50%;top:50%;transform:translate(-50%,-50%);
+  white-space:nowrap;font-size:9.5px;font-weight:700;line-height:1;color:#fff;
+  text-shadow:0 0 2px rgba(0,0,0,.45);pointer-events:none;padding:0 3px;
+}
+.dcell .dic{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;line-height:0}
+.dcell .dic svg{width:18px;height:18px;display:block}
 /* 아이콘 + 그 옆의 횟수 */
-.dcell .dpi{display:inline-flex;align-items:center;gap:1px}
-.dcell .dpi .rn{font-size:9.5px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.dcell .dpi{display:inline-flex;align-items:center;gap:2px}
+.dcell .dpi .rn{font-size:11.5px;font-weight:750;line-height:1;font-variant-numeric:tabular-nums}
 /* 경기가 있는 날 — 일정 아이콘과 구분되도록 색을 채운 야구장 아이콘으로 표시합니다 */
-.dcell .gdot{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex:none;
+.dcell .gdot{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;flex:none;
   border-radius:999px;background:var(--accent-ink)}
-.dcell .gdot svg{width:11px;height:11px;color:var(--surface-1);stroke-width:2.1}
-.dcell .more{font-size:9.5px;color:var(--text-3);font-weight:650}
+.dcell .gdot svg{width:14px;height:14px;color:var(--surface-1);stroke-width:2.1}
+.dcell .more{font-size:11px;color:var(--text-3);font-weight:700}
 /* 일정 목록 줄의 아이콘 자리 */
 .pic{flex:none;width:36px;height:36px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;
   background:var(--surface-2);color:var(--accent-ink)}
@@ -331,6 +338,11 @@ input[type="time"]::-webkit-calendar-picker-indicator{flex:none;margin-left:auto
 /* 시간 — 기기 기본 시계 팝업이 시트 안에서 잘리는 일이 없도록 드롭다운 두 개로 고릅니다 */
 .tsel{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .tsel select{min-width:0}
+/* 여러 날 일정 띠 색 고르기 */
+.colpick{display:flex;gap:14px;flex-wrap:wrap;margin:-2px 0 12px;padding:2px 0}
+.colbtn{position:relative;width:32px;height:32px;border-radius:999px;border:0;padding:0;cursor:pointer}
+.colbtn::after{content:"";position:absolute;inset:-4px;border-radius:999px;border:2px solid transparent}
+.colbtn[aria-pressed="true"]::after{border-color:var(--text-1)}
 /* 내용 + 횟수 한 줄 */
 .f2.tr{grid-template-columns:minmax(0,1fr) 136px}
 .f2.tr>.f{margin-bottom:12px}
@@ -842,6 +854,18 @@ function planIcon(c, size){
 }
 function planName(c){ return (PIMAP[c]||PLAN_ICONS[0]).ko; }
 function planColor(c){ return (PIMAP[c]||PLAN_ICONS[0]).col; }
+/* 여러 날 일정 띠의 색 — 기본은 회색 */
+const PLAN_COLS = [
+  {c:"gray",   ko:"회색", v:"var(--neutral)"},
+  {c:"blue",   ko:"파랑", v:"var(--s1)"},
+  {c:"green",  ko:"초록", v:"var(--s3)"},
+  {c:"orange", ko:"주황", v:"var(--s2)"},
+  {c:"red",    ko:"빨강", v:"var(--crit)"},
+  {c:"teal",   ko:"청록", v:"var(--accent-ink)"}
+];
+const PCOL = {}; PLAN_COLS.forEach(x=>{ PCOL[x.c]=x; });
+function planBarColor(x){ return (PCOL[x && x.col] || PCOL.gray).v; }
+function isRange(x){ return !!(x && x.end && x.end > x.date); }
 
 /* ---- 대한민국 공휴일 ----
    음력 공휴일(설날·추석·부처님오신날)과 대체공휴일은 해마다 날짜가 달라
@@ -890,6 +914,7 @@ function normalizePlans(list){
       if(e && e <= d) e = "";                       // 종료일이 시작일 이전·같으면 하루짜리로 봅니다
       return { id: x.id || uid(), date: d, end: e,
         icon: PIMAP[x.icon]? x.icon : "run",
+        col: PCOL[x.col]? x.col : "gray",
         time: /^\d{2}:\d{2}$/.test(String(x.time||""))? String(x.time) : "",
         reps: clamp(Math.round(num(x.reps,0)), 0, 999),
         title: String(x.title||""), note: String(x.note||"") };
@@ -2736,7 +2761,7 @@ function viewPlans(){
   const days = week.flat(), gFrom = days[0], gTo = days[days.length-1];
 
   /* 여러 날에 걸친 일정은 띠로 그립니다 — 겹치면 줄(레인)을 나눠 씁니다 (최대 3줄) */
-  const ranges = (S.plans||[]).filter(x=> x.end && x.end >= gFrom && x.date <= gTo)
+  const ranges = (S.plans||[]).filter(x=> x.end && x.end > x.date && x.end >= gFrom && x.date <= gTo)
     .slice().sort((a,b)=> a.date.localeCompare(b.date) || b.end.localeCompare(a.end));
   const laneEnd = [], laneOf = {};
   ranges.forEach(r=>{
@@ -2745,10 +2770,26 @@ function viewPlans(){
     laneEnd[i] = r.end; laneOf[r.id] = i;
   });
   const laneN = Math.min(laneEnd.length, 3);
+  /* 기간 전체의 한가운데 하루에만 이름을 적습니다 (9/18~9/20 이면 19일).
+     그 날이 이 달 화면에 없을 때만 보이는 구간의 가운데로 대신합니다. */
+  const labelAt = {};
+  ranges.forEach(r=>{
+    if(laneOf[r.id] >= laneN) return;
+    const a = new Date(r.date+"T00:00:00"), b = new Date(r.end+"T00:00:00");
+    const len = Math.round((b-a)/86400000) + 1;
+    const mid = new Date(a.getFullYear(), a.getMonth(), a.getDate() + Math.floor((len-1)/2));
+    let ds = mid.getFullYear()+"-"+pad2(mid.getMonth()+1)+"-"+pad2(mid.getDate());
+    if(days.indexOf(ds) < 0){
+      const hit = days.filter(d=> r.date<=d && d<=r.end);
+      if(!hit.length) return;
+      ds = hit[Math.floor((hit.length-1)/2)];
+    }
+    labelAt[ds + "|" + laneOf[r.id]] = r;
+  });
 
   const cells = days.map(ds=>{
     const all = plansOn(ds), gm = gamesOn(ds);
-    const one = all.filter(x=> !x.end);                        // 하루짜리 일정만 아이콘으로
+    const one = all.filter(x=> !(x.end && x.end > x.date));    // 하루짜리 일정만 아이콘으로
     const hn = holidayName(ds);
     const wd = new Date(ds+"T00:00:00").getDay();
     const cls = ["dcell", ds.slice(0,7)!==m? "out":"", ds===tdy? "tdy":"", ds===sel? "sel":"",
@@ -2757,10 +2798,12 @@ function viewPlans(){
         const r = ranges.find(x=> laneOf[x.id]===i && x.date<=ds && ds<=x.end);
         if(!r) return `<span class="dbar"></span>`;
         const c = ["dbar", ds===r.date? "s":"", ds===r.end? "e":""].filter(Boolean).join(" ");
-        return `<span class="${c}" style="background:${planColor(r.icon)}"></span>`;
+        const lb = labelAt[ds+"|"+i];
+        const tx = lb? `<span class="blbl">${esc((lb.title || planName(lb.icon)) + (num(lb.reps,0)? " "+num(lb.reps,0)+"회" : ""))}</span>` : "";
+        return `<span class="${c}" style="background:${planBarColor(r)}">${tx}</span>`;
       }).join("") + `</span>` : "";
-    const marks = (gm.length? `<span class="gdot" title="경기">${planIcon("field", 11)}</span>` : "")
-      + one.slice(0,3).map(x=> `<span class="dpi" style="color:${planColor(x.icon)}">${planIcon(x.icon, 14)}${
+    const marks = (gm.length? `<span class="gdot" title="경기">${planIcon("field", 14)}</span>` : "")
+      + one.slice(0,3).map(x=> `<span class="dpi" style="color:${planColor(x.icon)}">${planIcon(x.icon, 18)}${
           num(x.reps,0)? `<b class="rn">${num(x.reps,0)}</b>` : ""}</span>`).join("")
       + (one.length>3? `<span class="more">+${one.length-3}</span>` : "");
     return `<button type="button" class="${cls}" data-act="pickDay" data-v="${ds}" aria-pressed="${ds===sel}"
@@ -2779,7 +2822,7 @@ function viewPlans(){
       </div>`).join("")
     + list.map(x=>`
       <div class="row">
-        <span class="pic" style="color:${planColor(x.icon)}">${planIcon(x.icon, 20)}</span>
+        <span class="pic" style="color:${isRange(x)? planBarColor(x) : planColor(x.icon)}">${planIcon(x.icon, 20)}</span>
         <div class="main" data-act="editPlan" data-id="${x.id}">
           <div class="t">${esc(x.title || planName(x.icon))}${num(x.reps,0)? ` <span style="color:var(--text-3);font-weight:500">${num(x.reps,0)}회</span>` : ""}</div>
           <div class="s">${esc(planLine(x)) || planName(x.icon)}</div></div>
@@ -3838,7 +3881,7 @@ function roMsg(){
 /* 보기 모드에서 막는 동작 */
 const RO_BLOCK = new Set([
   "newGame","editGame","saveGame","delGame","addDefInn","delDefInn",
-  "newPlan","editPlan","savePlan","delPlan",
+  "newPlan","editPlan","savePlan","delPlan","pickPlanCol",
   "newPA","editPA","savePA","delPA",
   "newDef","editDef","saveDef","delDef",
   "newVideo","editVideo","saveVideo","updateVideo","delVideo",
@@ -4046,7 +4089,7 @@ let plDraft = null;
 function planSheet(id, date){
   const x = id? (S.plans||[]).find(o=>o.id===id) : null;
   const v = x || {id:null, date: date || planDay(), icon:"run", time:"", title:"", note:""};
-  plDraft = {icon: PIMAP[v.icon]? v.icon : "run", id: x? x.id : null};
+  plDraft = {icon: PIMAP[v.icon]? v.icon : "run", col: PCOL[v.col]? v.col : "gray", id: x? x.id : null};
   /* 시·분 — 5분 단위로 고르고, 예전 기록에 5분 단위가 아닌 값이 있으면 그 값도 목록에 넣습니다 */
   const TH = (v.time||"").slice(0,2), TM = (v.time||"").slice(3,5);
   const MOPT = Array.from({length:12},(_,i)=>pad2(i*5));
@@ -4067,7 +4110,13 @@ function planSheet(id, date){
       <label class="f"><span>종료 날짜 <span style="color:var(--text-3);font-weight:400">— 선택 · 여러 날 일정</span></span>
         <input id="pl_end" type="date" value="${esc(v.end||"")}"></label>
     </div>
-    <div class="hint" id="pl_rangehint" style="margin:-4px 0 12px">비우면 하루짜리 일정</div>
+    <div class="hint" id="pl_rangehint" style="margin:-4px 0 10px">비우면 하루짜리 일정</div>
+    <span style="display:block;font-size:12.5px;color:var(--text-2);margin-bottom:6px;font-weight:550">띠 색
+      <span style="color:var(--text-3);font-weight:400">— 여러 날 일정에 사용 · 기본 회색</span></span>
+    <div class="colpick">
+      ${PLAN_COLS.map(c=>`<button type="button" class="colbtn" data-act="pickPlanCol" data-v="${c.c}"
+        style="background:${c.v}" title="${c.ko}" aria-label="띠 색 ${c.ko}" aria-pressed="${plDraft.col===c.c}"></button>`).join("")}
+    </div>
     <label class="f"><span>시간 <span style="color:var(--text-3);font-weight:400">— 선택</span></span>
       <div class="tsel">
         <select id="pl_h" aria-label="시">
@@ -4907,6 +4956,10 @@ document.addEventListener("click", ev=>{
       plDraft.icon = v;
       $$("#modal .icbtn").forEach(b=> b.setAttribute("aria-pressed", String(b.dataset.v===v)));
       break;
+    case "pickPlanCol":
+      if(plDraft) plDraft.col = PCOL[v]? v : "gray";
+      $$("#modal .colbtn").forEach(b=> b.setAttribute("aria-pressed", String(b.dataset.v===(plDraft?plDraft.col:"gray"))));
+      break;
     case "savePlan": {
       const dt = $("#pl_date").value || today();
       const hh = $("#pl_h").value;
@@ -4914,6 +4967,7 @@ document.addEventListener("click", ev=>{
       if(en && en <= dt) en = "";                    // 종료일이 앞서면 하루짜리로 저장합니다
       const d = { date: dt, end: en,
                   icon: (plDraft && PIMAP[plDraft.icon])? plDraft.icon : "run",
+                  col: (plDraft && PCOL[plDraft.col])? plDraft.col : "gray",
                   time: hh? hh + ":" + ($("#pl_m").value || "00") : "",
                   reps: clamp(num($("#pl_reps").value, 0), 0, 999),
                   title: $("#pl_title").value.trim(), note: $("#pl_note").value.trim() };
