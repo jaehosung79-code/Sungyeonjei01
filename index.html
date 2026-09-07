@@ -2702,7 +2702,10 @@ function viewPlans(){
         <div class="cap">${list.length? "일정 "+list.length+"개" : "일정 없음"}${gsel.length? " · 경기 "+gsel.length+"건" : ""}</div></div>
         ${addBtn("newPlan", `data-v="${sel}"`, "일정 추가")}</div>
       <div class="list">${rows || `<div class="hint">이 날은 비어 있음${readOnly()? "" : " · 오른쪽 위 + 로 추가"}</div>`}</div>
-      ${readOnly()? "" : `<button class="btn pri block nb" data-act="newPlan" data-v="${sel}" style="margin-top:10px">+ 일정 추가</button>`}
+      ${readOnly()? "" : `<div class="btnrow" style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn pri nb" data-act="newPlan" data-v="${sel}" style="flex:1">+ 일정 추가</button>
+        <button class="btn nb" data-act="newGameOn" data-v="${sel}" style="flex:1">+ 경기 기록</button>
+      </div>`}
     </div>`;
 }
 
@@ -3730,7 +3733,7 @@ function roMsg(){
 /* 보기 모드에서 막는 동작 */
 const RO_BLOCK = new Set([
   "newGame","editGame","saveGame","delGame","addDefInn","delDefInn",
-  "newPlan","editPlan","savePlan","delPlan",
+  "newPlan","editPlan","savePlan","delPlan","newGameOn",
   "newPA","editPA","savePA","delPA",
   "newDef","editDef","saveDef","delDef",
   "newVideo","editVideo","saveVideo","updateVideo","delVideo",
@@ -3814,6 +3817,7 @@ function stepper(id, val, min, max){
 
 /* ---------------------------- 경기 정보 시트 ---------------------------- */
 let gdraft = null;   // 경기 시트에서 편집 중인 포지션별 수비 이닝
+let gameFromPlans = "";   // 일정 달력에서 연 경기 시트면 저장 뒤 달력으로 돌아갑니다
 let gPaint = null;   // 수비 이닝 줄 다시 그리기 (추가 · 삭제)
 /* 포지션별 수비 이닝 한 줄씩 */
 function defInnRowsHTML(){
@@ -3838,9 +3842,10 @@ function syncDefInn(){
     inn: clamp(num((r.querySelector("input[type=number]")||{}).value, 0), 0, 30)
   }));
 }
-function gameSheet(id){
+/* preDate — 일정 달력에서 고른 날짜로 새 경기를 시작합니다 */
+function gameSheet(id, preDate){
   const g = id? S.games.find(x=>x.id===id) : null;
-  const d = g || {date:today(), opponent:"", venue:"", homeAway:"홈", myScore:"", oppScore:"", note:"", level:"", type:"official", pdec:"", inn:0, dinn:[]};
+  const d = g || {date: preDate || today(), opponent:"", venue:"", homeAway:"홈", myScore:"", oppScore:"", note:"", level:"", type:"official", pdec:"", inn:0, dinn:[]};
   const auto = g? autoDecision(g) : {dec:"", why:"", auto:true};
   const hasP = g? gamePitRecs(g).length>0 : false;
   const gt = gameType(d);
@@ -3936,7 +3941,7 @@ let plDraft = null;
 function planSheet(id, date){
   const x = id? (S.plans||[]).find(o=>o.id===id) : null;
   const v = x || {id:null, date: date || planDay(), icon:"run", time:"", title:"", note:""};
-  plDraft = {icon: PIMAP[v.icon]? v.icon : "run"};
+  plDraft = {icon: PIMAP[v.icon]? v.icon : "run", id: x? x.id : null};
   openSheet(`
     <div class="sh"><h3>${x?"일정 수정":"일정 추가"}</h3><div class="spacer" style="flex:1"></div>
       <button class="iconbtn" data-act="close" title="닫기" aria-label="닫기">${IC_X}</button></div>
@@ -3945,6 +3950,8 @@ function planSheet(id, date){
       ${PLAN_ICONS.map(ic=>`<button type="button" class="icbtn" data-act="pickPlanIcon" data-v="${ic.c}"
         aria-pressed="${plDraft.icon===ic.c}">${planIcon(ic.c,24)}<span>${ic.ko}</span></button>`).join("")}
     </div>
+    ${x? "" : `<div class="hint" style="margin:-4px 0 12px"><b>Game</b> 은 일정이 아니라 <b>경기 기록</b>으로 등록됩니다 —
+      고르면 새 경기 화면이 열립니다</div>`}
     <div class="f2">
       <label class="f"><span>날짜</span><input id="pl_date" type="date" value="${esc(v.date)}"></label>
       <label class="f"><span>시간 <span style="color:var(--text-3);font-weight:400">— 선택</span></span>
@@ -4747,6 +4754,13 @@ document.addEventListener("click", ev=>{
     case "newPlan": planSheet(null, v || planDay()); break;
     case "editPlan": planSheet(id, null); break;
     case "pickPlanIcon":
+      /* 새 일정에서 Game 을 고르면 일정 대신 경기 기록으로 넘어갑니다 (경기는 경기 탭과 하나로 관리) */
+      if(v==="field" && plDraft && !plDraft.id){
+        const dt = ($("#pl_date") && $("#pl_date").value) || planDay();
+        gameFromPlans = dt; closeSheet(); gameSheet(null, dt);
+        toast("경기는 경기 기록으로 등록");
+        break;
+      }
       plDraft.icon = v;
       $$("#modal .icbtn").forEach(b=> b.setAttribute("aria-pressed", String(b.dataset.v===v)));
       break;
@@ -4769,14 +4783,21 @@ document.addEventListener("click", ev=>{
         saveNow(); closeSheet(); render(); toast("삭제 완료");
       }); break; }
 
-    case "newGame": gameSheet(null); break;
-    case "editGame": gameSheet(id); break;
+    case "newGame": gameFromPlans = ""; gameSheet(null); break;
+    /* 일정 달력에서 그 날짜로 새 경기 기록 만들기 */
+    case "newGameOn": gameFromPlans = v; gameSheet(null, v); break;
+    case "editGame": gameFromPlans = ""; gameSheet(id); break;
     case "addDefInn": if(gPaint) gPaint("add"); break;
     case "delDefInn": if(gPaint) gPaint("del", num(el.dataset.i,0)); break;
     case "saveGame": {
       const d = readGameSheet();
+      const back = gameFromPlans; gameFromPlans = "";
       if(id){ const g=S.games.find(x=>x.id===id); Object.assign(g,d); }
-      else { const g=Object.assign({id:uid(), pas:[], def:[], videos:[], pdec:""}, d); S.games.push(g); S.ui.tab="games"; S.ui.gameId=g.id; }
+      else {
+        const g=Object.assign({id:uid(), pas:[], def:[], videos:[], pdec:""}, d); S.games.push(g);
+        if(back){ S.ui.tab="plans"; S.ui.gameId=null; S.ui.pm=d.date.slice(0,7); S.ui.pd=d.date; }
+        else { S.ui.tab="games"; S.ui.gameId=g.id; }
+      }
       saveNow(); closeSheet(); render(); toast("저장 완료"); break; }
     case "delGame":
       ask("경기 삭제","이 경기의 타석·수비·영상 기록 모두 삭제 · 되돌릴 수 없음",
