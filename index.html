@@ -273,6 +273,14 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
 .pic{flex:none;width:36px;height:36px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;
   background:var(--surface-2);color:var(--accent-ink)}
 .pic svg{width:20px;height:20px;display:block}
+/* 날짜 목록 한 줄 — 이름 · 횟수 · 시간 · 나머지 정보 */
+.row .main.one{display:flex;align-items:baseline;gap:6px;min-width:0;white-space:nowrap;overflow:hidden}
+.row .main.one .t{flex:0 1 auto;min-width:0;font-size:14.5px;font-weight:700;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .main.one .ct{flex:none;font-size:13px;font-weight:800;color:var(--text-1);font-variant-numeric:tabular-nums}
+.row .main.one .tm{flex:none;font-size:12px;font-weight:600;color:var(--text-2);font-variant-numeric:tabular-nums}
+.row .main.one .mt{flex:1 1 auto;min-width:0;font-size:11.5px;font-weight:400;color:var(--text-3);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* 아이콘 고르기 */
 .icpick{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px}
 .icbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
@@ -2912,21 +2920,28 @@ function viewPlans(){
   }).join("");
 
   const list = plansOn(sel), gsel = gamesOn(sel), selHol = holidayName(sel);
+  /* 목록도 한 줄 — 아이콘 · 이름 · 횟수 · 시간 · 그 밖의 정보 순 */
   const rows = gsel.map(g=>`
       <div class="row" data-act="openGame" data-id="${g.id}">
         <span class="pic">${planIcon("field", 20)}</span>
-        <div class="main"><div class="t">${typeBadge(g)} ${esc(g.opponent||"상대 미입력")}</div>
-          <div class="s">경기 기록${g.venue? " · "+esc(g.venue):""}</div></div>
+        <div class="main one">
+          <span class="t">${typeBadge(g)} ${esc(g.opponent||"상대 미입력")}</span>
+          <span class="mt">경기 기록${g.venue? " · "+esc(g.venue):""}</span></div>
         <div class="r ch">${IC_CHEV_R}</div>
       </div>`).join("")
-    + list.map(x=>`
+    + list.map(x=>{
+      const meta = [planRange(x), x.note||""].filter(Boolean).join(" · ");
+      return `
       <div class="row">
         <span class="pic" style="color:${isRange(x)? planBarColor(x) : planColor(x.icon)}">${planIcon(x.icon, 20)}</span>
-        <div class="main" data-act="editPlan" data-id="${x.id}">
-          <div class="t">${esc(x.title || planName(x.icon))}${num(x.reps,0)? ` <span style="color:var(--text-3);font-weight:500">${num(x.reps,0)}회</span>` : ""}</div>
-          <div class="s">${esc(planLine(x)) || planName(x.icon)}</div></div>
+        <div class="main one" data-act="editPlan" data-id="${x.id}">
+          <span class="t">${esc(x.title || planName(x.icon))}</span>
+          ${num(x.reps,0)? `<span class="ct">${repsTxt(x.reps)}</span>` : ""}
+          ${x.time? `<span class="tm">${esc(x.time)}</span>` : ""}
+          ${meta? `<span class="mt">${esc(meta)}</span>` : ""}
+        </div>
         ${delBtn("delPlan", `data-id="${x.id}"`, "일정 삭제")}
-      </div>`).join("");
+      </div>`;}).join("");
 
   // 이번 달 요약 — 아이콘별 횟수 (시작일 기준)
   const mon = (S.plans||[]).filter(x=> x.date.slice(0,7)===m);
