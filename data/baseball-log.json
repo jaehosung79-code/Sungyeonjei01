@@ -1225,6 +1225,28 @@
      "defId": null,
      "note": "",
      "createdAt": 1788740071184
+    },
+    {
+     "id": "mtqi6gydxqxuk",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/10jWxyanGmDkBEfwEzgAptLYGLE8SAzAh/view?usp=drivesdk",
+     "title": "2번째 타석 · 5회 땅볼 아웃",
+     "folder": "",
+     "paId": "mtqi5rvhrr6ky",
+     "defId": null,
+     "note": "",
+     "createdAt": 1788740953429
+    },
+    {
+     "id": "mtqi6pt9k2ikt",
+     "kind": "link",
+     "url": "https://drive.google.com/file/d/1HOQyhV-th3UYs_vK0XIVOwFetxv3EWpg/view?usp=drivesdk",
+     "title": "수비 5회 · 2루수 보살",
+     "folder": "",
+     "paId": null,
+     "defId": "mtqi637foav1d",
+     "note": "",
+     "createdAt": 1788740964909
     }
    ],
    "pdec": "",
@@ -1239,6 +1261,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-07T00:29:10.164Z",
+ "savedAt": "2026-09-07T00:30:22.762Z",
  "by": "성연제"
 }
