@@ -343,6 +343,10 @@ input[type="time"]::-webkit-calendar-picker-indicator{flex:none;margin-left:auto
 .colbtn{position:relative;width:32px;height:32px;border-radius:999px;border:0;padding:0;cursor:pointer}
 .colbtn::after{content:"";position:absolute;inset:-4px;border-radius:999px;border:2px solid transparent}
 .colbtn[aria-pressed="true"]::after{border-color:var(--text-1)}
+/* 항목 제목 옆의 작은 켜기·끄기 단추 */
+.mini{margin-left:6px;border:1px solid var(--border);background:var(--surface-1);color:var(--text-3);
+  border-radius:999px;padding:3px 9px;font:inherit;font-size:11px;font-weight:650;cursor:pointer;vertical-align:1px}
+.mini[aria-pressed="true"]{border-color:var(--accent-ink);color:var(--accent-ink);background:var(--surface-2)}
 /* 내용 + 횟수 한 줄 */
 .f2.tr{grid-template-columns:minmax(0,1fr) 136px}
 .f2.tr>.f{margin-bottom:12px}
@@ -866,6 +870,15 @@ const PLAN_COLS = [
 const PCOL = {}; PLAN_COLS.forEach(x=>{ PCOL[x.c]=x; });
 function planBarColor(x){ return (PCOL[x && x.col] || PCOL.gray).v; }
 function isRange(x){ return !!(x && x.end && x.end > x.date); }
+/* 자동 횟수 — 같은 아이콘으로 이 날짜까지 적어 둔 마지막 일정의 횟수 + 1 */
+function nextReps(icon, date, selfId){
+  const list = (S.plans||[])
+    .filter(x=> x.icon===icon && x.id!==selfId && String(x.date) <= String(date))
+    .slice().sort((a,b)=> String(a.date).localeCompare(String(b.date))
+                       || String(a.id).localeCompare(String(b.id)));
+  const last = list[list.length-1];
+  return clamp((last? num(last.reps,0) : 0) + 1, 1, 999);
+}
 
 /* ---- 대한민국 공휴일 ----
    음력 공휴일(설날·추석·부처님오신날)과 대체공휴일은 해마다 날짜가 달라
@@ -972,7 +985,7 @@ const blank = ()=>({
   games:[],
   plans:[],             // 일정 — {id, date:"YYYY-MM-DD", icon, time, title, note}
   settings:{ level:"elem", inningsBy:{elem:6, mid:7, high:7, univ:9}, autoplay:"sound",
-             fullscreen:true, viewOnly:false,
+             fullscreen:true, viewOnly:false, autoReps:false,
              gh:{repo:GH_DEFAULT_REPO, branch:"main", path:"data/baseball-log.json", auto:true, wifi:true, autoPull:true, off:false} },
   backup:{ at:0, sig:"" },
   ui:{ tab:"home", year:"all", gtype:"all", metric:"avg", bmode:"classic", pmode:"classic", pm:"", pd:"" }
@@ -4086,10 +4099,12 @@ function gameSheet(id, preDate){
 
 /* ------------------------------ 일정 시트 ------------------------------ */
 let plDraft = null;
+let plRecalc = null;   // 일정 시트의 자동 횟수 다시 계산
 function planSheet(id, date){
   const x = id? (S.plans||[]).find(o=>o.id===id) : null;
   const v = x || {id:null, date: date || planDay(), icon:"run", time:"", title:"", note:""};
-  plDraft = {icon: PIMAP[v.icon]? v.icon : "run", col: PCOL[v.col]? v.col : "gray", id: x? x.id : null};
+  plDraft = {icon: PIMAP[v.icon]? v.icon : "run", col: PCOL[v.col]? v.col : "gray", id: x? x.id : null,
+             auto: x? false : (S.settings.autoReps === true)};   // 수정할 때는 적어 둔 횟수를 그대로 둡니다
   /* 시·분 — 5분 단위로 고르고, 예전 기록에 5분 단위가 아닌 값이 있으면 그 값도 목록에 넣습니다 */
   const TH = (v.time||"").slice(0,2), TM = (v.time||"").slice(3,5);
   const MOPT = Array.from({length:12},(_,i)=>pad2(i*5));
@@ -4130,9 +4145,11 @@ function planSheet(id, date){
     <div class="f2 tr">
       <label class="f"><span>내용 <span style="color:var(--text-3);font-weight:400">— 비우면 아이콘 이름</span></span>
         <input id="pl_title" value="${esc(v.title||"")}" placeholder="예: 러닝 5km · 팀 훈련"></label>
-      <label class="f"><span>횟수 <span style="color:var(--text-3);font-weight:400">— 0이면 없음</span></span>
-        ${stepper("pl_reps", clamp(num(v.reps,0),0,999), 0, 999)}</label>
+      <div class="f"><span style="display:block;font-size:12.5px;color:var(--text-2);margin-bottom:5px;font-weight:550">횟수
+        <button type="button" class="mini" id="pl_auto" data-act="toggleAutoReps" aria-pressed="${plDraft.auto}">자동</button></span>
+        ${stepper("pl_reps", clamp(num(v.reps,0),0,999), 0, 999)}</div>
     </div>
+    <div class="hint" id="pl_autohint" style="margin:-6px 0 12px"></div>
     <label class="f"><span>메모</span><textarea id="pl_note" placeholder="장소, 준비물, 함께하는 사람 등">${esc(v.note||"")}</textarea></label>
     <div class="sf">${x? delBtn("delPlan", `data-id="${x.id}"`, "이 일정 삭제") : `<button class="btn" data-act="close">취소</button>`}
       <button class="btn pri" data-act="savePlan" data-id="${x?x.id:""}">저장</button></div>`,
@@ -4153,6 +4170,28 @@ function planSheet(id, date){
     };
     [d1,d2].forEach(el=>{ el.addEventListener("change", syncR); el.addEventListener("input", syncR); });
     syncR();
+    /* 자동 횟수 — 같은 아이콘의 바로 앞 일정 +1 · 직접 고치면 자동이 꺼집니다 */
+    const repsEl = sheet.querySelector("#pl_reps"),
+          autoEl = sheet.querySelector("#pl_auto"),
+          ahEl   = sheet.querySelector("#pl_autohint");
+    let quiet = false;
+    plRecalc = ()=>{
+      autoEl.setAttribute("aria-pressed", String(!!plDraft.auto));
+      if(plDraft.auto){
+        quiet = true;
+        repsEl.value = String(nextReps(plDraft.icon, d1.value || today(), plDraft.id));
+        quiet = false;
+        ahEl.innerHTML = `<b>${planName(plDraft.icon)}</b> 의 바로 앞 일정 횟수 +1 로 자동 계산 — 숫자를 직접 고치면 자동이 꺼집니다`;
+      } else {
+        ahEl.textContent = "자동을 켜면 같은 아이콘의 바로 앞 일정 횟수 +1 로 채워집니다";
+      }
+    };
+    repsEl.addEventListener("input", ()=>{
+      if(quiet) return;
+      if(plDraft.auto){ plDraft.auto = false; plRecalc(); }
+    });
+    d1.addEventListener("change", plRecalc);
+    plRecalc();
   });
 }
 
@@ -4955,6 +4994,10 @@ document.addEventListener("click", ev=>{
       }
       plDraft.icon = v;
       $$("#modal .icbtn").forEach(b=> b.setAttribute("aria-pressed", String(b.dataset.v===v)));
+      if(plRecalc) plRecalc();                 // 아이콘이 바뀌면 자동 횟수도 다시 셉니다
+      break;
+    case "toggleAutoReps":
+      if(plDraft){ plDraft.auto = !plDraft.auto; if(plRecalc) plRecalc(); }
       break;
     case "pickPlanCol":
       if(plDraft) plDraft.col = PCOL[v]? v : "gray";
@@ -4971,6 +5014,7 @@ document.addEventListener("click", ev=>{
                   time: hh? hh + ":" + ($("#pl_m").value || "00") : "",
                   reps: clamp(num($("#pl_reps").value, 0), 0, 999),
                   title: $("#pl_title").value.trim(), note: $("#pl_note").value.trim() };
+      S.settings.autoReps = !!(plDraft && plDraft.auto);      // 자동 횟수 사용 여부를 기억합니다
       S.plans = Array.isArray(S.plans)? S.plans : [];
       if(id){ const o = S.plans.find(x=>x.id===id); if(o) Object.assign(o, d); }
       else S.plans.push(Object.assign({id:uid()}, d));
