@@ -247,8 +247,6 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
   font-variant-numeric:tabular-nums;letter-spacing:-.05em}
 .dcell .dev .tm{flex:none;font-size:7px;font-weight:600;color:var(--accent-ink);opacity:.7;
   font-variant-numeric:tabular-nums;letter-spacing:-.05em;margin-left:2px}
-/* 일정 이름·횟수 — 글자폭 95%로 가로 압축 (폰트에 wdth 축이 없어 scaleX 사용) */
-.dcell .dev .nm,.dcell .dev .ct{transform:scaleX(.95);transform-origin:left center}
 .dcell .dev.noic .nm{color:var(--accent-ink)}
 /* 경기 줄은 살짝 강조합니다 */
 .dcell .dev.gm .nm{color:var(--accent-ink)}
@@ -259,8 +257,9 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
   .dcell:nth-child(7n) .dbars{margin-right:0}
   .dcell .dev{gap:0;padding-left:0}
   .dcell .dev svg{width:7px;height:7px;margin-right:1px}
-  .dcell .dev .nm{letter-spacing:-.09em}
-  .dcell .dev .ct,.dcell .dev .tm{letter-spacing:-.08em}
+  .dcell .dev .nm{letter-spacing:-.05em}
+  .dcell .dev .ct{letter-spacing:-.05em}
+  .dcell .dev .tm{letter-spacing:-.08em}
   .dcell .dev .ct{margin-left:1px}
   .dcell .dev .tm{margin-left:1px}
   .dcell .dev .nm,.dcell .dev .ct{font-size:8px}
