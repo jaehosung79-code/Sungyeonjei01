@@ -139,7 +139,9 @@
    "myScore": "2",
    "oppScore": "5",
    "note": "",
-   "pdec": ""
+   "pdec": "",
+   "inn": 0,
+   "dinn": []
   },
   {
    "id": "mtgkjj8rdk1xb",
@@ -226,7 +228,9 @@
    "myScore": "4",
    "oppScore": "4",
    "note": "",
-   "pdec": ""
+   "pdec": "",
+   "inn": 0,
+   "dinn": []
   },
   {
    "id": "mtgksphkkshbr",
@@ -371,7 +375,9 @@
    "myScore": "7",
    "oppScore": "7",
    "note": "",
-   "pdec": ""
+   "pdec": "",
+   "inn": 0,
+   "dinn": []
   },
   {
    "id": "mtgm0is8j7bna",
@@ -458,7 +464,9 @@
    "myScore": "0",
    "oppScore": "2",
    "note": "",
-   "pdec": ""
+   "pdec": "",
+   "inn": 0,
+   "dinn": []
   },
   {
    "id": "mtgn5tioac16p",
@@ -594,7 +602,9 @@
    "myScore": "3",
    "oppScore": "3",
    "note": "수비 : 포구. 그리고 조금더 빨리 다음 동작으로 이어질수 있게",
-   "pdec": ""
+   "pdec": "",
+   "inn": 0,
+   "dinn": []
   },
   {
    "id": "mtkwdv0pnhq1o",
@@ -689,7 +699,9 @@
    "type": "official",
    "myScore": "6",
    "oppScore": "5",
-   "note": ""
+   "note": "",
+   "inn": 0,
+   "dinn": []
   },
   {
    "id": "mtl71967i58lm",
@@ -791,7 +803,9 @@
    "type": "official",
    "myScore": "5",
    "oppScore": "1",
-   "note": ""
+   "note": "",
+   "inn": 0,
+   "dinn": []
   },
   {
    "id": "mtl7j9ce5ymlm",
@@ -893,7 +907,9 @@
    "type": "official",
    "myScore": "4",
    "oppScore": "7",
-   "note": ""
+   "note": "",
+   "inn": 0,
+   "dinn": []
   },
   {
    "id": "mtmiol8rajy2d",
@@ -1035,7 +1051,9 @@
    "type": "official",
    "myScore": "6",
    "oppScore": "7",
-   "note": "5회 타석에서 대타로 교체당함"
+   "note": "5회 타석에서 대타로 교체당함",
+   "inn": 0,
+   "dinn": []
   },
   {
    "id": "mtmphekl7jbmw",
@@ -1160,7 +1178,9 @@
    "type": "official",
    "myScore": "3",
    "oppScore": "5",
-   "note": ""
+   "note": "",
+   "inn": 0,
+   "dinn": []
   },
   {
    "id": "mtqhffh1msgtu",
@@ -1306,9 +1326,12 @@
    "type": "practice",
    "myScore": "2",
    "oppScore": "9",
-   "note": ""
+   "note": "",
+   "inn": 0,
+   "dinn": []
   }
  ],
- "savedAt": "2026-09-07T01:41:34.604Z",
+ "plans": [],
+ "savedAt": "2026-09-07T02:06:31.564Z",
  "by": "성연제"
 }
