@@ -118,7 +118,7 @@ a{color:var(--s1)}
   background:color-mix(in srgb, var(--surface-0) 88%, transparent);
   backdrop-filter:saturate(180%) blur(12px);
   border-bottom:1px solid var(--border);
-  padding:calc(env(safe-area-inset-top) + 10px) 8px 10px;
+  padding:calc(env(safe-area-inset-top) + 10px) 4px 10px;
   display:flex; align-items:center; gap:10px;
 }
 .topbar .brand{display:flex;align-items:center;gap:8px;min-width:0}
@@ -161,7 +161,7 @@ a{color:var(--s1)}
 .pitem button{display:inline-flex;align-items:center;justify-content:center}
 .pitem button svg{display:block}
 
-.wrap{max-width:1080px;margin:0 auto;padding:14px 8px 24px}
+.wrap{max-width:1080px;margin:0 auto;padding:14px 4px 24px}
 @media(min-width:820px){ .wrap{padding:20px 10px}
   .topbar{padding-left:10px;padding-right:10px}
   .sheet{padding-left:10px;padding-right:10px} }
@@ -213,7 +213,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
 .dcell.tdy .dn{color:var(--hi)}
 .dcell.sel{background:var(--surface-2)}
 /* 공휴일 — 다른 일정과 같은 모양으로 목록에 넣습니다 */
-.dcell .hnm{font-size:8.5px;line-height:1.3;color:var(--crit);font-weight:750;letter-spacing:-.04em;
+.dcell .hnm{font-size:8px;line-height:1.3;color:var(--crit);font-weight:750;letter-spacing:-.04em;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
   word-break:keep-all;overflow-wrap:anywhere;padding:0 0 1px 1px}
 /* 여러 날에 걸친 일정 띠 — 칸 끝까지 채워 옆 칸과 이어 보이게 합니다 */
@@ -241,12 +241,14 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
 .dcell .dev svg{width:8px;height:8px;flex:none;display:block}
 /* 자리가 모자라면 이름부터 줄여 숫자·시간이 남게 합니다 */
 /* 일정 글씨는 청록(accent-ink) — 공휴일만 빨간색을 씁니다 */
-.dcell .dev .nm{flex:0 1 auto;min-width:0;font-size:8px;font-weight:750;color:var(--accent-ink);
+.dcell .dev .nm{flex:0 1 auto;min-width:0;font-size:8.5px;font-weight:750;color:var(--accent-ink);
   letter-spacing:-.05em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dcell .dev .ct{flex:none;font-size:8px;font-weight:800;color:var(--accent-ink);
+.dcell .dev .ct{flex:none;font-size:8.5px;font-weight:800;color:var(--accent-ink);
   font-variant-numeric:tabular-nums;letter-spacing:-.05em}
 .dcell .dev .tm{flex:none;font-size:7px;font-weight:600;color:var(--accent-ink);opacity:.7;
   font-variant-numeric:tabular-nums;letter-spacing:-.05em;margin-left:2px}
+/* 일정 이름·횟수 — 글자폭 95%로 가로 압축 (폰트에 wdth 축이 없어 scaleX 사용) */
+.dcell .dev .nm,.dcell .dev .ct{transform:scaleX(.95);transform-origin:left center}
 .dcell .dev.noic .nm{color:var(--accent-ink)}
 /* 경기 줄은 살짝 강조합니다 */
 .dcell .dev.gm .nm{color:var(--accent-ink)}
@@ -261,16 +263,16 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
   .dcell .dev .ct,.dcell .dev .tm{letter-spacing:-.08em}
   .dcell .dev .ct{margin-left:1px}
   .dcell .dev .tm{margin-left:1px}
-  .dcell .dev .nm,.dcell .dev .ct{font-size:7.5px}
+  .dcell .dev .nm,.dcell .dev .ct{font-size:8px}
   .dcell .dev .tm{font-size:6.5px}
-  .dcell .hnm{font-size:7.5px}
+  .dcell .hnm{font-size:7px}
 }
 @media(max-width:349px){
   .dcell .dn{font-size:10.5px}
   .dcell .dev svg{display:none}          /* 아주 좁으면 아이콘을 빼고 이름·횟수·시간만 남깁니다 */
-  .dcell .dev .nm,.dcell .dev .ct{font-size:7px}
+  .dcell .dev .nm,.dcell .dev .ct{font-size:7.5px}
   .dcell .dev .tm{font-size:6px}
-  .dcell .hnm{font-size:7px}
+  .dcell .hnm{font-size:6.5px}
 }
 /* 일정 목록 줄의 아이콘 자리 */
 .pic{flex:none;width:36px;height:36px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;
@@ -471,7 +473,7 @@ input[type="range"]::-moz-range-thumb{width:18px;height:18px;border-radius:999px
 .sheet{
   background:var(--surface-0);width:100%;max-width:620px;
   border-radius:20px 20px 0 0;max-height:92vh;overflow:auto;
-  padding:0 8px calc(20px + env(safe-area-inset-bottom));
+  padding:0 4px calc(20px + env(safe-area-inset-bottom));
   animation:rise .2s cubic-bezier(.2,.9,.3,1);
 }
 @media(min-width:700px){
