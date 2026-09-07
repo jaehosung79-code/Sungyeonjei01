@@ -1161,8 +1161,24 @@
    "myScore": "3",
    "oppScore": "5",
    "note": ""
+  },
+  {
+   "id": "mtqhffh1msgtu",
+   "pas": [],
+   "def": [],
+   "videos": [],
+   "pdec": "",
+   "date": "2026-09-05",
+   "opponent": "방배초",
+   "venue": "강남초",
+   "homeAway": "홈",
+   "level": "",
+   "type": "practice",
+   "myScore": "2",
+   "oppScore": "9",
+   "note": ""
   }
  ],
- "savedAt": "2026-09-04T09:14:27.088Z",
+ "savedAt": "2026-09-07T00:08:29.597Z",
  "by": "성연제"
 }
