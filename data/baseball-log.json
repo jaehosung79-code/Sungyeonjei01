@@ -1384,19 +1384,8 @@
    "icon": "ball",
    "col": "gray",
    "time": "20:00",
-   "reps": 0,
-   "title": "BTAC 40",
-   "note": ""
-  },
-  {
-   "id": "mtqn1mpt1v1tm",
-   "date": "2026-09-16",
-   "end": "",
-   "icon": "gym",
-   "col": "gray",
-   "time": "21:00",
-   "reps": 0,
-   "title": "PT 04",
+   "reps": 40,
+   "title": "BTAC",
    "note": ""
   },
   {
@@ -1475,8 +1464,19 @@
    "reps": 3,
    "title": "운동짐(재)",
    "note": ""
+  },
+  {
+   "id": "mtqoi3sgkqhrk",
+   "date": "2026-09-16",
+   "end": "",
+   "icon": "gym",
+   "col": "gray",
+   "time": "21:00",
+   "reps": 4,
+   "title": "운동짐(연)",
+   "note": ""
   }
  ],
- "savedAt": "2026-09-07T03:25:50.130Z",
+ "savedAt": "2026-09-07T03:26:45.056Z",
  "by": "성연제"
 }
