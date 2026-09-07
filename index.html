@@ -314,6 +314,9 @@ input[type="time"]::-webkit-calendar-picker-indicator{flex:none;margin-left:auto
 /* 좁은 화면에서는 날짜·시간을 한 줄에 하나씩 */
 .f2.dt{grid-template-columns:1fr}
 .f2.dt>.f{margin-bottom:0}
+/* 시간 — 기기 기본 시계 팝업이 시트 안에서 잘리는 일이 없도록 드롭다운 두 개로 고릅니다 */
+.tsel{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tsel select{min-width:0}
 @media(min-width:400px){ .f2.dt{grid-template-columns:1fr 1fr} }
 /* 경기 정보의 "포지션별 수비 이닝" 한 줄 — 포지션 · 이닝 · 지우기 */
 .dirow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;margin-bottom:8px}
@@ -3951,6 +3954,11 @@ function planSheet(id, date){
   const x = id? (S.plans||[]).find(o=>o.id===id) : null;
   const v = x || {id:null, date: date || planDay(), icon:"run", time:"", title:"", note:""};
   plDraft = {icon: PIMAP[v.icon]? v.icon : "run", id: x? x.id : null};
+  /* 시·분 — 5분 단위로 고르고, 예전 기록에 5분 단위가 아닌 값이 있으면 그 값도 목록에 넣습니다 */
+  const TH = (v.time||"").slice(0,2), TM = (v.time||"").slice(3,5);
+  const MOPT = Array.from({length:12},(_,i)=>pad2(i*5));
+  if(TM && MOPT.indexOf(TM)<0) MOPT.push(TM);
+  MOPT.sort();
   openSheet(`
     <div class="sh"><h3>${x?"일정 수정":"일정 추가"}</h3><div class="spacer" style="flex:1"></div>
       <button class="iconbtn" data-act="close" title="닫기" aria-label="닫기">${IC_X}</button></div>
@@ -3961,16 +3969,28 @@ function planSheet(id, date){
     </div>
     ${x? "" : `<div class="hint" style="margin:-4px 0 12px"><b>Game</b> 은 일정이 아니라 <b>경기 기록</b>으로 등록됩니다 —
       고르면 새 경기 화면이 열립니다</div>`}
-    <div class="f2 dt">
-      <label class="f"><span>날짜</span><input id="pl_date" type="date" value="${esc(v.date)}"></label>
-      <label class="f"><span>시간 <span style="color:var(--text-3);font-weight:400">— 선택</span></span>
-        <input id="pl_time" type="time" value="${esc(v.time||"")}"></label>
-    </div>
+    <label class="f"><span>날짜</span><input id="pl_date" type="date" value="${esc(v.date)}"></label>
+    <label class="f"><span>시간 <span style="color:var(--text-3);font-weight:400">— 선택</span></span>
+      <div class="tsel">
+        <select id="pl_h" aria-label="시">
+          <option value="">시간 없음</option>
+          ${Array.from({length:24},(_,h)=>`<option value="${pad2(h)}" ${TH===pad2(h)?"selected":""}>${h}시</option>`).join("")}
+        </select>
+        <select id="pl_m" aria-label="분">
+          ${MOPT.map(mm=>`<option value="${mm}" ${TM===mm?"selected":""}>${+mm}분</option>`).join("")}
+        </select>
+      </div></label>
     <label class="f"><span>내용 <span style="color:var(--text-3);font-weight:400">— 비우면 아이콘 이름</span></span>
       <input id="pl_title" value="${esc(v.title||"")}" placeholder="예: 러닝 5km · 팀 훈련 · 하체 운동"></label>
     <label class="f"><span>메모</span><textarea id="pl_note" placeholder="장소, 준비물, 함께하는 사람 등">${esc(v.note||"")}</textarea></label>
     <div class="sf">${x? delBtn("delPlan", `data-id="${x.id}"`, "이 일정 삭제") : `<button class="btn" data-act="close">취소</button>`}
-      <button class="btn pri" data-act="savePlan" data-id="${x?x.id:""}">저장</button></div>`);
+      <button class="btn pri" data-act="savePlan" data-id="${x?x.id:""}">저장</button></div>`,
+  sheet=>{
+    // "시간 없음"이면 분 칸은 쓰지 않으므로 흐리게 둡니다
+    const h = sheet.querySelector("#pl_h"), mm = sheet.querySelector("#pl_m");
+    const sync = ()=>{ const off = !h.value; mm.disabled = off; mm.style.opacity = off? ".45" : ""; };
+    h.addEventListener("change", sync); sync();
+  });
 }
 
 /* ------------------------------ 타석 시트 ------------------------------ */
@@ -4775,9 +4795,10 @@ document.addEventListener("click", ev=>{
       break;
     case "savePlan": {
       const dt = $("#pl_date").value || today();
+      const hh = $("#pl_h").value;
       const d = { date: dt, icon: (plDraft && PIMAP[plDraft.icon])? plDraft.icon : "run",
-                  time: $("#pl_time").value || "", title: $("#pl_title").value.trim(),
-                  note: $("#pl_note").value.trim() };
+                  time: hh? hh + ":" + ($("#pl_m").value || "00") : "",
+                  title: $("#pl_title").value.trim(), note: $("#pl_note").value.trim() };
       S.plans = Array.isArray(S.plans)? S.plans : [];
       if(id){ const o = S.plans.find(x=>x.id===id); if(o) Object.assign(o, d); }
       else S.plans.push(Object.assign({id:uid()}, d));
