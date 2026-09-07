@@ -200,7 +200,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
   display:flex;flex-direction:column;align-items:stretch;gap:0;min-width:0;
 }
 /* 칸 위의 짧은 구분선 — 오른쪽에 칸 사이 여백을 둡니다 */
-.dcell::before{content:"";display:block;height:2px;border-radius:2px;background:var(--grid);
+.dcell::before{content:"";display:block;height:1px;border-radius:1px;background:var(--grid);
   margin:0 0 11px;flex:none}
 .dcell.tdy::before{background:var(--hi);opacity:.55}
 .dcell .dn{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.05;
@@ -214,7 +214,8 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
   word-break:keep-all;overflow-wrap:anywhere;padding:0 0 1px 1px}
 /* 여러 날에 걸친 일정 띠 — 칸 끝까지 채워 옆 칸과 이어 보이게 합니다 */
-.dcell .dbars{display:flex;flex-direction:column;gap:2px;width:calc(100% + 5px);margin:0 -5px 4px 0}
+.dcell .dbars{display:flex;flex-direction:column;gap:2px;width:auto;margin:0 -3px 4px 0}
+.dcell:nth-child(7n) .dbars{margin-right:0}
 .dbar{position:relative;height:14px;background:transparent}
 .dbar.s{border-top-left-radius:4px;border-bottom-left-radius:4px}
 .dbar.e{border-top-right-radius:4px;border-bottom-right-radius:4px}
@@ -225,6 +226,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
   white-space:nowrap;font-size:9px;font-weight:700;line-height:1;color:#fff;
   text-shadow:0 0 2px rgba(0,0,0,.45);pointer-events:none;padding:0 3px;
 }
+.dbar .blbl.dk{color:var(--text-1);text-shadow:none}
 /* 그 날의 일정 목록 — 아이콘 · 이름 · 횟수 한 줄, 그 아래 시간 한 줄 */
 .dcell .dic{display:flex;flex-direction:column;align-items:stretch;gap:0;min-width:0}
 /* 일정 한 줄 — 아이콘 · 이름 · 횟수 · 시간 왼쪽 정렬 (한 줄에 모두) */
@@ -248,6 +250,8 @@ nav.tabs button[aria-current="page"]{color:var(--accent-ink);font-weight:650}
 /* 아주 좁은 화면에서는 한 번 더 줄여 한 줄에 들어가게 합니다 */
 @media(max-width:399px){
   .dcell{padding-right:2px}
+  .dcell .dbars{margin-right:-2px}
+  .dcell:nth-child(7n) .dbars{margin-right:0}
   .dcell .dev{gap:0;padding-left:0}
   .dcell .dev svg{width:7px;height:7px;margin-right:1px}
   .dcell .dev .nm{letter-spacing:-.07em}
@@ -374,7 +378,20 @@ input[type="time"]::-webkit-calendar-picker-indicator{flex:none;margin-left:auto
 .tsel{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .tsel select{min-width:0}
 /* 여러 날 일정 띠 색 고르기 */
-.colpick{display:flex;gap:14px;flex-wrap:wrap;margin:-2px 0 12px;padding:2px 0}
+.colpick{display:flex;gap:14px;flex-wrap:wrap;margin:-2px 0 10px;padding:2px 0}
+/* 투명도 슬라이더와 미리보기 */
+input[type="range"]{-webkit-appearance:none;appearance:none;border:0;background:none;padding:0;
+  min-height:32px;width:100%;cursor:pointer}
+input[type="range"]::-webkit-slider-runnable-track{height:6px;border-radius:999px;background:var(--surface-3)}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;
+  border-radius:999px;background:var(--accent-ink);border:2px solid var(--surface-1);margin-top:-7px;
+  box-shadow:0 1px 3px rgba(11,11,11,.25)}
+input[type="range"]::-moz-range-track{height:6px;border-radius:999px;background:var(--surface-3)}
+input[type="range"]::-moz-range-thumb{width:18px;height:18px;border-radius:999px;background:var(--accent-ink);
+  border:2px solid var(--surface-1);box-shadow:0 1px 3px rgba(11,11,11,.25)}
+.opprev{height:18px;border-radius:5px;display:flex;align-items:center;justify-content:center;
+  font-size:10.5px;font-weight:700;color:#fff;text-shadow:0 0 2px rgba(0,0,0,.45);margin:-4px 0 12px}
+.opprev.dk{color:var(--text-1);text-shadow:none}
 .colbtn{position:relative;width:32px;height:32px;border-radius:999px;border:0;padding:0;cursor:pointer}
 .colbtn::after{content:"";position:absolute;inset:-4px;border-radius:999px;border:2px solid transparent}
 .colbtn[aria-pressed="true"]::after{border-color:var(--text-1)}
@@ -904,6 +921,14 @@ const PLAN_COLS = [
 ];
 const PCOL = {}; PLAN_COLS.forEach(x=>{ PCOL[x.c]=x; });
 function planBarColor(x){ return (PCOL[x && x.col] || PCOL.gray).v; }
+/* 띠 배경 — 고른 색에 투명도를 섞습니다 (20~100%) */
+function planOpacity(x){ return clamp(Math.round(num(x && x.op, 100)), 20, 100); }
+function planBarBg(x){
+  const c = planBarColor(x), o = planOpacity(x);
+  return o >= 100? c : `color-mix(in srgb, ${c} ${o}%, transparent)`;
+}
+/* 옅은 띠 위에서는 흰 글씨가 읽히지 않으므로 어두운 글씨로 바꿉니다 */
+function planBarDark(x){ return planOpacity(x) <= 55; }
 function isRange(x){ return !!(x && x.end && x.end > x.date); }
 /* 달력에 쓰는 이름 — ETC 는 직접 적은 내용, 나머지는 아이콘 이름 */
 function repsTxt(v){ const k=num(v,0); return k<100? pad2(k) : String(k); }
@@ -976,6 +1001,7 @@ function normalizePlans(list){
       return { id: x.id || uid(), date: d, end: e,
         icon: PIMAP[x.icon]? x.icon : "run",
         col: PCOL[x.col]? x.col : "gray",
+        op: clamp(Math.round(num(x.op, 100)), 20, 100),
         time: /^\d{2}:\d{2}$/.test(String(x.time||""))? String(x.time) : "",
         reps: clamp(Math.round(num(x.reps,0)), 0, 999),
         title: String(x.title||""), note: String(x.note||"") };
@@ -2799,6 +2825,8 @@ function viewGame(id){
    달력에서 날짜를 누르면 그 날의 일정과 경기가 아래에 나옵니다.
    일정은 아이콘 · 시간 · 내용으로 적고, 목록에서 바로 지울 수 있습니다. */
 const WKD = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
+const MON_EN = ["January","February","March","April","May","June",
+                "July","August","September","October","November","December"];
 function planLine(p){
   return [planRange(p), p.time || "", num(p.reps,0)? num(p.reps,0)+"회" : "", p.note || ""]
     .filter(Boolean).join(" · ");
@@ -2861,8 +2889,8 @@ function viewPlans(){
         if(!r) return `<span class="dbar"></span>`;
         const c = ["dbar", ds===r.date? "s":"", ds===r.end? "e":""].filter(Boolean).join(" ");
         const lb = labelAt[ds+"|"+i];
-        const tx = lb? `<span class="blbl">${esc((String(lb.title||"").trim() || planCalName(lb)) + (num(lb.reps,0)? " "+repsTxt(lb.reps) : ""))}</span>` : "";
-        return `<span class="${c}" style="background:${planBarColor(r)}">${tx}</span>`;
+        const tx = lb? `<span class="blbl${planBarDark(lb)? " dk":""}">${esc((String(lb.title||"").trim() || planCalName(lb)) + (num(lb.reps,0)? " "+repsTxt(lb.reps) : ""))}</span>` : "";
+        return `<span class="${c}" style="background:${planBarBg(r)}">${tx}</span>`;
       }).join("") + `</span>` : "";
     /* 한 항목 = [아이콘 · 이름 · 횟수] + 그 아래 시간 한 줄 */
     /* 일정 하나 = 한 줄 · 아이콘 → 이름 → 횟수 → 시간 순 왼쪽 정렬
@@ -2908,8 +2936,8 @@ function viewPlans(){
   return `<div class="card">
       <div class="calhd">
         <button class="iconbtn sm" data-act="pmMove" data-v="-1" title="이전 달" aria-label="이전 달">${IC_BACK}</button>
-        <div class="m">${y}년 ${mo}월</div>
-        <button class="btn sm" data-act="pmToday">오늘</button>
+        <div class="m">${MON_EN[mo-1]} ${y}</div>
+        <button class="btn sm" data-act="pmToday">Today</button>
         <button class="iconbtn sm" data-act="pmMove" data-v="1" title="다음 달" aria-label="다음 달">${IC_CHEV_R}</button>
       </div>
       <div class="wkhd">${WKD.map((d,i)=>`<span class="${[i===0?"sun":"", (days.indexOf(tdy)>=0 && i===twd)?"tdy":""].filter(Boolean).join(" ")}">${d}</span>`).join("")}</div>
@@ -4156,11 +4184,13 @@ function gameSheet(id, preDate){
 
 /* ------------------------------ 일정 시트 ------------------------------ */
 let plDraft = null;
-let plRecalc = null;   // 일정 시트의 자동 횟수 다시 계산
+let plRecalc = null;    // 일정 시트의 자동 횟수 다시 계산
+let plColPaint = null;  // 일정 시트의 띠 색·투명도 미리보기
 function planSheet(id, date){
   const x = id? (S.plans||[]).find(o=>o.id===id) : null;
   const v = x || {id:null, date: date || planDay(), icon:"run", time:"", title:"", note:""};
-  plDraft = {icon: PIMAP[v.icon]? v.icon : "run", col: PCOL[v.col]? v.col : "gray", id: x? x.id : null,
+  plDraft = {icon: PIMAP[v.icon]? v.icon : "run", col: PCOL[v.col]? v.col : "gray",
+             op: clamp(Math.round(num(v.op,100)),20,100), id: x? x.id : null,
              auto: x? false : (S.settings.autoReps === true)};   // 수정할 때는 적어 둔 횟수를 그대로 둡니다
   /* 시·분 — 5분 단위로 고르고, 예전 기록에 5분 단위가 아닌 값이 있으면 그 값도 목록에 넣습니다 */
   const TH = (v.time||"").slice(0,2), TM = (v.time||"").slice(3,5);
@@ -4189,6 +4219,10 @@ function planSheet(id, date){
       ${PLAN_COLS.map(c=>`<button type="button" class="colbtn" data-act="pickPlanCol" data-v="${c.c}"
         style="background:${c.v}" title="${c.ko}" aria-label="띠 색 ${c.ko}" aria-pressed="${plDraft.col===c.c}"></button>`).join("")}
     </div>
+    <label class="f" style="margin-bottom:8px"><span>투명도
+      <span id="pl_opv" style="color:var(--text-3);font-weight:400">${plDraft.op}%</span></span>
+      <input id="pl_op" type="range" min="20" max="100" step="5" value="${plDraft.op}" aria-label="띠 투명도"></label>
+    <div class="opprev" id="pl_opprev">미리보기</div>
     <label class="f"><span>시간 <span style="color:var(--text-3);font-weight:400">— 선택</span></span>
       <div class="tsel">
         <select id="pl_h" aria-label="시">
@@ -4233,6 +4267,18 @@ function planSheet(id, date){
           autoEl = sheet.querySelector("#pl_auto"),
           ahEl   = sheet.querySelector("#pl_autohint");
     let quiet = false;
+    /* 띠 색 · 투명도 미리보기 */
+    const opEl = sheet.querySelector("#pl_op"), opVal = sheet.querySelector("#pl_opv"),
+          opPrev = sheet.querySelector("#pl_opprev");
+    plColPaint = ()=>{
+      plDraft.op = clamp(num(opEl.value,100),20,100);
+      opVal.textContent = plDraft.op + "%";
+      opPrev.style.background = planBarBg(plDraft);
+      opPrev.classList.toggle("dk", planBarDark(plDraft));
+      $$("#modal .colbtn").forEach(b=> b.setAttribute("aria-pressed", String(b.dataset.v===plDraft.col)));
+    };
+    opEl.addEventListener("input", plColPaint);
+    plColPaint();
     const thEl = sheet.querySelector("#pl_titlehint");
     plRecalc = ()=>{
       thEl.innerHTML = plDraft.icon==="etc"
@@ -5063,7 +5109,8 @@ document.addEventListener("click", ev=>{
       break;
     case "pickPlanCol":
       if(plDraft) plDraft.col = PCOL[v]? v : "gray";
-      $$("#modal .colbtn").forEach(b=> b.setAttribute("aria-pressed", String(b.dataset.v===(plDraft?plDraft.col:"gray"))));
+      if(plColPaint) plColPaint();
+      else $$("#modal .colbtn").forEach(b=> b.setAttribute("aria-pressed", String(b.dataset.v===(plDraft?plDraft.col:"gray"))));
       break;
     case "savePlan": {
       const dt = $("#pl_date").value || today();
@@ -5073,6 +5120,7 @@ document.addEventListener("click", ev=>{
       const d = { date: dt, end: en,
                   icon: (plDraft && PIMAP[plDraft.icon])? plDraft.icon : "run",
                   col: (plDraft && PCOL[plDraft.col])? plDraft.col : "gray",
+                  op: clamp(num($("#pl_op").value, 100), 20, 100),
                   time: hh? hh + ":" + ($("#pl_m").value || "00") : "",
                   reps: clamp(num($("#pl_reps").value, 0), 0, 999),
                   title: $("#pl_title").value.trim(), note: $("#pl_note").value.trim() };
