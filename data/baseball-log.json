@@ -1164,7 +1164,25 @@
   },
   {
    "id": "mtqhffh1msgtu",
-   "pas": [],
+   "pas": [
+    {
+     "id": "mtqhn14ubf34r",
+     "inning": 1,
+     "pitcherNo": "22",
+     "pitcher": "유시우",
+     "result": "LO",
+     "zone": {
+      "x": 195,
+      "y": 180,
+      "z2": 1
+     },
+     "rbi": 0,
+     "runs": 0,
+     "sb": 0,
+     "cs": 0,
+     "note": ""
+    }
+   ],
    "def": [],
    "videos": [],
    "pdec": "",
@@ -1179,6 +1197,6 @@
    "note": ""
   }
  ],
- "savedAt": "2026-09-07T00:08:29.597Z",
+ "savedAt": "2026-09-07T00:14:15.284Z",
  "by": "성연제"
 }
