@@ -303,6 +303,18 @@ input:focus,select,textarea:focus{outline:2px solid color-mix(in srgb,var(--s1) 
 select{outline:none;-webkit-appearance:none;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--text-3) 50%),linear-gradient(135deg,var(--text-3) 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:36px}
 .f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .f3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+/* 칸이 내용보다 좁아질 수 있어야 입력이 옆으로 삐져나가지 않습니다 */
+.f2>*,.f3>*{min-width:0}
+/* 날짜·시간 — 기기 기본 달력·시계 위젯이 칸 밖으로 밀려 잘리는 것을 막습니다 */
+input[type="date"],input[type="time"]{padding-left:10px;padding-right:8px;max-width:100%}
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value{text-align:left;margin:0;min-width:0}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator{flex:none;margin-left:auto;padding:0 0 0 4px}
+/* 좁은 화면에서는 날짜·시간을 한 줄에 하나씩 */
+.f2.dt{grid-template-columns:1fr}
+.f2.dt>.f{margin-bottom:0}
+@media(min-width:400px){ .f2.dt{grid-template-columns:1fr 1fr} }
 /* 경기 정보의 "포지션별 수비 이닝" 한 줄 — 포지션 · 이닝 · 지우기 */
 .dirow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;margin-bottom:8px}
 .dirow select{min-width:0}
@@ -3949,7 +3961,7 @@ function planSheet(id, date){
     </div>
     ${x? "" : `<div class="hint" style="margin:-4px 0 12px"><b>Game</b> 은 일정이 아니라 <b>경기 기록</b>으로 등록됩니다 —
       고르면 새 경기 화면이 열립니다</div>`}
-    <div class="f2">
+    <div class="f2 dt">
       <label class="f"><span>날짜</span><input id="pl_date" type="date" value="${esc(v.date)}"></label>
       <label class="f"><span>시간 <span style="color:var(--text-3);font-weight:400">— 선택</span></span>
         <input id="pl_time" type="time" value="${esc(v.time||"")}"></label>
